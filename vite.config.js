@@ -8,6 +8,8 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/css/products.css',
+                'resources/css/contact.css',
+                'resources/css/documentation.css',
                 'resources/js/app.js',
                 'resources/js/products.js',
             ],

@@ -23,8 +23,8 @@
                 <a class="nav-link" href="{{ route('about') }}" data-i18n="about">Tentang</a>
                 <a class="nav-link" href="{{ route('products') }}" data-i18n="products">Produk</a>
                 <a class="nav-link" href="https://imimedika.com/karir.php" data-i18n="careers">Karir</a>
-                <a class="nav-link" href="#kontak" data-i18n="contact">Kontak</a>
-                <a class="nav-link" href="https://imimedika.com/dokumentasi.php" data-i18n="news">Artikel &amp; Berita</a>
+                <a class="nav-link" href="{{ route('contact') }}" data-i18n="contact">Kontak</a>
+                <a class="nav-link" href="{{ route('documentation') }}" data-i18n="news">Artikel &amp; Berita</a>
 
                 <div class="language-control">
                     <span class="google-mark" aria-hidden="true">G</span>
@@ -83,7 +83,7 @@
             <div class="container">
                 <h2 id="contact-title" data-i18n="contactTitle">Siap Membantu Kebutuhan Alat Kesehatan Anda</h2>
                 <p data-i18n="contactSubtitle">Jangan ragu untuk menghubungi kami untuk informasi lebih lanjut</p>
-                <a class="contact-cta__button" href="https://imimedika.com/kontak.php" data-i18n="contactButton">Hubungi Kami!</a>
+                <a class="contact-cta__button" href="{{ route('contact') }}" data-i18n="contactButton">Hubungi Kami!</a>
             </div>
         </section>
 

@@ -1,0 +1,261 @@
+.contact-icons {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+.contact-main {
+    min-height: 100vh;
+    padding: 70px 0 80px;
+    background: linear-gradient(135deg, #f7f9fc 0%, #e9edf3 100%);
+}
+
+.contact-heading {
+    padding: 35px 0 66px;
+    text-align: center;
+}
+
+.contact-heading h1 {
+    color: #2461d7;
+    font-size: clamp(2.35rem, 3.6vw, 3.2rem);
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.contact-heading__rule,
+.contact-social__rule {
+    display: block;
+    width: 80px;
+    height: 3px;
+    margin: 18px auto 30px;
+    border-radius: 4px;
+    background: #2876e2;
+}
+
+.contact-heading p {
+    max-width: 730px;
+    margin: 0 auto;
+    color: #4a5160;
+    font-size: 1.05rem;
+    line-height: 1.9;
+}
+
+.factory-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 40px;
+}
+
+.factory-card {
+    overflow: hidden;
+    border-radius: 15px;
+    background: #fff;
+    box-shadow: 0 12px 30px rgba(18, 31, 63, 0.1);
+}
+
+.factory-card h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 86px;
+    padding: 20px 32px;
+    background: linear-gradient(110deg, #2461dc 0%, #2448aa 100%);
+    color: #fff;
+    font-size: 1.55rem;
+    font-weight: 700;
+}
+
+.factory-card h2 svg {
+    width: 23px;
+    height: 23px;
+}
+
+.factory-card__body {
+    padding: 32px;
+}
+
+.factory-card__address {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-height: 90px;
+    padding: 18px 17px;
+    border-left: 3px solid #1767e8;
+    border-radius: 8px;
+    background: #f8f9fc;
+    color: #273145;
+    font-size: 0.95rem;
+    line-height: 1.7;
+}
+
+.factory-card__address svg {
+    flex: 0 0 auto;
+    width: 19px;
+    height: 19px;
+    margin-top: 2px;
+    color: #1767e8;
+}
+
+.factory-card__details {
+    display: grid;
+    gap: 22px;
+    padding: 32px 12px 34px;
+}
+
+.factory-card__details a {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: fit-content;
+    color: #202838;
+    font-size: 0.98rem;
+    text-decoration: none;
+}
+
+.factory-card__details a:hover {
+    color: #1d5ed7;
+}
+
+.factory-card__round-icon {
+    display: grid;
+    flex: 0 0 39px;
+    place-items: center;
+    width: 39px;
+    height: 39px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #81b7f6, #3d70d8);
+    color: #fff;
+    box-shadow: 0 3px 8px rgba(39, 92, 177, 0.2);
+}
+
+.factory-card__round-icon svg {
+    width: 19px;
+    height: 19px;
+}
+
+.factory-card__hours {
+    padding: 24px 0 28px;
+    border-top: 1px solid #e6e8ed;
+}
+
+.factory-card__hours h3 {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 17px;
+    color: #1f5bc9;
+    font-size: 1.1rem;
+}
+
+.factory-card__hours h3 svg {
+    width: 19px;
+    height: 19px;
+}
+
+.factory-card__hours p {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 9px;
+    color: #29313c;
+    font-size: 0.95rem;
+}
+
+.factory-card__body iframe {
+    display: block;
+    width: 100%;
+    height: 260px;
+    border: 0;
+    border-radius: 8px;
+}
+
+.contact-social {
+    margin-top: 64px;
+    padding: 43px 30px 45px;
+    border-top: 4px solid #2876e2;
+    border-radius: 15px;
+    background: linear-gradient(120deg, #f9fbfe, #e7edf6);
+    box-shadow: 0 8px 25px rgba(18, 31, 63, 0.09);
+    text-align: center;
+}
+
+.contact-social h2 {
+    color: #2461d7;
+    font-size: clamp(1.7rem, 2.4vw, 2.3rem);
+    line-height: 1.25;
+}
+
+.contact-social__rule {
+    width: 50px;
+    margin: 14px auto 16px;
+}
+
+.contact-social p {
+    max-width: 610px;
+    margin: 0 auto;
+    color: #4a5160;
+    line-height: 1.7;
+}
+
+.contact-social__links {
+    display: flex;
+    justify-content: center;
+    gap: 22px;
+    margin-top: 29px;
+}
+
+.contact-social__links a {
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #2668d9, #20449f);
+    color: #fff;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.contact-social__links a:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 18px rgba(26, 76, 171, 0.25);
+}
+
+.contact-social__links svg {
+    width: 25px;
+    height: 25px;
+}
+
+@media (max-width: 768px) {
+    .contact-main {
+        padding-top: 65px;
+    }
+
+    .factory-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+    }
+
+    .contact-heading {
+        padding: 45px 0 48px;
+    }
+}
+
+@media (max-width: 576px) {
+    .contact-main {
+        padding-top: 58px;
+    }
+
+    .factory-card h2 {
+        min-height: 72px;
+        padding: 17px 24px;
+    }
+
+    .factory-card__body {
+        padding: 22px;
+    }
+
+    .contact-social {
+        padding: 35px 20px;
+    }
+}
