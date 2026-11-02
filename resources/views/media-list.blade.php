@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ $type === 'articles' ? 'Daftar artikel kesehatan IMI Medika.' : 'Berita terbaru IMI Medika.' }}">
     <title>{{ $type === 'articles' ? 'Artikel' : 'Berita' }} - Interskala Medika Indonesia</title>
+    @if ($type === 'news')
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    @endif
     @vite(['resources/css/app.css', 'resources/css/documentation.css', 'resources/js/app.js'])
 </head>
 <body class="documentation-page media-list-page">
@@ -54,22 +59,14 @@
                         <input id="news-search" type="search" placeholder="Cari berita..." autocomplete="off" aria-label="Cari berita">
                     </label>
                     <div class="news-toolbar__actions">
-                        <label class="news-select" for="news-filter">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z"/></svg>
-                            <span>Filter</span>
-                            <select id="news-filter" aria-label="Filter berita berdasarkan tahun">
-                                <option value="all">Semua Tahun</option>
-                                <option value="2026">2026</option>
-                            </select>
-                        </label>
-                        <label class="news-select" for="news-sort">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M7 12h13M10 17h10"/></svg>
-                            <span>Urutkan</span>
-                            <select id="news-sort" aria-label="Urutkan berita">
-                                <option value="newest">Terbaru</option>
-                                <option value="oldest">Terlama</option>
-                            </select>
-                        </label>
+                        <details class="news-dropdown">
+                            <summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z"/></svg> Filter</summary>
+                            <div class="news-dropdown__panel"><label for="news-filter">Tahun</label><select id="news-filter" aria-label="Filter berita berdasarkan tahun"><option value="all">Semua Tahun</option><option value="2026">2026</option></select></div>
+                        </details>
+                        <details class="news-dropdown">
+                            <summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M7 12h13M10 17h10"/></svg> Urutkan</summary>
+                            <div class="news-dropdown__panel"><label for="news-sort">Urutan</label><select id="news-sort" aria-label="Urutkan berita"><option value="newest">Terbaru</option><option value="oldest">Terlama</option></select></div>
+                        </details>
                     </div>
                 </div>
 
@@ -79,15 +76,15 @@
                             <img src="{{ asset('images/hospital-expo-2026.jpg') }}" alt="Tim Interskala Medika Indonesia dan Interskala Sehat Sejahtera di Hospital Expo 2026" loading="lazy" width="6240" height="4160">
                         </a>
                         <div class="news-card__body">
-                            <div class="news-card__meta"><span>Abdurrahman Panji Virgian</span><time datetime="2026-10-21">21 Oct 2026</time></div>
                             <h2><a href="https://imimedika.com/detail_berita.php?id=6">Interskala Medika Indonesia dan Interskala Sehat Sejahtera Hadir di Hospital Expo 2026</a></h2>
-                            <p>Interskala Medika Indonesia dan Interskala Sehat Sejahtera memperkenalkan solusi alat kesehatan di Hospital Expo 2026.</p>
+                            <p>Interskala Medika Indonesia dan Interskala Sehat Sejahtera Hadir di Hospital Expo 2026 Memperkenalkan solusi alat...</p>
+                            <div class="news-card__meta"><span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2C5.9 14 2 17.1 2 21v1h20v-1c0-3.9-3.9-7-10-7Z"/></svg> Abdurrahman Panji Virgian</span><time datetime="2026-10-21"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6M17 2v6M3 10h18"/></svg> 21 Oct 2026</time></div>
                             <a class="news-card__read-more" href="https://imimedika.com/detail_berita.php?id=6">Baca Selengkapnya <span aria-hidden="true">→</span></a>
                         </div>
                     </article>
                 </div>
                 <p class="news-no-results" id="news-no-results" hidden>Tidak ada berita yang cocok dengan pencarian Anda.</p>
-                <nav class="news-pagination" aria-label="Halaman berita"><span class="news-pagination__active" aria-current="page">1</span></nav>
+                <nav class="news-pagination" aria-label="Halaman berita"><button type="button" disabled aria-label="Halaman sebelumnya">‹</button><span class="news-pagination__active" aria-current="page">1</span><button type="button" disabled>2</button><button type="button" disabled>3</button><button type="button" disabled aria-label="Halaman berikutnya">›</button></nav>
             @else
                 <div class="media-empty">
                     <h2 data-i18n="noArticles">Belum Ada Artikel</h2>

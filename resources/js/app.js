@@ -280,7 +280,8 @@ if (newsGrid) {
         });
 
         newsCards.forEach((card) => {
-            const matchesSearch = card.textContent.toLocaleLowerCase('id').includes(searchTerm);
+            const searchableText = `${card.querySelector('h2').textContent} ${card.querySelector('p').textContent}`;
+            const matchesSearch = searchableText.toLocaleLowerCase('id').includes(searchTerm);
             const matchesYear = selectedYear === 'all' || card.dataset.year === selectedYear;
             card.hidden = !(matchesSearch && matchesYear);
             visibleCount += Number(!card.hidden);
@@ -291,6 +292,10 @@ if (newsGrid) {
     };
 
     searchInput.addEventListener('input', updateNews);
-    yearFilter.addEventListener('change', updateNews);
-    sortOrder.addEventListener('change', updateNews);
+    [yearFilter, sortOrder].forEach((select) => {
+        select.addEventListener('change', () => {
+            updateNews();
+            select.closest('details').open = false;
+        });
+    });
 }
