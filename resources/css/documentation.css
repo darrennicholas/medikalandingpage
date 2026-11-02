@@ -141,7 +141,7 @@
 .media-card svg {
     width: 58px;
     height: 58px;
-    margin-bottom: 34px;
+    margin-bottom: 20px;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -151,15 +151,17 @@
 }
 
 .media-card h3 {
+    margin-bottom: 15px;
     font-size: 1.8rem;
     font-weight: 700;
     transition: transform 0.4s ease;
 }
 
 .media-card span {
-    margin-top: 12px;
+    margin-bottom: 20px;
     color: #3e485a;
     font-size: 0.95rem;
+    opacity: 0.8;
     transition: color 0.4s ease, transform 0.4s ease;
 }
 

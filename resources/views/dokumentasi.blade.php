@@ -58,12 +58,12 @@
 
                 <div class="media-grid">
                     <a class="media-card" href="{{ route('articles') }}" aria-label="Lihat artikel selengkapnya">
-                        <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M13 6h28l10 10v42H13V6Z" fill="currentColor"/><path d="M41 6v11h10M21 27h22M21 35h22M21 43h16" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <svg viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M13 4h28l11 11v45H13V4Zm28 2v10h10L41 6ZM21 28h23v3H21v-3Zm0 8h23v3H21v-3Zm0 8h17v3H21v-3Z"/></svg>
                         <h3 data-i18n="articleCardTitle">Artikel</h3>
                         <span data-i18n="readMore">Selengkapnya</span>
                     </a>
                     <a class="media-card" href="{{ route('news') }}" aria-label="Lihat berita selengkapnya">
-                        <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="9" y="9" width="46" height="46" rx="3" fill="currentColor"/><path d="M18 18h17v16H18V18Zm23 2h7M41 27h7M18 41h30M18 47h30" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><rect x="21" y="21" width="11" height="10" rx="1" fill="#fff"/></svg>
+                        <svg viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M9 8h46v43a5 5 0 0 1-5 5H14a5 5 0 0 1-5-5V8Zm8 8h18v17H17V16Zm23 1h9v3h-9v-3Zm0 7h9v3h-9v-3ZM17 39h32v3H17v-3Zm0 7h32v3H17v-3Z"/></svg>
                         <h3 data-i18n="newsCardTitle">Berita</h3>
                         <span data-i18n="readMore">Selengkapnya</span>
                     </a>
