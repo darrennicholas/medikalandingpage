@@ -76,9 +76,7 @@
                 <div class="news-grid" id="news-grid">
                     <article class="news-card" data-title="Interskala Medika Indonesia dan Interskala Sehat Sejahtera Hadir di Hospital Expo 2026" data-year="2026" data-date="2026-10-21">
                         <a class="news-card__image" href="https://imimedika.com/detail_berita.php?id=6" aria-label="Baca berita Hospital Expo 2026">
-                            <span class="news-card__image-mark">IMI <span>Medika</span></span>
-                            <span class="news-card__image-title">HOSPITAL<br>EXPO 2026</span>
-                            <span class="news-card__image-decoration" aria-hidden="true"></span>
+                            <img src="{{ asset('images/hospital-expo-2026.jpg') }}" alt="Tim Interskala Medika Indonesia dan Interskala Sehat Sejahtera di Hospital Expo 2026" loading="lazy" width="6240" height="4160">
                         </a>
                         <div class="news-card__body">
                             <div class="news-card__meta"><span>Abdurrahman Panji Virgian</span><time datetime="2026-10-21">21 Oct 2026</time></div>
