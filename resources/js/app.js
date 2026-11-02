@@ -207,6 +207,22 @@ const englishCopy = {
     provinceReach: 'Provinces Reached',
     certificatesTitle: 'Certificates & Awards',
     certificatesSubtitle: 'Recognition of our commitment to quality and international standards',
+    productTagline: 'WE BRING THE FUTURE HEALTH CARE',
+    productHeading: 'Find Our Best Products',
+    productDescription: 'Explore our range of high-quality products for your medical and healthcare needs',
+    categoryLabel: 'Category',
+    allCategories: '-- All Categories --',
+    subcategoryLabel: 'Subcategory',
+    allSubcategories: '-- All Subcategories --',
+    resetFilter: 'Reset Filter',
+    emptyCategory: 'No products are available in this category yet.',
+    buyProduct: 'Buy',
+    brochure: 'Brochure',
+    brochurePreview: 'Brochure Preview',
+    brochureUnavailable: 'Could Not Load Brochure',
+    brochureUnavailableMessage: 'The PDF could not be displayed. Please download it directly.',
+    brochureHint: 'Right-click the PDF to zoom or download',
+    downloadPdf: 'Download PDF',
 };
 
 document.querySelector('#language-picker')?.addEventListener('change', (event) => {

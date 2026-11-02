@@ -1,0 +1,645 @@
+[
+  {
+    "id": "16",
+    "name": "AKL",
+    "products": [
+      {
+        "name": "TIANLONG Hepatitis B Virus (HBV) Nucleic Acid Detection Kit",
+        "subtitle": "Reagen Tianlong (PCR Deteksi Kit)",
+        "parameter": "",
+        "image": "images/products/6a9126db3e074_1787897563.png",
+        "logo_top": "images/products/logos/logo_atas_6a9126db3e7f5_1787897563.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a9126db3eea7_1787897563.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/tianlong-hepatitis-b-virus-hbv-nucleic-acid-detection-kit",
+        "brochure_url": "https://drive.google.com/file/d/1bg4x2mlwoVw33RIdF7gzBI_LttgIdD7f/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "DEEPBLUE Disposable Virus Sampling Tube Inactivated (SL-2)",
+        "subtitle": "Deepblue (VTM)",
+        "parameter": "",
+        "image": "images/products/6a91377699f69_1787901814.png",
+        "logo_top": "images/products/logos/logo_atas_6a9137769a52c_1787901814.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a9137769aa32_1787901814.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/deepblue-disposable-virus-sampling-tube",
+        "brochure_url": "",
+        "subcategory": "none"
+      },
+      {
+        "name": "TIANLONG Hepatitis C Virus (HCV) Nucleic Acid Detection Kit",
+        "subtitle": "Reagen Tianlong (PCR Deteksi Kit)",
+        "parameter": "",
+        "image": "images/products/6a91065cb5191_1787889244.png",
+        "logo_top": "images/products/logos/logo_atas_6a91065cb55cc_1787889244.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a91065cb5892_1787889244.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/tianlong-hepatitis-c-virus-hcv-nucleic-acid-detection-kit",
+        "brochure_url": "",
+        "subcategory": "none"
+      },
+      {
+        "name": "TIANLONG Human Influenza Virus B (Yamagata & Victoria) and A (H1 & H3) Nucleic Acid Multiplex Detection Kit (Fluorescence PCR Method)",
+        "subtitle": "Reagen Tianlong (PCR Deteksi Kit)",
+        "parameter": "",
+        "image": "images/products/6a9127ad6f26c_1787897773.png",
+        "logo_top": "images/products/logos/logo_atas_6a9127ad6f655_1787897773.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a9127ad6f923_1787897773.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/tianlong-human-influenza-virus-b-yamagataandvictoria-and-a-h1andh3-nucleic-acid-multiplex-detection-kit-fluorescence-pcr-method",
+        "brochure_url": "",
+        "subcategory": "none"
+      },
+      {
+        "name": "TIANLONG Human Influenza Virus B Genotyping (Yamagata & Victoria)",
+        "subtitle": "Reagen Tianlong (PCR Deteksi Kit)",
+        "parameter": "",
+        "image": "images/products/6a91291a6eca9_1787898138.png",
+        "logo_top": "images/products/logos/logo_atas_6a91291a6f0db_1787898138.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a91291a6f3ac_1787898138.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/tianlong-human-influenza-virus-b-genotyping-yamagataandvictoria",
+        "brochure_url": "https://drive.google.com/file/d/1hqLvoXXg08TJDYYmJOA7pxazK5TVWnbJ/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "Tianlong LIBEX Extractor",
+        "subtitle": "Mesin Tianlong (Ekstraksi)",
+        "parameter": "",
+        "image": "images/products/6a913cb2c20df_1787903154.png",
+        "logo_top": "images/products/logos/logo_atas_6a913cb2c2462_1787903154.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a913cb2c26c2_1787903154.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/libex-nucleic-acid-extractor",
+        "brochure_url": "https://drive.google.com/file/d/1ixXWV6d7aqwaNOpg8TKWiRHGkQAnDzLj/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "TIANLONG Monkeypox Virus Nucleic Acid Detection Kit (Fluorescence PCR Method)",
+        "subtitle": "Reagen Tianlong (PCR Deteksi Kit)",
+        "parameter": "",
+        "image": "images/products/6a9102af19e88_1787888303.png",
+        "logo_top": "images/products/logos/logo_atas_6a9102af1a45b_1787888303.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a9102af1a7ac_1787888303.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/tianlong-monkeypox-virus-nucleic-acid-detection-kit-fluorescence-pcr-method",
+        "brochure_url": "https://drive.google.com/file/d/1jEX_eBuUpyKlwthWId1D--mObjexjVE_/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "TIANLONG Mycobacterium Tuberculosis Complex Nucleic Acid Detection Kit (Fluorescence PCR Method)",
+        "subtitle": "Reagen Tianlong (PCR Deteksi Kit)",
+        "parameter": "",
+        "image": "images/products/6a91037fa3b77_1787888511.png",
+        "logo_top": "images/products/logos/logo_atas_6a91037fa3f16_1787888511.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a91037fa4177_1787888511.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/tianlong-mycobacterium-tuberculosis-complex-nucleic-acid-detection-kit-fluorescence-pcr-method",
+        "brochure_url": "https://drive.google.com/file/d/1v9YCGEBG9P6VmO7LFFqqRr-7KpGBXkOy/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "TIANLONG Mycoplasma Pneumoniae (MP) Nucleic Acid Detection Kit (Fluorescence PCR Method)",
+        "subtitle": "Reagen Tianlong (PCR Deteksi Kit)",
+        "parameter": "",
+        "image": "images/products/6a91047ed016c_1787888766.png",
+        "logo_top": "images/products/logos/logo_atas_6a91047ed04bc_1787888766.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a91047ed0705_1787888766.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/tianlong-mycoplasma-pneumoniae-mp-nucleic-acid-detection-kit-fluorescence-pcr-method",
+        "brochure_url": "https://drive.google.com/file/d/1iUa_pQwvO9R678mKjvGvmHYuWaI0cQFh/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "TIANLONG Novel Coronavirus Nucleic Acid Detection Kit P732H",
+        "subtitle": "Reagen Tianlong (PCR Deteksi Kit)",
+        "parameter": "",
+        "image": "images/products/6a90f98c92c8f_1787885964.png",
+        "logo_top": "images/products/logos/logo_atas_6a90f98c931a7_1787885964.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a90f98c934d2_1787885964.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/tianlong-novel-coronavirus-2019-ncov-nucleic-acid-detection-kit-fluorescence-pcr-method",
+        "brochure_url": "",
+        "subcategory": "none"
+      },
+      {
+        "name": "TIANLONG Nucleic Acid Extraction Kit",
+        "subtitle": "Reagen Tianlong (Ekstraksi Kit)",
+        "parameter": "",
+        "image": "images/products/6a913371de5f6_1787900785.png",
+        "logo_top": "images/products/logos/logo_atas_6a913371deb90_1787900785.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a913371def11_1787900785.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/tianlong-nucleic-acid-extraction-kit",
+        "brochure_url": "https://drive.google.com/file/d/1NaNDhp-1p5OCLkMF8H84Pjl4k619SO33/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "Tianlong PCR System Gentier48E",
+        "subtitle": "Mesin Tianlong (Deteksi)",
+        "parameter": "",
+        "image": "images/products/6a913a2e1bfe0_1787902510.png",
+        "logo_top": "images/products/logos/logo_atas_6a913a2e1c655_1787902510.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a913a2e1c9a6_1787902510.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/tianlong-real-time-pcr-system-gentier48e",
+        "brochure_url": "",
+        "subcategory": "none"
+      },
+      {
+        "name": "Tianlong PCR System Gentier96E",
+        "subtitle": "Mesin Tianlong (Deteksi)",
+        "parameter": "",
+        "image": "images/products/6a913b58dd5ae_1787902808.png",
+        "logo_top": "images/products/logos/logo_atas_6a913b58dda11_1787902808.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a913b58ddcfb_1787902808.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/tianlong-real-time-pcr-system-gentier96e",
+        "brochure_url": "https://drive.google.com/file/d/1afitby875LwTb4JHPzhKVhGpORIXdvem/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "TIANLONG Yellow Fever Virus Nucleic Acid Detection Kit (Fluorescence PCR Method)",
+        "subtitle": "Reagen Tianlong (PCR Deteksi Kit)",
+        "parameter": "",
+        "image": "images/products/6a9105cc1e65e_1787889100.png",
+        "logo_top": "images/products/logos/logo_atas_6a9105cc1ebf9_1787889100.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a9105cc1efc8_1787889100.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/tianlong-yellow-fever-virus-nucleic-acid-detection-kit-fluorescence-pcr-method",
+        "brochure_url": "",
+        "subcategory": "none"
+      }
+    ]
+  },
+  {
+    "id": "12",
+    "name": "Drugs Abuse",
+    "products": [
+      {
+        "name": "DOA 10 Drugs Panel Test",
+        "subtitle": "Napza Test | Drug Abuse",
+        "parameter": "",
+        "image": "images/products/6a8bcc27e2954_1787546663.png",
+        "logo_top": "images/products/logos/logo_atas_6a8bcc27e4502_1787546663.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8bcc27e477d_1787546663.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-doa-10-drugs-cup-test-amp-thc-mop-meth-coc-bzo-soma-pcp-mtd-mdma",
+        "brochure_url": "https://drive.google.com/file/d/1jGCrR21yRfQAuKn7WOCXBqzyo5tuGciY/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "DOA 3 Drugs Panel Test",
+        "subtitle": "Napza Test | Drug Abuse",
+        "parameter": "",
+        "image": "images/products/6a8bb9450049a_1787541829.png",
+        "logo_top": "images/products/logos/logo_atas_6a8bb94501526_1787541829.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8bb94501970_1787541829.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-doa-3-drugs-panel-test-amp-thc-meth",
+        "brochure_url": "https://drive.google.com/file/d/1OgAZAOtbssswFPrNqpnq1iYIuSMBFQrk/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "DOA 3 Drugs Panel Test",
+        "subtitle": "Napza Test | Drug Abuse",
+        "parameter": "",
+        "image": "images/products/6a8bbb66588c6_1787542374.png",
+        "logo_top": "images/products/logos/logo_atas_6a8bbb6659abb_1787542374.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8bbb6659dd5_1787542374.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-doa-3-drugs-panel-test-amp-mop-meth",
+        "brochure_url": "https://drive.google.com/file/d/1dwoBpRBs-aM2pskVr7yxSkxBmRgC3ixc/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "DOA 3 Drugs Panel Test",
+        "subtitle": "Napza Test | Drug Abuse",
+        "parameter": "",
+        "image": "images/products/6a8bc3b848e42_1787544504.png",
+        "logo_top": "images/products/logos/logo_atas_6a8bc3b849e2f_1787544504.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8bc3b84a0bf_1787544504.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-doa-3-drugs-panel-test-amp-thc-mop",
+        "brochure_url": "https://drive.google.com/file/d/1XMmeEjK-uJK6vEQ5nwWYFNKIJz5ztMg8/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "DOA 5 Drugs Panel Test",
+        "subtitle": "Napza Test | Drug Abuse",
+        "parameter": "",
+        "image": "images/products/6a8bc94deed65_1787545933.png",
+        "logo_top": "images/products/logos/logo_atas_6a8bc94df0070_1787545933.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8bc94df0619_1787545933.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-doa-5-drugs-panel-test-thc-mop-amp-meth-bzo",
+        "brochure_url": "https://drive.google.com/file/d/1NrcRiEWlMAFbQ_M4DBy5IduryAfNjc7z/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "DOA 6 Drugs Panel Test",
+        "subtitle": "Napza Test | Drug Abuse",
+        "parameter": "",
+        "image": "images/products/6a8bca079f3cf_1787546119.png",
+        "logo_top": "images/products/logos/logo_atas_6a8bca07a06d9_1787546119.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8bca07a097e_1787546119.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-multi-6-parameter-amp-thc-mop-meth-coc-bzo",
+        "brochure_url": "https://drive.google.com/file/d/14ffd72WZD02uZvNEoxJMUrtDf7a7xCtg/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "DOA 7 Drugs Panel Test",
+        "subtitle": "Napza Test | Drug Abuse",
+        "parameter": "",
+        "image": "images/products/6a8bcb231b7ca_1787546403.png",
+        "logo_top": "images/products/logos/logo_atas_6a8bcb231c5b8_1787546403.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8bcb231c917_1787546403.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/multi-7-parameter-amp-thc-mop-meth-coc-bzo-soma",
+        "brochure_url": "https://drive.google.com/file/d/1upZyH6J-UJC9q_sxeXkVIjNCufqu5Dbp/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "DOA Drugs Panel Test AMP",
+        "subtitle": "Napza Test | Drug Abuse Single Panel Test",
+        "parameter": "(AMP)",
+        "image": "images/products/6a8be664ba49b_1787553380.png",
+        "logo_top": "images/products/logos/logo_atas_6a8be664bb6fd_1787553380.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8be664bbb34_1787553380.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-doa-drugs-panel-test-amp",
+        "brochure_url": "https://drive.google.com/file/d/1vGgg3mNkzSRoX2A65fpfr7oNHK1Z1NLQ/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "DOA Drugs Panel Test BZO",
+        "subtitle": "Napza Test | Drug Abuse Single Panel Test",
+        "parameter": "(BZO)",
+        "image": "images/products/6a8fe93972a11_1787816249.png",
+        "logo_top": "images/products/logos/logo_atas_6a8fe93973a32_1787816249.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8fe93973cbe_1787816249.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-doa-drugs-panel-test-bzo",
+        "brochure_url": "https://drive.google.com/file/d/1DpbLauuedA2tqp4Oc2y95ieARl2iiAR6/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "DOA Drugs Panel Test MDMA",
+        "subtitle": "Napza Test | Drug Abuse Single Panel Test",
+        "parameter": "(MDMA)",
+        "image": "images/products/6a8bcd6107968_1787546977.png",
+        "logo_top": "images/products/logos/logo_atas_6a8bcd61086cc_1787546977.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8bcd61089ef_1787546977.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-doa-drugs-panel-test-mdma",
+        "brochure_url": "https://drive.google.com/file/d/1fgU2nwtsXTkaaILTnA3RB13uhYvk3rPF/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "DOA Drugs Panel Test METH",
+        "subtitle": "Napza Test | Drug Abuse Single Panel Test",
+        "parameter": "(METH)",
+        "image": "images/products/6a8fe89733c45_1787816087.png",
+        "logo_top": "images/products/logos/logo_atas_6a8fe89734f52_1787816087.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8fe89735214_1787816087.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-doa-drugs-panel-test-meth",
+        "brochure_url": "https://drive.google.com/file/d/1r3ICob22XTLVbl5aaFcAVXcoomiJWw_E/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "DOA Drugs Panel Test MOP",
+        "subtitle": "Napza Test | Drug Abuse Single Panel Test",
+        "parameter": "(MOP)",
+        "image": "images/products/6a8c079a16078_1787561882.png",
+        "logo_top": "images/products/logos/logo_atas_6a8c079a19c2e_1787561882.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8c079a1a2d2_1787561882.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-doa-drugs-panel-test-mop",
+        "brochure_url": "https://drive.google.com/file/d/1rthW12Ku4CY4fvPoFoeRYBQkIbq5k-OY/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "DOA Drugs Panel Test THC",
+        "subtitle": "Napza Test | Drug Abuse Single Panel Test",
+        "parameter": "(THC)",
+        "image": "images/products/6a8bdff9bdfb8_1787551737.png",
+        "logo_top": "images/products/logos/logo_atas_6a8bdff9bf1be_1787551737.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8bdff9bf6e5_1787551737.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-doa-drugs-panel-test-thc",
+        "brochure_url": "https://drive.google.com/file/d/1AFVoz4a6TwCBxY0g1G-YrcP5V45aEhIc/view?usp=sharing",
+        "subcategory": "none"
+      }
+    ]
+  },
+  {
+    "id": "3",
+    "name": "Glucose Meter",
+    "products": []
+  },
+  {
+    "id": "21",
+    "name": "Instrument and Consumable",
+    "products": []
+  },
+  {
+    "id": "22",
+    "name": "Medical Consumable",
+    "products": []
+  },
+  {
+    "id": "18",
+    "name": "Molecular",
+    "products": []
+  },
+  {
+    "id": "14",
+    "name": "POCT",
+    "products": [
+      {
+        "name": "Blood Glucose Test Strip",
+        "subtitle": "Medicheck",
+        "parameter": "",
+        "image": "images/products/6a8ffea926e25_1787821737.png",
+        "logo_top": "images/products/logos/logo_atas_6a8ffea9279a2_1787821737.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8ffea927d24_1787821737.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/medicheck-blood-glucose-test-strip",
+        "brochure_url": "",
+        "subcategory": "none"
+      },
+      {
+        "name": "Blood Glucose Test Strip",
+        "subtitle": "Yasee",
+        "parameter": "",
+        "image": "images/products/6a90022b0d095_1787822635.png",
+        "logo_top": "images/products/logos/logo_atas_6a90022b0d8e0_1787822635.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a90022b0dc58_1787822635.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/yasee-blood-glucose-test-strip-50-test-strips-25-test-x-2-vial",
+        "brochure_url": "https://drive.google.com/file/d/1dX44YjqkO40NefwB9DrCVDZirtmPgvf0/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "Blood Total Cholesterol Test Strip",
+        "subtitle": "IS",
+        "parameter": "",
+        "image": "images/products/6a8feba451a20_1787816868.png",
+        "logo_top": "images/products/logos/logo_atas_6a8feba45216b_1787816868.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8feba45249b_1787816868.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-blood-total-cholesterol-test-strip",
+        "brochure_url": "",
+        "subcategory": "none"
+      },
+      {
+        "name": "Blood Uric Acid Test Strip",
+        "subtitle": "IS",
+        "parameter": "",
+        "image": "images/products/6a8ffcf8de317_1787821304.png",
+        "logo_top": "images/products/logos/logo_atas_6a8ffcf8dea24_1787821304.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8ffcf8ded27_1787821304.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-blood-uric-acid-test-strip",
+        "brochure_url": "https://drive.google.com/file/d/1fol3QN9qhv719bGesUEEv8t0N_u5zp7I/view?usp=sharing",
+        "subcategory": "none"
+      }
+    ]
+  },
+  {
+    "id": "20",
+    "name": "Point Of Care Testing",
+    "products": []
+  },
+  {
+    "id": "11",
+    "name": "Rapid Test",
+    "products": [
+      {
+        "name": "Malaria P.f/P.v Rapid Test Single Buffer",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a86b57c23b90_1787213180.png",
+        "logo_top": "images/products/logos/logo_atas_6a86b57c24bd3_1787213180.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a86b57c25020_1787213180.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-malaria-p-f-p-v-rapid-test-single-buffer",
+        "brochure_url": "https://drive.google.com/file/d/1O8dFuUwpyibnn2uRLSp4PHFO-sGQor7q/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "Malaria P.f/Pan Rapid Test Single Buffer",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a86b94338f8d_1787214147.png",
+        "logo_top": "images/products/logos/logo_atas_6a86b94339c9e_1787214147.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a86b94339fbb_1787214147.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-malaria-p-f-pan-rapid-test-single-buffer",
+        "brochure_url": "https://drive.google.com/file/d/10RbHl_rUE7AbLQJ8rrtOsVQduzuSJmr3/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "Anti HBs Rapid Test",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a8810dc830a4_1787302108.png",
+        "logo_top": "images/products/logos/logo_atas_6a8810dc840da_1787302108.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8810dc844b8_1787302108.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-anti-hbs-rapid-test",
+        "brochure_url": "",
+        "subcategory": "none"
+      },
+      {
+        "name": "Anti-HCV Rapid Test",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a8406371bfae_1787037239.png",
+        "logo_top": "images/products/logos/logo_atas_6a8406371ce16_1787037239.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8406371d1b5_1787037239.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-anti-hcv-rapid-test",
+        "brochure_url": "https://drive.google.com/file/d/13HBRmcOjjmN0Toi6ZwqV6Z4qNMmUlJN2/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "Chikungunya IgG/IgM Rapid Test Cassette",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a86594b5817c_1787189579.png",
+        "logo_top": "images/products/logos/logo_atas_6a86594b5b9bf_1787189579.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a86594b5e5eb_1787189579.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-chikungunya-igg-igm-rapid-test",
+        "brochure_url": "https://drive.google.com/file/d/1H9f2P7C_378_8jm5xg4HMPSZnuAgSup-/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "Dengue Combo IgG/IgM dan NS1 Rapid Test",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a880f66ab6c0_1787301734.png",
+        "logo_top": "images/products/logos/logo_atas_6a880f66ac5d2_1787301734.png",
+        "logo_bottom": "",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-dengue-combo-igg-igm-and-ns1-rapid-test",
+        "brochure_url": "",
+        "subcategory": "none"
+      },
+      {
+        "name": "Dengue IgG/IgM Rapid Test",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a880e33b1066_1787301427.png",
+        "logo_top": "images/products/logos/logo_atas_6a880e33b215b_1787301427.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a880e33b25a3_1787301427.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-dengue-igg-igm-rapid",
+        "brochure_url": "",
+        "subcategory": "none"
+      },
+      {
+        "name": "Dengue NS1 Rapid Test",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a8411dee6832_1787040222.png",
+        "logo_top": "images/products/logos/logo_atas_6a8411dee7815_1787040222.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8411dee7c9a_1787040222.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-dengue-ns1-rapid-test",
+        "brochure_url": "https://drive.google.com/file/d/1AThtEX0hVj-Pfv9kRIdCgPv2G_8GzgGJ/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "Fecal Occult Blood (FOB) Rapid Test",
+        "subtitle": "Rapid Test | Gastrointestinal",
+        "parameter": "",
+        "image": "images/products/6a86cb5134fc4_1787218769.png",
+        "logo_top": "images/products/logos/logo_atas_6a86cb5136049_1787218769.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a86cb51364b1_1787218769.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-fecal-occult-blood-fob-rapid-test",
+        "brochure_url": "https://drive.google.com/file/d/1sczJIlqPtw21LEVCytcPI_1skIVTio_U/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "HAV IgM Rapid Test",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a87f7f3c1cb8_1787295731.png",
+        "logo_top": "images/products/logos/logo_atas_6a87f7f3c2cb9_1787295731.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a87f7f3c3082_1787295731.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-hav-igm-rapid-test",
+        "brochure_url": "",
+        "subcategory": "none"
+      },
+      {
+        "name": "HBsAg Rapid Test",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a840fc13764f_1787039681.png",
+        "logo_top": "images/products/logos/logo_atas_6a840fc138ce9_1787039681.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a840fc1393e7_1787039681.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-hbsag",
+        "brochure_url": "https://drive.google.com/file/d/1JJAqRoicJp4UUhaGYe3mS6cknES0eqL7/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "hCG Pregnancy Rapid Test",
+        "subtitle": "Rapid Test | Fertility",
+        "parameter": "",
+        "image": "images/products/6a8825edc7af4_1787307501.png",
+        "logo_top": "images/products/logos/logo_atas_6a8825edc8b02_1787307501.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a8825edc8ebd_1787307501.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-hcg-pregnancy-rapid-test",
+        "brochure_url": "https://drive.google.com/file/d/1ppb7nB3PI2_HO3NuthFKTPtoiObR10m0/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "HIV 1/2 Combo (HIV + Syphilis) Rapid Test",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a85774a6e7bd_1787131722.png",
+        "logo_top": "images/products/logos/logo_atas_6a85774a6f897_1787131722.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a85774a6fca2_1787131722.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-hiv-1-2-combo-hiv-syphilis",
+        "brochure_url": "https://drive.google.com/file/d/1cTU38CQ4WF6ZXIjevB_kfTM_2Hgp4api/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "HIV Ab 3-Line Rapid Test",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a857537d5610_1787131191.png",
+        "logo_top": "images/products/logos/logo_atas_6a857537d71be_1787131191.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a857537d796b_1787131191.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-hiv-ab-3-line-rapid-test",
+        "brochure_url": "https://drive.google.com/file/d/1k9BJsZ9lnPb3lzImLacCAUkIiODR_lh6/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "HIV Duo (HIV + Syphilis) Rapid Test",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a850ffa01220_1787105274.png",
+        "logo_top": "images/products/logos/logo_atas_6a850ffa01f3e_1787105274.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a850ffa02258_1787105274.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-hiv-duo-hiv-syphilis-rapid-test",
+        "brochure_url": "https://drive.google.com/file/d/1JTmBJp5OypdrpDQT57LXr3K8Pae_4_7c/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "HIV-1/2 Antibody Rapid Test",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a850728c468d_1787103016.png",
+        "logo_top": "images/products/logos/logo_atas_6a850728c5604_1787103016.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a850728c59be_1787103016.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-hiv-1-2-antibody-rapid-test",
+        "brochure_url": "https://drive.google.com/file/d/1hxPPipz1QlkYT1ppY0X_q9GEtXC6BNts/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "Malaria P.f/P.v Rapid Test",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a86b43681631_1787212854.png",
+        "logo_top": "images/products/logos/logo_atas_6a86b436827f9_1787212854.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a86b43682da9_1787212854.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-malaria-p-f-p-v-rapid-test",
+        "brochure_url": "https://drive.google.com/file/d/1O8dFuUwpyibnn2uRLSp4PHFO-sGQor7q/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "Malaria Pf/Pan Rapid Test",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a86b7d0a2067_1787213776.png",
+        "logo_top": "images/products/logos/logo_atas_6a86b7d0a2f3b_1787213776.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a86b7d0a32d0_1787213776.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-malaria-p-f-pan-rapid-test",
+        "brochure_url": "https://drive.google.com/file/d/1Du9tb9y5TxxItykkYSV2j21E3fJBrsI2/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "Syphilis Ab Rapid Test",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a84045711963_1787036759.png",
+        "logo_top": "images/products/logos/logo_atas_6a84045712caf_1787036759.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a84045712f73_1787036759.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-syphilis-ab",
+        "brochure_url": "https://drive.google.com/file/d/1gG_7MECL5QG53Quh3rSArBdahQ49L6nX/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "TIANLONG Monkeypox Virus Nucleic Acid",
+        "subtitle": "Rapid Test | Monkeypox",
+        "parameter": "(AMP)",
+        "image": "images/products/6a7550ad339ab_1786073261.png",
+        "logo_top": "images/products/logos/logo_atas_6a7550ad34640_1786073261.jpg",
+        "logo_bottom": "images/products/logos/logo_bawah_6a7550ad348fe_1786073261.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/tianlong-monkeypox-virus-nucleic-acid-detection-kit-fluorescence-pcr-method",
+        "brochure_url": "https://drive.google.com/file/d/1lwlRjqF1EDRTZ8EWZly-5nXFQ41Rtwq9/view?usp=sharing",
+        "subcategory": "none"
+      },
+      {
+        "name": "Typhoid IgG/IgM Rapid Test",
+        "subtitle": "Rapid Test | Infection Disease",
+        "parameter": "",
+        "image": "images/products/6a867ec0e6a0f_1787199168.png",
+        "logo_top": "images/products/logos/logo_atas_6a867ec0e795d_1787199168.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a867ec0e7d14_1787199168.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-typhoid-igg-igm-rapid-test",
+        "brochure_url": "https://drive.google.com/file/d/1OPUdsS_EitX7kqUmHhBldyHIqIw7ZpeE/view?usp=sharing",
+        "subcategory": "none"
+      }
+    ]
+  },
+  {
+    "id": "19",
+    "name": "Rapid Test (Master)",
+    "products": []
+  },
+  {
+    "id": "6",
+    "name": "Rapid Test COVID-19",
+    "products": [
+      {
+        "name": "COVID-19 (SARS-CoV-2) Antigen Test Kit (Colloidal Gold)",
+        "subtitle": "Rapid Test | Covid-19",
+        "parameter": "",
+        "image": "images/products/6a88195d23e50_1787304285.png",
+        "logo_top": "images/products/logos/logo_atas_6a88195d24f99_1787304285.png",
+        "logo_bottom": "images/products/logos/logo_bawah_6a88195d25381_1787304285.png",
+        "buy_url": "https://katalog.inaproc.id/interskala-medika-indonesia/is-covid-19-sars-cov-2-antigen-test-kit-colloidal-gold",
+        "brochure_url": "https://drive.google.com/file/d/1I5f8nLsJE2HprqOCoMThzlmVGAWQFR_Y/view?usp=sharing",
+        "subcategory": "none"
+      }
+    ]
+  }
+]
