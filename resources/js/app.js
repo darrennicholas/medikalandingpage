@@ -259,3 +259,38 @@ document.querySelector('#language-picker')?.addEventListener('change', (event) =
         element.textContent = isEnglish ? englishCopy[key] : originalCopy.get(key);
     });
 });
+
+const newsGrid = document.querySelector('#news-grid');
+
+if (newsGrid) {
+    const searchInput = document.querySelector('#news-search');
+    const yearFilter = document.querySelector('#news-filter');
+    const sortOrder = document.querySelector('#news-sort');
+    const noResults = document.querySelector('#news-no-results');
+    const newsCards = Array.from(newsGrid.querySelectorAll('.news-card'));
+
+    const updateNews = () => {
+        const searchTerm = searchInput.value.trim().toLocaleLowerCase('id');
+        const selectedYear = yearFilter.value;
+        let visibleCount = 0;
+
+        newsCards.sort((first, second) => {
+            const order = first.dataset.date.localeCompare(second.dataset.date);
+            return sortOrder.value === 'newest' ? -order : order;
+        });
+
+        newsCards.forEach((card) => {
+            const matchesSearch = card.textContent.toLocaleLowerCase('id').includes(searchTerm);
+            const matchesYear = selectedYear === 'all' || card.dataset.year === selectedYear;
+            card.hidden = !(matchesSearch && matchesYear);
+            visibleCount += Number(!card.hidden);
+            newsGrid.appendChild(card);
+        });
+
+        noResults.hidden = visibleCount > 0;
+    };
+
+    searchInput.addEventListener('input', updateNews);
+    yearFilter.addEventListener('change', updateNews);
+    sortOrder.addEventListener('change', updateNews);
+}

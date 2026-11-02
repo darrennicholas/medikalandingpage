@@ -47,13 +47,55 @@
                 <span aria-hidden="true"></span>
                 <p data-i18n="{{ $type === 'articles' ? 'articleListIntro' : 'newsListIntro' }}">{{ $type === 'articles' ? 'Temukan berbagai artikel kesehatan terkini yang informatif dan bermanfaat untuk meningkatkan kualitas hidup Anda' : 'Ikuti perkembangan terbaru seputar kesehatan, layanan, dan kegiatan terbaru dari IMI Medika' }}</p>
             </div>
-            <div class="media-empty">
-                <h2 data-i18n="{{ $type === 'articles' ? 'noArticles' : 'noNews' }}">{{ $type === 'articles' ? 'Belum Ada Artikel' : 'Belum Ada Berita' }}</h2>
-                @if ($type === 'news')
-                    <p data-i18n="noNewsDescription">Silakan tambahkan berita pertama Anda untuk dibagikan kepada pengunjung website.</p>
-                @endif
-                <a href="{{ route('documentation') }}" data-i18n="backToDocumentation">Kembali ke Dokumentasi</a>
-            </div>
+            @if ($type === 'news')
+                <div class="news-toolbar">
+                    <label class="news-search" for="news-search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+                        <input id="news-search" type="search" placeholder="Cari berita..." autocomplete="off" aria-label="Cari berita">
+                    </label>
+                    <div class="news-toolbar__actions">
+                        <label class="news-select" for="news-filter">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z"/></svg>
+                            <span>Filter</span>
+                            <select id="news-filter" aria-label="Filter berita berdasarkan tahun">
+                                <option value="all">Semua Tahun</option>
+                                <option value="2026">2026</option>
+                            </select>
+                        </label>
+                        <label class="news-select" for="news-sort">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M7 12h13M10 17h10"/></svg>
+                            <span>Urutkan</span>
+                            <select id="news-sort" aria-label="Urutkan berita">
+                                <option value="newest">Terbaru</option>
+                                <option value="oldest">Terlama</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="news-grid" id="news-grid">
+                    <article class="news-card" data-title="Interskala Medika Indonesia dan Interskala Sehat Sejahtera Hadir di Hospital Expo 2026" data-year="2026" data-date="2026-10-21">
+                        <a class="news-card__image" href="https://imimedika.com/detail_berita.php?id=6" aria-label="Baca berita Hospital Expo 2026">
+                            <span class="news-card__image-mark">IMI <span>Medika</span></span>
+                            <span class="news-card__image-title">HOSPITAL<br>EXPO 2026</span>
+                            <span class="news-card__image-decoration" aria-hidden="true"></span>
+                        </a>
+                        <div class="news-card__body">
+                            <div class="news-card__meta"><span>Abdurrahman Panji Virgian</span><time datetime="2026-10-21">21 Oct 2026</time></div>
+                            <h2><a href="https://imimedika.com/detail_berita.php?id=6">Interskala Medika Indonesia dan Interskala Sehat Sejahtera Hadir di Hospital Expo 2026</a></h2>
+                            <p>Interskala Medika Indonesia dan Interskala Sehat Sejahtera memperkenalkan solusi alat kesehatan di Hospital Expo 2026.</p>
+                            <a class="news-card__read-more" href="https://imimedika.com/detail_berita.php?id=6">Baca Selengkapnya <span aria-hidden="true">→</span></a>
+                        </div>
+                    </article>
+                </div>
+                <p class="news-no-results" id="news-no-results" hidden>Tidak ada berita yang cocok dengan pencarian Anda.</p>
+                <nav class="news-pagination" aria-label="Halaman berita"><span class="news-pagination__active" aria-current="page">1</span></nav>
+            @else
+                <div class="media-empty">
+                    <h2 data-i18n="noArticles">Belum Ada Artikel</h2>
+                    <a href="{{ route('documentation') }}" data-i18n="backToDocumentation">Kembali ke Dokumentasi</a>
+                </div>
+            @endif
         </div>
     </main>
 
