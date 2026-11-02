@@ -56,14 +56,15 @@
                     <span aria-hidden="true"></span>
                 </div>
 
+                <!-- Font Awesome Free icons by Fonticons, Inc. (CC BY 4.0): https://fontawesome.com/license/free -->
                 <div class="media-grid">
                     <a class="media-card" href="{{ route('articles') }}" aria-label="Lihat artikel selengkapnya">
-                        <svg viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M13 4h28l11 11v45H13V4Zm28 2v10h10L41 6ZM21 28h23v3H21v-3Zm0 8h23v3H21v-3Zm0 8h17v3H21v-3Z"/></svg>
+                        <svg viewBox="0 0 384 512" aria-hidden="true"><path fill="currentColor" d="M64 0C28.7 0 0 28.7 0 64v384c0 35.3 28.7 64 64 64h256c35.3 0 64-28.7 64-64V160H256c-17.7 0-32-14.3-32-32V0H64Zm192 0v128h128L256 0ZM112 256h160c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16Zm0 64h160c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16Zm0 64h160c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16Z"/></svg>
                         <h3 data-i18n="articleCardTitle">Artikel</h3>
                         <span data-i18n="readMore">Selengkapnya</span>
                     </a>
                     <a class="media-card" href="{{ route('news') }}" aria-label="Lihat berita selengkapnya">
-                        <svg viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M9 8h46v43a5 5 0 0 1-5 5H14a5 5 0 0 1-5-5V8Zm8 8h18v17H17V16Zm23 1h9v3h-9v-3Zm0 7h9v3h-9v-3ZM17 39h32v3H17v-3Zm0 7h32v3H17v-3Z"/></svg>
+                        <svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M96 96c0-35.3 28.7-64 64-64h288c35.3 0 64 28.7 64 64v320c0 35.3-28.7 64-64 64H80c-44.2 0-80-35.8-80-80V128c0-17.7 14.3-32 32-32s32 14.3 32 32v272c0 8.8 7.2 16 16 16s16-7.2 16-16V96Zm64 24v80c0 13.3 10.7 24 24 24h112c13.3 0 24-10.7 24-24v-80c0-13.3-10.7-24-24-24H184c-13.3 0-24 10.7-24 24Zm208-8c0 8.8 7.2 16 16 16h48c8.8 0 16-7.2 16-16s-7.2-16-16-16h-48c-8.8 0-16 7.2-16 16Zm0 96c0 8.8 7.2 16 16 16h48c8.8 0 16-7.2 16-16s-7.2-16-16-16h-48c-8.8 0-16 7.2-16 16ZM160 304c0 8.8 7.2 16 16 16h256c8.8 0 16-7.2 16-16s-7.2-16-16-16H176c-8.8 0-16 7.2-16 16Zm0 96c0 8.8 7.2 16 16 16h256c8.8 0 16-7.2 16-16s-7.2-16-16-16H176c-8.8 0-16 7.2-16 16Z"/></svg>
                         <h3 data-i18n="newsCardTitle">Berita</h3>
                         <span data-i18n="readMore">Selengkapnya</span>
                     </a>
