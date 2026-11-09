@@ -1,6 +1,17 @@
 const siteHeader = document.querySelector('#site-header');
 const menuToggle = document.querySelector('#menu-toggle');
 const primaryNavigation = document.querySelector('#primary-navigation');
+const heroVideo = document.querySelector('.hero__video');
+
+const showHeroVideoOverlay = () => {
+    heroVideo?.closest('.hero')?.classList.add('hero--video-ready');
+};
+
+if (heroVideo?.readyState >= 2) {
+    showHeroVideoOverlay();
+} else {
+    heroVideo?.addEventListener('loadeddata', showHeroVideoOverlay, { once: true });
+}
 
 const updateHeader = () => {
     siteHeader?.classList.toggle('is-scrolled', window.scrollY > 40);
@@ -41,23 +52,35 @@ const brandDots = document.querySelector('#brand-dots');
 
 if (brandTrack && brandDots) {
     const originalSlides = Array.from(brandTrack.children);
-    let currentIndex = 0;
-    let resetTimer;
+    const clonedSlideCount = Math.min(6, originalSlides.length);
+    const leadingClones = document.createDocumentFragment();
+    const trailingClones = document.createDocumentFragment();
+    let currentIndex = clonedSlideCount;
 
-    originalSlides.slice(0, 4).forEach((slide) => {
+    originalSlides.slice(-clonedSlideCount).forEach((slide) => {
         const clone = slide.cloneNode(true);
         clone.setAttribute('aria-hidden', 'true');
-        brandTrack.appendChild(clone);
+        leadingClones.appendChild(clone);
     });
+
+    originalSlides.slice(0, clonedSlideCount).forEach((slide) => {
+        const clone = slide.cloneNode(true);
+        clone.setAttribute('aria-hidden', 'true');
+        trailingClones.appendChild(clone);
+    });
+
+    brandTrack.prepend(leadingClones);
+    brandTrack.appendChild(trailingClones);
 
     const renderCarousel = (animate = true) => {
         const slideWidth = brandTrack.children[0].getBoundingClientRect().width;
-        brandTrack.style.transition = animate ? 'transform 500ms ease' : 'none';
+        const activeBrandIndex = ((currentIndex - clonedSlideCount) % originalSlides.length + originalSlides.length) % originalSlides.length;
+        brandTrack.style.transition = animate ? 'transform 1800ms linear' : 'none';
         brandTrack.style.transform = 'translate3d(-' + currentIndex * slideWidth + 'px, 0, 0)';
 
         brandDots.querySelectorAll('button').forEach((dot, index) => {
-            dot.classList.toggle('is-active', index === currentIndex % originalSlides.length);
-            dot.setAttribute('aria-current', index === currentIndex % originalSlides.length ? 'true' : 'false');
+            dot.classList.toggle('is-active', index === activeBrandIndex);
+            dot.setAttribute('aria-current', index === activeBrandIndex ? 'true' : 'false');
         });
     };
 
@@ -66,42 +89,28 @@ if (brandTrack && brandDots) {
         dot.type = 'button';
         dot.setAttribute('aria-label', 'Tampilkan brand ' + (index + 1));
         dot.addEventListener('click', () => {
-            clearTimeout(resetTimer);
-            currentIndex = index;
+            currentIndex = clonedSlideCount + index;
             renderCarousel();
         });
         brandDots.appendChild(dot);
     });
 
-    const nextBrand = () => {
-        currentIndex += 1;
-        renderCarousel();
-
-        if (currentIndex === originalSlides.length) {
-            resetTimer = window.setTimeout(() => {
-                currentIndex = 0;
-                renderCarousel(false);
-            }, 510);
+    const moveCarouselRight = () => {
+        if (currentIndex === 0) {
+            currentIndex = originalSlides.length;
+            renderCarousel(false);
+            void brandTrack.offsetWidth;
         }
+
+        currentIndex -= 1;
+        renderCarousel();
     };
 
     renderCarousel(false);
     window.addEventListener('resize', () => renderCarousel(false));
 
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        let autoplay = window.setInterval(nextBrand, 3000);
-        const carousel = brandTrack.closest('.brand-carousel');
-
-        carousel?.addEventListener('mouseenter', () => window.clearInterval(autoplay));
-        carousel?.addEventListener('mouseleave', () => {
-            autoplay = window.setInterval(nextBrand, 3000);
-        });
-        carousel?.addEventListener('focusin', () => window.clearInterval(autoplay));
-        carousel?.addEventListener('focusout', (event) => {
-            if (!carousel.contains(event.relatedTarget)) {
-                autoplay = window.setInterval(nextBrand, 3000);
-            }
-        });
+        window.setInterval(moveCarouselRight, 1800);
     }
 }
 

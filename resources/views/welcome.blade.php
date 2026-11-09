@@ -97,17 +97,17 @@
                 <div class="brand-carousel" aria-label="Brand mitra">
                     <div class="brand-carousel__viewport">
                         <div class="brand-carousel__track" id="brand-track">
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/diagnose.png') }}" alt="Diagnose" loading="lazy"></div>
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/dr-plus.png') }}" alt="DR Plus" loading="lazy"></div>
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/g-scientific.png') }}" alt="G Scientific" loading="lazy"></div>
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/genomic.png') }}" alt="Genomic" loading="lazy"></div>
                             <div class="brand-carousel__slide"><img src="{{ asset('images/brands/indocheck.png') }}" alt="Indocheck" loading="lazy"></div>
+                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/g-scientific.png') }}" alt="G Scientific" loading="lazy"></div>
+                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/diagnose.png') }}" alt="Diagnose" loading="lazy"></div>
+                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/vitrogen.png') }}" alt="Vitrogen" loading="lazy"></div>
+                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/genomic.png') }}" alt="Genomic" loading="lazy"></div>
+                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/mkcells.png') }}" alt="MKCells" loading="lazy"></div>
+                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/dr-plus.png') }}" alt="DR Plus" loading="lazy"></div>
                             <div class="brand-carousel__slide"><img src="{{ asset('images/brands/is.png') }}" alt="IS" loading="lazy"></div>
                             <div class="brand-carousel__slide"><img src="{{ asset('images/brands/logix.png') }}" alt="Logix" loading="lazy"></div>
                             <div class="brand-carousel__slide"><img src="{{ asset('images/brands/tamatech.png') }}" alt="Tamatech" loading="lazy"></div>
                             <div class="brand-carousel__slide"><img src="{{ asset('images/brands/medicheck.png') }}" alt="Medicheck" loading="lazy"></div>
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/mkcells.png') }}" alt="MKcells" loading="lazy"></div>
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/vitrogen.png') }}" alt="Vitrogen" loading="lazy"></div>
                         </div>
                     </div>
                     <div class="brand-carousel__dots" id="brand-dots" aria-label="Pilih brand"></div>
