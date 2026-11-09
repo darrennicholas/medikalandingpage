@@ -46,6 +46,7 @@ if (brandTrack && brandDots) {
     const trailingClones = document.createDocumentFragment();
     let currentIndex = clonedSlideCount;
     let activeDotIndex = 0;
+    let loaderResetTimer;
 
     originalSlides.slice(-clonedSlideCount).forEach((slide) => {
         const clone = slide.cloneNode(true);
@@ -62,10 +63,27 @@ if (brandTrack && brandDots) {
     brandTrack.prepend(leadingClones);
     brandTrack.appendChild(trailingClones);
 
-    const renderCarousel = (animate = true) => {
+    const brandLoader = document.createElement('span');
+    brandLoader.className = 'brand-carousel__loader';
+    brandLoader.setAttribute('aria-hidden', 'true');
+    brandDots.appendChild(brandLoader);
+
+    const positionBrandLoader = (animate, index) => {
+        const dotStyles = window.getComputedStyle(brandDots);
+        const dotSize = parseFloat(dotStyles.getPropertyValue('--brand-dot-size'));
+        const dotGap = parseFloat(dotStyles.getPropertyValue('--brand-dot-gap'));
+        const loaderWidth = parseFloat(dotStyles.getPropertyValue('--brand-loader-width'));
+        const leftOffset = index * (dotSize + dotGap) - (loaderWidth - dotSize) / 2;
+
+        brandLoader.style.transition = animate ? 'transform 2600ms linear' : 'none';
+        brandLoader.style.transform = `translate3d(${leftOffset}px, -50%, 0)`;
+    };
+
+    const renderCarousel = (animate = true, loaderIndex = activeDotIndex) => {
         const slideWidth = brandTrack.children[0].getBoundingClientRect().width;
         brandTrack.style.transition = animate ? 'transform 2600ms linear' : 'none';
         brandTrack.style.transform = 'translate3d(-' + currentIndex * slideWidth + 'px, 0, 0)';
+        positionBrandLoader(animate, loaderIndex);
 
         brandDots.querySelectorAll('button').forEach((dot, index) => {
             dot.classList.toggle('is-active', index === activeDotIndex);
@@ -78,6 +96,7 @@ if (brandTrack && brandDots) {
         dot.type = 'button';
         dot.setAttribute('aria-label', 'Tampilkan brand ' + (index + 1));
         dot.addEventListener('click', () => {
+            window.clearTimeout(loaderResetTimer);
             currentIndex = clonedSlideCount + index;
             activeDotIndex = index;
             renderCarousel();
@@ -93,8 +112,17 @@ if (brandTrack && brandDots) {
         }
 
         currentIndex -= 1;
-        activeDotIndex = (activeDotIndex + 1) % originalSlides.length;
-        renderCarousel();
+
+        if (activeDotIndex === originalSlides.length - 1) {
+            activeDotIndex = 0;
+            renderCarousel(true, originalSlides.length);
+            loaderResetTimer = window.setTimeout(() => {
+                positionBrandLoader(false, 0);
+            }, 2550);
+        } else {
+            activeDotIndex += 1;
+            renderCarousel();
+        }
     };
 
     renderCarousel(false);

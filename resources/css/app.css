@@ -454,34 +454,47 @@ section[id] {
 }
 
 .brand-carousel__dots {
+    --brand-dot-size: 20px;
+    --brand-dot-gap: 24px;
+    --brand-loader-width: 82px;
+
+    position: relative;
     display: flex;
-    justify-content: center;
     align-items: center;
-    gap: 24px;
+    gap: var(--brand-dot-gap);
+    width: max-content;
+    max-width: 100%;
     min-height: 24px;
-    margin-top: 12px;
+    margin: 12px auto 0;
 }
 
 .brand-carousel__dots button {
-    flex: 0 0 20px;
-    width: 20px;
-    height: 20px;
+    position: relative;
+    z-index: 1;
+    flex: 0 0 var(--brand-dot-size);
+    width: var(--brand-dot-size);
+    height: var(--brand-dot-size);
     border: 0;
     border-radius: 50%;
     background: #c7c7c7;
     cursor: pointer;
-    transition: width 0.9s ease, flex-basis 0.9s ease, transform 0.25s ease;
+    transition: transform 0.25s ease;
 }
 
 .brand-carousel__dots button:hover {
     transform: scale(1.35);
 }
 
-.brand-carousel__dots button.is-active {
-    flex-basis: 82px;
-    width: 82px;
-    border-radius: 20px;
+.brand-carousel__loader {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    z-index: 2;
+    width: var(--brand-loader-width);
+    height: var(--brand-dot-size);
+    border-radius: 999px;
     background: #0879ef;
+    pointer-events: none;
 }
 
 .site-footer {
@@ -1010,18 +1023,9 @@ section[id] {
     }
 
     .brand-carousel__dots {
-        gap: 14px;
-    }
-
-    .brand-carousel__dots button {
-        flex-basis: 16px;
-        width: 16px;
-        height: 16px;
-    }
-
-    .brand-carousel__dots button.is-active {
-        flex-basis: 54px;
-        width: 54px;
+        --brand-dot-size: 16px;
+        --brand-dot-gap: 14px;
+        --brand-loader-width: 54px;
     }
 }
 
@@ -1203,18 +1207,9 @@ section[id] {
     }
 
     .brand-carousel__dots {
-        gap: 8px;
-    }
-
-    .brand-carousel__dots button {
-        flex-basis: 10px;
-        width: 10px;
-        height: 10px;
-    }
-
-    .brand-carousel__dots button.is-active {
-        flex-basis: 32px;
-        width: 32px;
+        --brand-dot-size: 10px;
+        --brand-dot-gap: 8px;
+        --brand-loader-width: 32px;
     }
 }
 
