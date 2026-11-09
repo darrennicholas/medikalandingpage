@@ -54,10 +54,10 @@
     <main>
         <section class="product-hero" aria-labelledby="product-hero-title">
             <div class="container product-hero__content">
-                <h1 id="product-hero-title">PT Interskala Medika Indonesia</h1>
+                <h1 id="product-hero-title">PT. Interskala Medika Indonesia</h1>
+                <span class="product-hero__rule" aria-hidden="true"></span>
                 <p data-i18n="productTagline">WE BRING THE FUTURE HEALTH CARE</p>
             </div>
-            <svg class="product-hero__wave" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0,0V100H1000V0C849.5,133.5,500,133.5,0,0Z"/></svg>
         </section>
 
         <section class="product-catalog container" id="products" aria-labelledby="product-catalog-title">
