@@ -178,7 +178,7 @@ const englishCopy = {
     products: 'Products',
     careers: 'Careers',
     contact: 'Contact',
-    news: 'Articles & News',
+    news: 'Documentation',
     coverageTitle: 'Our Reach',
     coverageSubtitle: 'Serving all of Indonesia through an extensive distribution network',
     salesNetwork: 'Sales Network',

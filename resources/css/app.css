@@ -68,7 +68,7 @@ section[id] {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    max-width: 1200px;
+    max-width: 1760px;
     min-height: 70px;
     margin: 0 auto;
     padding: 10px 20px;
@@ -109,12 +109,16 @@ section[id] {
     font-weight: 500;
     text-decoration: none;
     white-space: nowrap;
-    transition: color 0.3s ease;
+    transition: color 0.3s ease, transform 0.3s ease;
 }
 
 .nav-link:hover,
 .nav-link--active {
     color: var(--primary);
+}
+
+.nav-link:hover {
+    transform: translateY(-1px);
 }
 
 .nav-link::after {
@@ -133,6 +137,16 @@ section[id] {
 .nav-link:hover::after,
 .nav-link--active::after {
     width: 60%;
+}
+
+.nav-link:focus-visible,
+.menu-toggle:focus-visible,
+.language-control select:focus-visible,
+.contact-cta__button:focus-visible,
+.brand-carousel__dots button:focus-visible,
+.certificate-carousel__dots button:focus-visible {
+    outline: 3px solid #55a7ff;
+    outline-offset: 4px;
 }
 
 .language-control {
@@ -224,7 +238,7 @@ section[id] {
 
 .hero h1 {
     margin-bottom: 24px;
-    font-size: 3rem;
+    font-size: clamp(2.25rem, 3.8vw, 4.5rem);
     font-weight: 700;
     text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
 }
@@ -239,6 +253,12 @@ section[id] {
 .coverage {
     padding: 80px 0;
     background: #f9f9f9;
+}
+
+.coverage > .container,
+.brands > .container,
+.contact-cta > .container {
+    max-width: 1760px;
 }
 
 .section-title {
@@ -310,6 +330,12 @@ section[id] {
     background: #fff;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
     text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
 }
 
 .stat-card strong {
@@ -330,6 +356,12 @@ section[id] {
     overflow: hidden;
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.35s ease, transform 0.35s ease;
+}
+
+.coverage__map:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.16);
 }
 
 .coverage__map img {
@@ -384,6 +416,10 @@ section[id] {
     transform: translateY(-3px);
 }
 
+.contact-cta__button:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
 .brands {
     padding: 64px 0;
     background: #f9f9f9;
@@ -435,6 +471,11 @@ section[id] {
     border-radius: 50%;
     background: #c7c7c7;
     cursor: pointer;
+    transition: background-color 0.25s ease, transform 0.25s ease;
+}
+
+.brand-carousel__dots button:hover {
+    transform: scale(1.35);
 }
 
 .brand-carousel__dots button.is-active {
@@ -519,8 +560,13 @@ section[id] {
 }
 
 .about-intro {
-    padding: 72px 0 96px;
+    padding: 150px 0 96px;
     background: #fff;
+}
+
+.about-intro > .container,
+.vision-mission > .container {
+    max-width: 1330px;
 }
 
 .about-intro .section-title,
@@ -542,6 +588,12 @@ section[id] {
     border-radius: 15px;
     box-shadow: var(--shadow);
     object-fit: cover;
+    transition: box-shadow 0.35s ease, transform 0.35s ease;
+}
+
+.about-intro__image:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 32px rgba(0, 0, 0, 0.16);
 }
 
 .about-intro__copy h3 {
@@ -610,12 +662,18 @@ section[id] {
 }
 
 .vision-card {
-    min-height: 365px;
+    min-height: 445px;
     padding: 42px 40px;
     border-radius: 15px;
     background: #fff;
     box-shadow: 0 15px 28px rgba(0, 0, 0, 0.1);
     text-align: center;
+    transition: box-shadow 0.35s ease, transform 0.35s ease;
+}
+
+.vision-card:hover {
+    transform: translateY(-7px);
+    box-shadow: 0 22px 42px rgba(0, 0, 0, 0.16);
 }
 
 .vision-card--mission {
@@ -626,11 +684,16 @@ section[id] {
 .vision-card--mission::before {
     position: absolute;
     top: 0;
-    bottom: 0;
     left: 0;
     width: 5px;
+    height: 35%;
     background: var(--primary);
     content: '';
+    transition: height 0.35s ease;
+}
+
+.vision-card:hover::before {
+    height: 100%;
 }
 
 .vision-card__icon {
@@ -642,6 +705,11 @@ section[id] {
     border-radius: 50%;
     background: #e5f0fa;
     color: var(--primary);
+    transition: background-color 0.35s ease, color 0.35s ease, transform 0.35s ease;
+}
+
+.vision-card:hover .vision-card__icon {
+    transform: scale(1.08);
 }
 
 .vision-card--mission .vision-card__icon {
@@ -690,6 +758,7 @@ section[id] {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 30px;
+    max-width: 930px;
 }
 
 .about-stats__card {
@@ -697,6 +766,12 @@ section[id] {
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.13);
     text-align: center;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.about-stats__card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.22);
 }
 
 .about-stats__card strong,
@@ -720,6 +795,10 @@ section[id] {
 
 .certificates .section-title {
     margin-bottom: 60px;
+}
+
+.certificates > .container {
+    max-width: 930px;
 }
 
 .certificates .section-title p {
@@ -749,6 +828,13 @@ section[id] {
     border-radius: 8px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
     text-align: center;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.certificate-card:hover {
+    transform: translateY(-5px);
+    border-color: #827bff;
+    box-shadow: 0 12px 28px rgba(5, 8, 223, 0.14);
 }
 
 .certificate-card h3 {
@@ -784,6 +870,11 @@ section[id] {
     border-radius: 8px;
     background: #cdd2db;
     cursor: pointer;
+    transition: width 0.3s ease, background-color 0.3s ease, transform 0.3s ease;
+}
+
+.certificate-carousel__dots button:hover {
+    transform: scale(1.15);
 }
 
 .certificate-carousel__dots button.is-active {
