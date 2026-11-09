@@ -79,7 +79,7 @@
     position: relative;
     display: inline-block;
     margin-bottom: 15px;
-    color: var(--product-dark);
+    color: var(--product-blue);
     font-size: clamp(1.8rem, 4vw, 2.5rem);
 }
 
@@ -90,7 +90,7 @@
     width: 60px;
     height: 4px;
     border-radius: 2px;
-    background: var(--product-gradient);
+    background: var(--product-blue);
     content: '';
     transform: translateX(-50%);
 }
@@ -416,6 +416,10 @@
 
 .product-category-section {
     margin: 0;
+}
+
+.product-category-section + .product-category-section {
+    margin-top: 48px;
 }
 
 .product-category-section[hidden],

@@ -54,10 +54,11 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
     };
 
     const populateSubcategories = () => {
-        const selectedCategory = productSections.find((section) => section.dataset.category === categorySelect.value);
-        const subcategories = selectedCategory
-            ? [...new Set(Array.from(selectedCategory.querySelectorAll('.product-card'), (card) => card.dataset.subcategory))].filter(Boolean)
-            : [];
+        const selectedCategoryIds = getSelectedCategoryIds();
+        const subcategories = [...new Set(productEntries
+            .filter(({ card }) => categorySelect.value === 'all' || selectedCategoryIds.includes(card.dataset.category))
+            .map(({ card }) => card.dataset.subcategory))]
+            .filter(Boolean);
 
         subcategorySelect.replaceChildren();
         const allOption = document.createElement('option');
@@ -125,15 +126,18 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
             .split('|')
             .map((term) => term.trim().toLowerCase())
             .filter(Boolean);
-        const matchingEntries = productEntries.filter(({ card, section }) =>
-            (selectedCategory === 'all' || selectedCategoryIds.includes(section.dataset.category))
+        const matchingEntries = productEntries.filter(({ card }) =>
+            (selectedCategory === 'all' || selectedCategoryIds.includes(card.dataset.category))
             && (selectedSubcategory === 'all' || card.dataset.subcategory === selectedSubcategory)
             && (productFilterTerms.length === 0 || productFilterTerms.some((term) => card.textContent.toLowerCase().includes(term))),
         );
-        const totalPages = Math.ceil(matchingEntries.length / pageSize);
+        const shouldPaginate = selectedCategory !== 'all';
+        const totalPages = shouldPaginate ? Math.ceil(matchingEntries.length / pageSize) : 1;
         currentPage = Math.min(currentPage, Math.max(totalPages, 1));
         const firstIndex = (currentPage - 1) * pageSize;
-        const visibleEntries = matchingEntries.slice(firstIndex, firstIndex + pageSize);
+        const visibleEntries = shouldPaginate
+            ? matchingEntries.slice(firstIndex, firstIndex + pageSize)
+            : matchingEntries;
         const visibleCards = new Set(visibleEntries.map(({ card }) => card));
 
         productEntries.forEach(({ card }) => {
@@ -142,14 +146,16 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
 
         productSections.forEach((section) => {
             const hasVisibleCard = visibleEntries.some((entry) => entry.section === section);
-            const selectedEmptyCategory = selectedCategoryIds.includes(section.dataset.category)
-                && section.querySelectorAll('.product-card').length === 0;
+            const sectionCategoryIds = section.dataset.categoryIds.split(',').filter(Boolean);
+            const isEmptySection = section.querySelectorAll('.product-card').length === 0;
+            const selectedEmptyCategory = isEmptySection
+                && (selectedCategory === 'all' || sectionCategoryIds.some((categoryId) => selectedCategoryIds.includes(categoryId)));
             section.hidden = !hasVisibleCard && !selectedEmptyCategory;
         });
 
         const hasSelectedEmptyCategory = productSections.some((section) =>
-            selectedCategoryIds.includes(section.dataset.category)
-            && section.querySelectorAll('.product-card').length === 0,
+            section.querySelectorAll('.product-card').length === 0
+            && (selectedCategory === 'all' || section.dataset.categoryIds.split(',').some((categoryId) => selectedCategoryIds.includes(categoryId))),
         );
         productNoMatches.hidden = matchingEntries.length > 0 || hasSelectedEmptyCategory;
 
@@ -178,7 +184,7 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
         }
 
         productPagination.replaceChildren();
-        productPagination.hidden = totalPages <= 1;
+        productPagination.hidden = !shouldPaginate || totalPages <= 1;
         syncCategoryNavigation();
 
         if (totalPages > 1) {
