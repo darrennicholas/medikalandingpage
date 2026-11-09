@@ -42,10 +42,6 @@
 
     <main>
         <section class="hero" id="beranda" aria-labelledby="hero-title">
-            <video class="hero__video" autoplay muted loop playsinline preload="metadata" aria-hidden="true">
-                <source src="https://imimedika.com/videos/FINAL%20CIKANDE.mp4" type="video/mp4">
-            </video>
-            <div class="hero__overlay"></div>
             <div class="container hero__content">
                 <h1 id="hero-title">PT INTERSKALA MEDIKA INDONESIA</h1>
                 <p>WE BRING THE FUTURE HEALTHCARE</p>

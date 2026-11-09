@@ -1,17 +1,6 @@
 const siteHeader = document.querySelector('#site-header');
 const menuToggle = document.querySelector('#menu-toggle');
 const primaryNavigation = document.querySelector('#primary-navigation');
-const heroVideo = document.querySelector('.hero__video');
-
-const showHeroVideoOverlay = () => {
-    heroVideo?.closest('.hero')?.classList.add('hero--video-ready');
-};
-
-if (heroVideo?.readyState >= 2) {
-    showHeroVideoOverlay();
-} else {
-    heroVideo?.addEventListener('loadeddata', showHeroVideoOverlay, { once: true });
-}
 
 const updateHeader = () => {
     siteHeader?.classList.toggle('is-scrolled', window.scrollY > 40);
@@ -56,6 +45,7 @@ if (brandTrack && brandDots) {
     const leadingClones = document.createDocumentFragment();
     const trailingClones = document.createDocumentFragment();
     let currentIndex = clonedSlideCount;
+    let activeDotIndex = 0;
 
     originalSlides.slice(-clonedSlideCount).forEach((slide) => {
         const clone = slide.cloneNode(true);
@@ -74,13 +64,12 @@ if (brandTrack && brandDots) {
 
     const renderCarousel = (animate = true) => {
         const slideWidth = brandTrack.children[0].getBoundingClientRect().width;
-        const activeBrandIndex = ((currentIndex - clonedSlideCount) % originalSlides.length + originalSlides.length) % originalSlides.length;
         brandTrack.style.transition = animate ? 'transform 1800ms linear' : 'none';
         brandTrack.style.transform = 'translate3d(-' + currentIndex * slideWidth + 'px, 0, 0)';
 
         brandDots.querySelectorAll('button').forEach((dot, index) => {
-            dot.classList.toggle('is-active', index === activeBrandIndex);
-            dot.setAttribute('aria-current', index === activeBrandIndex ? 'true' : 'false');
+            dot.classList.toggle('is-active', index === activeDotIndex);
+            dot.setAttribute('aria-current', index === activeDotIndex ? 'true' : 'false');
         });
     };
 
@@ -90,6 +79,7 @@ if (brandTrack && brandDots) {
         dot.setAttribute('aria-label', 'Tampilkan brand ' + (index + 1));
         dot.addEventListener('click', () => {
             currentIndex = clonedSlideCount + index;
+            activeDotIndex = index;
             renderCarousel();
         });
         brandDots.appendChild(dot);
@@ -103,6 +93,7 @@ if (brandTrack && brandDots) {
         }
 
         currentIndex -= 1;
+        activeDotIndex = (activeDotIndex + 1) % originalSlides.length;
         renderCarousel();
     };
 
