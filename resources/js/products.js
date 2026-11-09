@@ -4,6 +4,8 @@ const resetFilters = document.querySelector('#reset-filters');
 const productResults = document.querySelector('#product-results');
 const productPagination = document.querySelector('#product-pagination');
 const productSections = Array.from(document.querySelectorAll('.product-category-section'));
+const categoryFilterButtons = Array.from(document.querySelectorAll('[data-category-filter]'));
+const categoryToggleButtons = Array.from(document.querySelectorAll('[data-category-toggle]'));
 const brochureModal = document.querySelector('#product-modal');
 
 if (categorySelect && subcategorySelect && resetFilters && productResults && productPagination) {
@@ -14,6 +16,17 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
     let currentPage = 1;
 
     const isEnglish = () => document.documentElement.lang === 'en';
+
+    const syncCategoryNavigation = () => {
+        categoryFilterButtons.forEach((button) => {
+            const isSelectedCategory = button.dataset.categoryFilter === categorySelect.value;
+            const isSelectedSubcategory = (button.dataset.subcategoryFilter || 'all') === subcategorySelect.value;
+            const isActive = isSelectedCategory && isSelectedSubcategory;
+
+            button.classList.toggle('is-active', isActive);
+            button.setAttribute('aria-pressed', String(isActive));
+        });
+    };
 
     const populateSubcategories = () => {
         const selectedCategory = productSections.find((section) => section.dataset.category === categorySelect.value);
@@ -129,6 +142,7 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
 
         productPagination.replaceChildren();
         productPagination.hidden = totalPages <= 1;
+        syncCategoryNavigation();
 
         if (totalPages > 1) {
             const pageInfo = document.createElement('p');
@@ -173,6 +187,26 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
         renderProducts();
     });
 
+    categoryFilterButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            categorySelect.value = button.dataset.categoryFilter;
+            populateSubcategories();
+            subcategorySelect.value = button.dataset.subcategoryFilter || 'all';
+            currentPage = 1;
+            renderProducts();
+        });
+    });
+
+    categoryToggleButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+            const childCategories = document.querySelector(`#${button.getAttribute('aria-controls')}`);
+
+            button.setAttribute('aria-expanded', String(!isExpanded));
+            childCategories.hidden = isExpanded;
+        });
+    });
+
     document.querySelector('#language-picker')?.addEventListener('change', () => {
         if (subcategorySelect.options.length > 0) {
             subcategorySelect.options[0].textContent = isEnglish() ? '-- All Subcategories --' : '-- Semua Subkategori --';
@@ -181,6 +215,7 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
         renderProducts();
     });
 
+    populateSubcategories();
     renderProducts();
 }
 

@@ -16,6 +16,7 @@
         <symbol id="icon-pdf" viewBox="0 0 24 24"><path d="M6 2h8l5 5v15H6V2Zm8 0v5h5M9 16h7M9 19h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
         <symbol id="icon-close" viewBox="0 0 24 24"><path d="M5 5 19 19M19 5 5 19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
         <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     </svg>
 
     <header class="site-header" id="site-header">
@@ -61,71 +62,121 @@
 
         <section class="product-catalog container" id="products" aria-labelledby="product-catalog-title">
             <div class="product-heading">
-                <h2 id="product-catalog-title" data-i18n="productHeading">Temukan Produk Terbaik Kami</h2>
+                <h2 id="product-catalog-title" class="sr-only" data-i18n="productHeading">Temukan Produk Terbaik Kami</h2>
                 <p data-i18n="productDescription">Jelajahi berbagai kategori produk berkualitas tinggi untuk kebutuhan medis dan kesehatan Anda</p>
             </div>
 
-            <div class="product-filters" aria-label="Filter produk">
-                <div class="product-filters__group">
-                    <label for="filter-kategori"><svg aria-hidden="true"><use href="#icon-folder"/></svg><span data-i18n="categoryLabel">Kategori</span></label>
-                    <select id="filter-kategori" class="product-filters__select">
-                        <option value="all" data-i18n="allCategories">-- Semua Kategori --</option>
+            <div class="product-filter-controls" hidden>
+                <select id="filter-kategori" aria-label="Filter kategori produk">
+                    <option value="all" data-i18n="allCategories">-- Semua Kategori --</option>
+                    @foreach ($categories as $category)
+                        <option value="{{ $category['id'] }}" @selected($category['name'] === 'Drugs Abuse')>{{ $category['name'] }}</option>
+                    @endforeach
+                </select>
+                <select id="filter-subkategori" aria-label="Filter subkategori produk" disabled>
+                    <option value="all" data-i18n="allSubcategories">-- Semua Subkategori --</option>
+                </select>
+                <button id="reset-filters" type="button">Reset Filter</button>
+            </div>
+
+            <div class="product-catalog__layout">
+                <aside class="product-sidebar" aria-label="Kategori produk">
+                    <div class="product-sidebar__heading">
+                        <h2 data-i18n="categoryLabel">Kategori Produk</h2>
+                        <span aria-hidden="true"></span>
+                    </div>
+
+                    <button class="product-sidebar__category product-sidebar__category--all" type="button" data-category-filter="all" aria-pressed="false" data-i18n="allCategories">Semua Produk</button>
+
+                    <nav class="product-sidebar__list" aria-label="Pilih kategori produk">
                         @foreach ($categories as $category)
-                            <option value="{{ $category['id'] }}">{{ $category['name'] }}</option>
+                            @if (in_array($category['name'], ['Drugs Abuse', 'Rapid Test', 'Rapid Test COVID-19'], true))
+                                @continue
+                            @endif
+
+                            @if ($category['name'] === 'Rapid Test (Master)')
+                                <div class="product-sidebar__group">
+                                    <button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-toggle aria-expanded="true" aria-controls="rapid-test-subcategories">
+                                        <span>{{ $category['name'] }}</span>
+                                        <svg aria-hidden="true"><use href="#icon-chevron"/></svg>
+                                    </button>
+                                    <div class="product-sidebar__children" id="rapid-test-subcategories">
+                                        @foreach ($categories as $childCategory)
+                                            @if (!in_array($childCategory['name'], ['Drugs Abuse', 'Rapid Test', 'Rapid Test COVID-19'], true))
+                                                @continue
+                                            @endif
+
+                                            @php
+                                                $childCategoryName = match ($childCategory['name']) {
+                                                    'Drugs Abuse' => 'Drugs of Abuse (DOA)',
+                                                    'Rapid Test' => 'Infectious Disease',
+                                                    'Rapid Test COVID-19' => 'COVID-19',
+                                                    default => $childCategory['name'],
+                                                };
+                                            @endphp
+
+                                            <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $childCategory['id'] }}" aria-pressed="{{ $childCategory['name'] === 'Drugs Abuse' ? 'true' : 'false' }}">{{ $childCategoryName }}</button>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                @continue
+                            @endif
+
+                            <button class="product-sidebar__category" type="button" data-category-filter="{{ $category['id'] }}" aria-pressed="false">
+                                <span>{{ $category['name'] }}</span>
+                                <svg aria-hidden="true"><use href="#icon-chevron"/></svg>
+                            </button>
                         @endforeach
-                    </select>
+                    </nav>
+                </aside>
+
+                <div class="product-results-area">
+                    <p class="product-results sr-only" id="product-results" aria-live="polite"></p>
+                    <div id="product-categories">
+                        @foreach ($categories as $category)
+                            <section class="product-category-section" data-category="{{ $category['id'] }}" data-category-name="{{ $category['name'] }}" aria-labelledby="category-{{ $category['id'] }}">
+                                @php
+                                    $categoryTitle = $category['name'] === 'Drugs Abuse' ? 'Drugs of Abuse (DOA)' : $category['name'];
+                                @endphp
+                                <h3 class="product-category-section__title" id="category-{{ $category['id'] }}">{{ $categoryTitle }}</h3>
+                                @if (count($category['products']) === 0)
+                                    <p class="product-category-section__empty" data-i18n="emptyCategory">Belum ada produk dalam kategori ini.</p>
+                                @else
+                                    <div class="product-grid">
+                                        @foreach ($category['products'] as $product)
+                                            <article class="product-card" data-subcategory="{{ $product['subtitle'] }}">
+                                                @if ($product['logo_bottom'])
+                                                    <img class="product-card__watermark" src="{{ asset($product['logo_bottom']) }}" alt="" loading="lazy">
+                                                @endif
+                                                <div class="product-card__image-wrap">
+                                                    <img class="product-card__image" src="{{ asset($product['image']) }}" alt="{{ $product['name'] }}" loading="lazy">
+                                                    @if ($product['logo_top'])
+                                                        <span class="product-card__logo"><img src="{{ asset($product['logo_top']) }}" alt="" loading="lazy"></span>
+                                                    @endif
+                                                </div>
+                                                <div class="product-card__content">
+                                                    <h4 class="product-card__title">{{ $product['name'] }}</h4>
+                                                    @if ($product['parameter'])
+                                                        <strong class="product-card__parameter">{{ $product['parameter'] }}</strong>
+                                                    @endif
+                                                    <p class="product-card__subtitle">{{ $product['subtitle'] }}</p>
+                                                    <span class="product-card__badge">{{ $categoryTitle }}</span>
+                                                    <div class="product-card__actions">
+                                                        <a class="product-card__buy" href="{{ $product['buy_url'] }}" target="_blank" rel="noopener noreferrer" aria-label="Beli {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-cart"/></svg><span data-i18n="buyProduct">Beli</span></a>
+                                                        <button class="product-card__brochure" type="button" data-brochure-url="{{ $product['brochure_url'] }}" data-product-name="{{ $product['name'] }}" aria-label="Lihat brosur {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span data-i18n="brochure">Brosur</span></button>
+                                                    </div>
+                                                </div>
+                                            </article>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </section>
+                        @endforeach
+                    </div>
+
+                    <nav class="product-pagination" id="product-pagination" aria-label="Halaman produk"></nav>
                 </div>
-                <div class="product-filters__group">
-                    <label for="filter-subkategori"><svg aria-hidden="true"><use href="#icon-tag"/></svg><span data-i18n="subcategoryLabel">Subkategori</span></label>
-                    <select id="filter-subkategori" class="product-filters__select" disabled>
-                        <option value="all" data-i18n="allSubcategories">-- Semua Subkategori --</option>
-                    </select>
-                </div>
-                <button class="product-filters__reset" id="reset-filters" type="button"><svg aria-hidden="true"><use href="#icon-reset"/></svg><span data-i18n="resetFilter">Reset Filter</span></button>
             </div>
-
-            <p class="product-results" id="product-results" aria-live="polite"></p>
-
-            <div id="product-categories">
-                @foreach ($categories as $category)
-                    <section class="product-category-section" data-category="{{ $category['id'] }}" data-category-name="{{ $category['name'] }}" aria-labelledby="category-{{ $category['id'] }}">
-                        <h3 class="product-category-section__title" id="category-{{ $category['id'] }}">{{ $category['name'] }}</h3>
-                        @if (count($category['products']) === 0)
-                            <p class="product-category-section__empty" data-i18n="emptyCategory">Belum ada produk dalam kategori ini.</p>
-                        @else
-                            <div class="product-grid">
-                                @foreach ($category['products'] as $product)
-                                    <article class="product-card" data-subcategory="{{ $product['subtitle'] }}">
-                                        @if ($product['logo_bottom'])
-                                            <img class="product-card__watermark" src="{{ asset($product['logo_bottom']) }}" alt="" loading="lazy">
-                                        @endif
-                                        <div class="product-card__image-wrap">
-                                            <img class="product-card__image" src="{{ asset($product['image']) }}" alt="{{ $product['name'] }}" loading="lazy">
-                                            @if ($product['logo_top'])
-                                                <span class="product-card__logo"><img src="{{ asset($product['logo_top']) }}" alt="" loading="lazy"></span>
-                                            @endif
-                                        </div>
-                                        <div class="product-card__content">
-                                            <h4 class="product-card__title">{{ $product['name'] }}</h4>
-                                            @if ($product['parameter'])
-                                                <strong class="product-card__parameter">{{ $product['parameter'] }}</strong>
-                                            @endif
-                                            <p class="product-card__subtitle">{{ $product['subtitle'] }}</p>
-                                            <span class="product-card__badge">{{ $category['name'] }}</span>
-                                            <div class="product-card__actions">
-                                                <a class="product-card__buy" href="{{ $product['buy_url'] }}" target="_blank" rel="noopener noreferrer" aria-label="Beli {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-cart"/></svg><span data-i18n="buyProduct">Beli</span></a>
-                                                <button class="product-card__brochure" type="button" data-brochure-url="{{ $product['brochure_url'] }}" data-product-name="{{ $product['name'] }}" aria-label="Lihat brosur {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span data-i18n="brochure">Brosur</span></button>
-                                            </div>
-                                        </div>
-                                    </article>
-                                @endforeach
-                            </div>
-                        @endif
-                    </section>
-                @endforeach
-            </div>
-
-            <nav class="product-pagination" id="product-pagination" aria-label="Halaman produk"></nav>
         </section>
     </main>
 
