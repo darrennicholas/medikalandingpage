@@ -64,7 +64,7 @@ if (brandTrack && brandDots) {
 
     const renderCarousel = (animate = true) => {
         const slideWidth = brandTrack.children[0].getBoundingClientRect().width;
-        brandTrack.style.transition = animate ? 'transform 1800ms linear' : 'none';
+        brandTrack.style.transition = animate ? 'transform 2600ms linear' : 'none';
         brandTrack.style.transform = 'translate3d(-' + currentIndex * slideWidth + 'px, 0, 0)';
 
         brandDots.querySelectorAll('button').forEach((dot, index) => {
@@ -101,7 +101,7 @@ if (brandTrack && brandDots) {
     window.addEventListener('resize', () => renderCarousel(false));
 
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        window.setInterval(moveCarouselRight, 1800);
+        window.setInterval(moveCarouselRight, 2600);
     }
 }
 

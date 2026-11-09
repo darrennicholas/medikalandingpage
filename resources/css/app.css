@@ -442,8 +442,9 @@ section[id] {
 
 .brand-carousel__slide img {
     display: block;
-    max-width: 82%;
-    max-height: 70px;
+    width: 180px;
+    height: 76px;
+    max-width: 84%;
     object-fit: contain;
     transition: transform 0.3s ease;
 }
@@ -469,7 +470,7 @@ section[id] {
     border-radius: 50%;
     background: #c7c7c7;
     cursor: pointer;
-    transition: width 0.45s ease, flex-basis 0.45s ease, background-color 0.45s ease, transform 0.25s ease;
+    transition: width 0.9s ease, flex-basis 0.9s ease, transform 0.25s ease;
 }
 
 .brand-carousel__dots button:hover {
@@ -998,6 +999,11 @@ section[id] {
         flex-basis: 33.333333%;
     }
 
+    .brand-carousel__slide img {
+        width: 160px;
+        height: 72px;
+    }
+
     .hero {
         height: calc(100vh - 65px);
         margin-top: 65px;
@@ -1064,6 +1070,11 @@ section[id] {
 
     .brand-carousel__slide {
         flex-basis: 50%;
+    }
+
+    .brand-carousel__slide img {
+        width: 150px;
+        height: 68px;
     }
 
     .brands .section-title h2 {
@@ -1184,6 +1195,11 @@ section[id] {
 
     .brand-carousel__slide {
         flex-basis: 100%;
+    }
+
+    .brand-carousel__slide img {
+        width: 180px;
+        height: 72px;
     }
 
     .brand-carousel__dots {
