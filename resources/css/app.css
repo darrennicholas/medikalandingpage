@@ -437,16 +437,32 @@ section[id] {
     align-items: center;
     justify-content: center;
     height: 160px;
+    overflow: hidden;
     padding: 0 10px;
 }
 
 .brand-carousel__slide img {
     display: block;
-    width: 180px;
-    height: 76px;
-    max-width: 84%;
+    width: 210px;
+    height: 70px;
+    max-width: 90%;
     object-fit: contain;
+    object-position: center;
     transition: transform 0.3s ease;
+}
+
+.brand-carousel__slide img[src*="/images/brands/g-scientific.png"],
+.brand-carousel__slide img[src*="/images/brands/diagnose.png"],
+.brand-carousel__slide img[src*="/images/brands/vitrogen.png"],
+.brand-carousel__slide img[src*="/images/brands/genomic.png"],
+.brand-carousel__slide img[src*="/images/brands/mkcells.png"],
+.brand-carousel__slide img[src*="/images/brands/is.png"],
+.brand-carousel__slide img[src*="/images/brands/medicheck.png"] {
+    object-fit: cover;
+}
+
+.brand-carousel__slide img[src*="/images/brands/is.png"] {
+    height: 100px;
 }
 
 .brand-carousel__slide img:hover {
@@ -1013,8 +1029,8 @@ section[id] {
     }
 
     .brand-carousel__slide img {
-        width: 160px;
-        height: 72px;
+        width: 180px;
+        height: 70px;
     }
 
     .hero {
@@ -1077,8 +1093,8 @@ section[id] {
     }
 
     .brand-carousel__slide img {
-        width: 150px;
-        height: 68px;
+        width: 170px;
+        height: 70px;
     }
 
     .brands .section-title h2 {
@@ -1203,7 +1219,7 @@ section[id] {
 
     .brand-carousel__slide img {
         width: 180px;
-        height: 72px;
+        height: 70px;
     }
 
     .brand-carousel__dots {

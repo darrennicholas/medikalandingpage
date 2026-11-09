@@ -75,13 +75,13 @@ if (brandTrack && brandDots) {
         const loaderWidth = parseFloat(dotStyles.getPropertyValue('--brand-loader-width'));
         const leftOffset = index * (dotSize + dotGap) - (loaderWidth - dotSize) / 2;
 
-        brandLoader.style.transition = animate ? 'transform 2600ms linear' : 'none';
+        brandLoader.style.transition = animate ? 'transform 1500ms linear' : 'none';
         brandLoader.style.transform = `translate3d(${leftOffset}px, -50%, 0)`;
     };
 
     const renderCarousel = (animate = true, loaderIndex = activeDotIndex) => {
         const slideWidth = brandTrack.children[0].getBoundingClientRect().width;
-        brandTrack.style.transition = animate ? 'transform 2600ms linear' : 'none';
+        brandTrack.style.transition = animate ? 'transform 1500ms linear' : 'none';
         brandTrack.style.transform = 'translate3d(-' + currentIndex * slideWidth + 'px, 0, 0)';
         positionBrandLoader(animate, loaderIndex);
 
@@ -118,7 +118,7 @@ if (brandTrack && brandDots) {
             renderCarousel(true, originalSlides.length);
             loaderResetTimer = window.setTimeout(() => {
                 positionBrandLoader(false, 0);
-            }, 2550);
+            }, 1450);
         } else {
             activeDotIndex += 1;
             renderCarousel();
@@ -129,7 +129,7 @@ if (brandTrack && brandDots) {
     window.addEventListener('resize', () => renderCarousel(false));
 
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        window.setInterval(moveCarouselRight, 2600);
+        window.setInterval(moveCarouselRight, 1500);
     }
 }
 
