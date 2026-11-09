@@ -66,11 +66,16 @@
                 <p data-i18n="productDescription">Jelajahi berbagai kategori produk berkualitas tinggi untuk kebutuhan medis dan kesehatan Anda</p>
             </div>
 
+            @php
+                $categoryIdsByName = collect($categories)->pluck('id', 'name');
+            @endphp
+
             <div class="product-filter-controls" hidden>
                 <select id="filter-kategori" aria-label="Filter kategori produk">
+                    <option value="rapid-test-master" selected>Rapid Test (Master)</option>
                     <option value="all" data-i18n="allCategories">-- Semua Kategori --</option>
                     @foreach ($categories as $category)
-                        <option value="{{ $category['id'] }}" @selected($category['name'] === 'Drugs Abuse')>{{ $category['name'] }}</option>
+                        <option value="{{ $category['id'] }}">{{ $category['name'] }}</option>
                     @endforeach
                 </select>
                 <select id="filter-subkategori" aria-label="Filter subkategori produk" disabled>
@@ -89,49 +94,76 @@
                     <button class="product-sidebar__category product-sidebar__category--all" type="button" data-category-filter="all" aria-pressed="false" data-i18n="allCategories">Semua Produk</button>
 
                     <nav class="product-sidebar__list" aria-label="Pilih kategori produk">
-                        @foreach ($categories as $category)
-                            @if (in_array($category['name'], ['Drugs Abuse', 'Rapid Test', 'Rapid Test COVID-19'], true))
-                                @continue
-                            @endif
+                        <div class="product-sidebar__group">
+                            <div class="product-sidebar__category-row">
+                                <button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-filter="{{ $categoryIdsByName['Molecular'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Molecular'] ?? '' }}" data-category-title="Molecular" aria-pressed="false">Molecular</button>
+                                <button class="product-sidebar__toggle" type="button" data-category-toggle aria-expanded="false" aria-controls="molecular-subcategories" aria-label="Tampilkan subkategori Molecular"><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                            </div>
+                            <div class="product-sidebar__children" id="molecular-subcategories" hidden>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['AKL'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['AKL'] ?? '' }}" data-product-filter="PCR" data-category-title="Molecular" aria-pressed="false">PCR <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['AKL'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['AKL'] ?? '' }}" data-product-filter="Extraction|Ekstraksi" data-category-title="Molecular" aria-pressed="false">Extraction <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                            </div>
+                        </div>
 
-                            @if ($category['name'] === 'Rapid Test (Master)')
-                                <div class="product-sidebar__group">
-                                    <button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-toggle aria-expanded="true" aria-controls="rapid-test-subcategories">
-                                        <span>{{ $category['name'] }}</span>
-                                        <svg aria-hidden="true"><use href="#icon-chevron"/></svg>
-                                    </button>
-                                    <div class="product-sidebar__children" id="rapid-test-subcategories">
-                                        @foreach ($categories as $childCategory)
-                                            @if (!in_array($childCategory['name'], ['Drugs Abuse', 'Rapid Test', 'Rapid Test COVID-19'], true))
-                                                @continue
-                                            @endif
+                        <div class="product-sidebar__group">
+                            <div class="product-sidebar__category-row">
+                                <button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-filter="rapid-test-master" data-category-ids="{{ implode(',', [$categoryIdsByName['Drugs Abuse'] ?? '', $categoryIdsByName['Rapid Test'] ?? '', $categoryIdsByName['Rapid Test COVID-19'] ?? '']) }}" data-category-title="Rapid Test (Master)" aria-pressed="true">Rapid Test (Master)</button>
+                                <button class="product-sidebar__toggle" type="button" data-category-toggle aria-expanded="true" aria-controls="rapid-test-subcategories" aria-label="Tampilkan subkategori Rapid Test (Master)"><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                            </div>
+                            <div class="product-sidebar__children" id="rapid-test-subcategories">
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Rapid Test'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Rapid Test'] ?? '' }}" data-product-filter="HIV|Syphilis" data-category-title="Rapid Test (Master)" aria-pressed="false">Infeksius HIV Series <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Rapid Test'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Rapid Test'] ?? '' }}" data-product-filter="Hepatitis|HBsAg|Anti HBs|Anti-HCV|HAV|HBV" data-category-title="Rapid Test (Master)" aria-pressed="false">Infeksius Hepatitis <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Rapid Test'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Rapid Test'] ?? '' }}" data-product-filter="Malaria|Dengue|Chikungunya|Typhoid" data-category-title="Rapid Test (Master)" aria-pressed="false">Infeksius Tropical <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Rapid Test'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Rapid Test'] ?? '' }}" data-product-filter="Tumor Marker" data-category-title="Rapid Test (Master)" aria-pressed="false">Tumor Marker <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Rapid Test COVID-19'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Rapid Test COVID-19'] ?? '' }}" data-category-title="Rapid Test (Master)" aria-pressed="false">Covid <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Drugs Abuse'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Drugs Abuse'] ?? '' }}" data-category-title="Rapid Test (Master)" aria-pressed="false">Drugs of Abuse <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                            </div>
+                        </div>
 
-                                            @php
-                                                $childCategoryName = match ($childCategory['name']) {
-                                                    'Drugs Abuse' => 'Drugs of Abuse (DOA)',
-                                                    'Rapid Test' => 'Infectious Disease',
-                                                    'Rapid Test COVID-19' => 'COVID-19',
-                                                    default => $childCategory['name'],
-                                                };
-                                            @endphp
+                        <div class="product-sidebar__group">
+                            <div class="product-sidebar__category-row">
+                                <button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-filter="{{ $categoryIdsByName['POCT'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['POCT'] ?? '' }}" data-category-title="Point of Care Testing (POCT)" aria-pressed="false">Point of Care Testing (POCT)</button>
+                                <button class="product-sidebar__toggle" type="button" data-category-toggle aria-expanded="false" aria-controls="poct-subcategories" aria-label="Tampilkan subkategori Point of Care Testing"><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                            </div>
+                            <div class="product-sidebar__children" id="poct-subcategories" hidden>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['POCT'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['POCT'] ?? '' }}" data-product-filter="Glucose" data-category-title="Point of Care Testing (POCT)" aria-pressed="false">Glucose <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['POCT'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['POCT'] ?? '' }}" data-product-filter="Cholesterol" data-category-title="Point of Care Testing (POCT)" aria-pressed="false">Cholesterol <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['POCT'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['POCT'] ?? '' }}" data-product-filter="Uric Acid" data-category-title="Point of Care Testing (POCT)" aria-pressed="false">Uric Acid <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['POCT'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['POCT'] ?? '' }}" data-product-filter="Lipid" data-category-title="Point of Care Testing (POCT)" aria-pressed="false">Lipid <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                            </div>
+                        </div>
 
-                                            <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $childCategory['id'] }}" aria-pressed="{{ $childCategory['name'] === 'Drugs Abuse' ? 'true' : 'false' }}">{{ $childCategoryName }}</button>
-                                        @endforeach
-                                    </div>
-                                </div>
-                                @continue
-                            @endif
+                        <div class="product-sidebar__group">
+                            <div class="product-sidebar__category-row">
+                                <button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-filter="{{ $categoryIdsByName['Instrument and Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Instrument and Consumable'] ?? '' }}" data-category-title="Medical Instruments" aria-pressed="false">Medical Instruments</button>
+                                <button class="product-sidebar__toggle" type="button" data-category-toggle aria-expanded="false" aria-controls="instrument-subcategories" aria-label="Tampilkan subkategori Medical Instruments"><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                            </div>
+                            <div class="product-sidebar__children" id="instrument-subcategories" hidden>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Instrument and Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Instrument and Consumable'] ?? '' }}" data-category-title="Medical Instruments" data-product-filter="Urine Analyzer" aria-pressed="false">Urine Analyzer and Strips <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Instrument and Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Instrument and Consumable'] ?? '' }}" data-category-title="Medical Instruments" data-product-filter="Chemistry Analyzer" aria-pressed="false">Chemistry Analyzer and Reagent <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Instrument and Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Instrument and Consumable'] ?? '' }}" data-category-title="Medical Instruments" data-product-filter="Electrolyte Analyzer" aria-pressed="false">Electrolyte Analyzer and Reagent <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Instrument and Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Instrument and Consumable'] ?? '' }}" data-category-title="Medical Instruments" data-product-filter="Hematology Analyzer" aria-pressed="false">Hematology Analyzer and Reagent <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                            </div>
+                        </div>
 
-                            <button class="product-sidebar__category" type="button" data-category-filter="{{ $category['id'] }}" aria-pressed="false">
-                                <span>{{ $category['name'] }}</span>
-                                <svg aria-hidden="true"><use href="#icon-chevron"/></svg>
-                            </button>
-                        @endforeach
+                        <div class="product-sidebar__group">
+                            <div class="product-sidebar__category-row">
+                                <button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-filter="{{ $categoryIdsByName['Medical Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Medical Consumable'] ?? '' }}" data-category-title="Medical Consumables" aria-pressed="false">Medical Consumables</button>
+                                <button class="product-sidebar__toggle" type="button" data-category-toggle aria-expanded="false" aria-controls="consumable-subcategories" aria-label="Tampilkan subkategori Medical Consumables"><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                            </div>
+                            <div class="product-sidebar__children" id="consumable-subcategories" hidden>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Medical Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Medical Consumable'] ?? '' }}" data-category-title="Medical Consumables" data-product-filter="Filtertips" aria-pressed="false">Filtertips dkk <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Medical Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Medical Consumable'] ?? '' }}" data-category-title="Medical Consumables" data-product-filter="Blood Vacuum tube" aria-pressed="false">Blood Vacuum tube <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Medical Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Medical Consumable'] ?? '' }}" data-category-title="Medical Consumables" data-product-filter="Swab" aria-pressed="false">Swab <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                            </div>
+                        </div>
                     </nav>
                 </aside>
 
                 <div class="product-results-area">
                     <p class="product-results sr-only" id="product-results" aria-live="polite"></p>
+                    <h2 class="product-active-heading" id="product-active-heading"></h2>
+                    <p class="product-no-matches" id="product-no-matches" data-i18n="emptyCategory" hidden>Belum ada produk dalam kategori ini.</p>
                     <div id="product-categories">
                         @foreach ($categories as $category)
                             <section class="product-category-section" data-category="{{ $category['id'] }}" data-category-name="{{ $category['name'] }}" aria-labelledby="category-{{ $category['id'] }}">

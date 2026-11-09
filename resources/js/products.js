@@ -3,6 +3,9 @@ const subcategorySelect = document.querySelector('#filter-subkategori');
 const resetFilters = document.querySelector('#reset-filters');
 const productResults = document.querySelector('#product-results');
 const productPagination = document.querySelector('#product-pagination');
+const productActiveHeading = document.querySelector('#product-active-heading');
+const productNoMatches = document.querySelector('#product-no-matches');
+const productResultsArea = document.querySelector('.product-results-area');
 const productSections = Array.from(document.querySelectorAll('.product-category-section'));
 const categoryFilterButtons = Array.from(document.querySelectorAll('[data-category-filter]'));
 const categoryToggleButtons = Array.from(document.querySelectorAll('[data-category-toggle]'));
@@ -14,18 +17,40 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
         Array.from(section.querySelectorAll('.product-card'), (card) => ({ card, section })),
     );
     let currentPage = 1;
+    let selectedProductFilter = '';
 
     const isEnglish = () => document.documentElement.lang === 'en';
 
+    const getActiveFilterButton = () => categoryFilterButtons.find((button) =>
+        button.dataset.categoryFilter === categorySelect.value
+        && (button.dataset.productFilter || '') === selectedProductFilter,
+    );
+
+    const getSelectedCategoryIds = () => {
+        const activeFilterButton = getActiveFilterButton();
+        const categoryIds = activeFilterButton?.dataset.categoryIds || activeFilterButton?.dataset.categoryFilter || '';
+
+        return categoryIds.split(',').filter(Boolean);
+    };
+
     const syncCategoryNavigation = () => {
+        const activeFilterButton = getActiveFilterButton();
+        const isAllProducts = categorySelect.value === 'all';
+
         categoryFilterButtons.forEach((button) => {
             const isSelectedCategory = button.dataset.categoryFilter === categorySelect.value;
-            const isSelectedSubcategory = (button.dataset.subcategoryFilter || 'all') === subcategorySelect.value;
-            const isActive = isSelectedCategory && isSelectedSubcategory;
+            const isSelectedProduct = (button.dataset.productFilter || '') === selectedProductFilter;
+            const isActive = isSelectedCategory && isSelectedProduct;
 
             button.classList.toggle('is-active', isActive);
             button.setAttribute('aria-pressed', String(isActive));
         });
+
+        productActiveHeading.hidden = isAllProducts;
+        productActiveHeading.textContent = isAllProducts
+            ? ''
+            : activeFilterButton?.dataset.categoryTitle || activeFilterButton?.textContent.trim() || '';
+        productResultsArea.classList.toggle('is-category-filtered', !isAllProducts);
     };
 
     const populateSubcategories = () => {
@@ -95,9 +120,15 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
     const renderProducts = () => {
         const selectedCategory = categorySelect.value;
         const selectedSubcategory = subcategorySelect.value;
+        const selectedCategoryIds = getSelectedCategoryIds();
+        const productFilterTerms = selectedProductFilter
+            .split('|')
+            .map((term) => term.trim().toLowerCase())
+            .filter(Boolean);
         const matchingEntries = productEntries.filter(({ card, section }) =>
-            (selectedCategory === 'all' || section.dataset.category === selectedCategory)
-            && (selectedSubcategory === 'all' || card.dataset.subcategory === selectedSubcategory),
+            (selectedCategory === 'all' || selectedCategoryIds.includes(section.dataset.category))
+            && (selectedSubcategory === 'all' || card.dataset.subcategory === selectedSubcategory)
+            && (productFilterTerms.length === 0 || productFilterTerms.some((term) => card.textContent.toLowerCase().includes(term))),
         );
         const totalPages = Math.ceil(matchingEntries.length / pageSize);
         currentPage = Math.min(currentPage, Math.max(totalPages, 1));
@@ -111,10 +142,16 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
 
         productSections.forEach((section) => {
             const hasVisibleCard = visibleEntries.some((entry) => entry.section === section);
-            const selectedEmptyCategory = selectedCategory === section.dataset.category
+            const selectedEmptyCategory = selectedCategoryIds.includes(section.dataset.category)
                 && section.querySelectorAll('.product-card').length === 0;
             section.hidden = !hasVisibleCard && !selectedEmptyCategory;
         });
+
+        const hasSelectedEmptyCategory = productSections.some((section) =>
+            selectedCategoryIds.includes(section.dataset.category)
+            && section.querySelectorAll('.product-card').length === 0,
+        );
+        productNoMatches.hidden = matchingEntries.length > 0 || hasSelectedEmptyCategory;
 
         productResults.replaceChildren();
         const count = document.createElement('strong');
@@ -170,18 +207,21 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
     };
 
     categorySelect.addEventListener('change', () => {
+        selectedProductFilter = '';
         populateSubcategories();
         currentPage = 1;
         renderProducts();
     });
 
     subcategorySelect.addEventListener('change', () => {
+        selectedProductFilter = '';
         currentPage = 1;
         renderProducts();
     });
 
     resetFilters.addEventListener('click', () => {
         categorySelect.value = 'all';
+        selectedProductFilter = '';
         populateSubcategories();
         currentPage = 1;
         renderProducts();
@@ -190,6 +230,7 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
     categoryFilterButtons.forEach((button) => {
         button.addEventListener('click', () => {
             categorySelect.value = button.dataset.categoryFilter;
+            selectedProductFilter = button.dataset.productFilter || '';
             populateSubcategories();
             subcategorySelect.value = button.dataset.subcategoryFilter || 'all';
             currentPage = 1;
@@ -201,6 +242,17 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
         button.addEventListener('click', () => {
             const isExpanded = button.getAttribute('aria-expanded') === 'true';
             const childCategories = document.querySelector(`#${button.getAttribute('aria-controls')}`);
+
+            if (!isExpanded) {
+                categoryToggleButtons.forEach((otherButton) => {
+                    if (otherButton === button) {
+                        return;
+                    }
+
+                    otherButton.setAttribute('aria-expanded', 'false');
+                    document.querySelector(`#${otherButton.getAttribute('aria-controls')}`).hidden = true;
+                });
+            }
 
             button.setAttribute('aria-expanded', String(!isExpanded));
             childCategories.hidden = isExpanded;
