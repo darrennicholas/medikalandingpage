@@ -327,3 +327,141 @@ if (newsGrid) {
         });
     });
 }
+
+const articleForm = document.querySelector('#article-create-form');
+
+if (articleForm) {
+    const articleDialog = document.querySelector('#article-create-dialog');
+    const articleList = document.querySelector('#article-list');
+    const emptyState = document.querySelector('#article-empty');
+    const noResults = document.querySelector('#article-no-results');
+    const searchInput = document.querySelector('#article-search');
+    const categoryFilter = document.querySelector('#article-filter');
+    const sortOrder = document.querySelector('#article-sort');
+    const formStatus = document.querySelector('#article-form-status');
+    const storageKey = 'imi-medika-article-drafts';
+
+    const readArticles = () => {
+        try {
+            const storedArticles = JSON.parse(window.localStorage.getItem(storageKey) ?? '[]');
+
+            return Array.isArray(storedArticles) ? storedArticles : [];
+        } catch {
+            return [];
+        }
+    };
+
+    const articles = readArticles();
+
+    const createTextElement = (tagName, className, text) => {
+        const element = document.createElement(tagName);
+        element.className = className;
+        element.textContent = text;
+
+        return element;
+    };
+
+    const renderArticles = () => {
+        const searchTerm = searchInput.value.trim().toLocaleLowerCase('id');
+        const selectedCategory = categoryFilter.value;
+        const sortedArticles = [...articles].sort((first, second) => {
+            const dateOrder = first.date.localeCompare(second.date);
+
+            return sortOrder.value === 'newest' ? -dateOrder : dateOrder;
+        });
+        const visibleArticles = sortedArticles.filter((article) => {
+            const matchesSearch = `${article.title} ${article.content} ${article.tags}`.toLocaleLowerCase('id').includes(searchTerm);
+            const matchesCategory = selectedCategory === 'all' || article.category === selectedCategory;
+
+            return matchesSearch && matchesCategory;
+        });
+
+        articleList.replaceChildren();
+        visibleArticles.forEach((article) => {
+            const card = document.createElement('article');
+            card.className = 'article-entry';
+            card.appendChild(createTextElement('span', 'article-entry__category', article.category));
+            card.appendChild(createTextElement('h2', '', article.title));
+            card.appendChild(createTextElement('p', '', `${article.content.slice(0, 170)}${article.content.length > 170 ? '…' : ''}`));
+
+            const meta = document.createElement('div');
+            meta.className = 'article-entry__meta';
+            meta.appendChild(createTextElement('span', '', article.author));
+
+            const date = document.createElement('time');
+            date.dateTime = article.date;
+            date.textContent = new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium' }).format(new Date(`${article.date}T00:00:00`));
+            meta.appendChild(date);
+            card.appendChild(meta);
+            articleList.appendChild(card);
+        });
+
+        emptyState.hidden = articles.length > 0;
+        noResults.hidden = articles.length === 0 || visibleArticles.length > 0;
+    };
+
+    const closeArticleDialog = () => {
+        articleDialog.close();
+        formStatus.textContent = '';
+    };
+
+    document.querySelector('#article-add-open').addEventListener('click', () => {
+        articleDialog.showModal();
+        articleForm.elements.date.value = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    });
+
+    ['#article-form-close', '#article-form-cancel'].forEach((selector) => {
+        document.querySelector(selector).addEventListener('click', closeArticleDialog);
+    });
+
+    articleDialog.addEventListener('click', (event) => {
+        if (event.target === articleDialog) {
+            closeArticleDialog();
+        }
+    });
+
+    articleForm.elements.title.addEventListener('input', () => {
+        if (!articleForm.elements.slug.value.trim()) {
+            articleForm.elements.slug.value = articleForm.elements.title.value
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-|-$/g, '');
+        }
+    });
+
+    articleForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const formData = new FormData(articleForm);
+        const newArticle = {
+            category: String(formData.get('category')),
+            title: String(formData.get('title')).trim(),
+            author: String(formData.get('author')).trim(),
+            date: String(formData.get('date')),
+            slug: String(formData.get('slug')).trim(),
+            tags: String(formData.get('tags')).trim(),
+            content: String(formData.get('content')).trim(),
+            coverAlt: String(formData.get('coverAlt')).trim(),
+            coverName: formData.get('cover')?.name ?? '',
+        };
+
+        try {
+            articles.unshift(newArticle);
+            window.localStorage.setItem(storageKey, JSON.stringify(articles));
+            renderArticles();
+            articleForm.reset();
+            closeArticleDialog();
+        } catch {
+            articles.shift();
+            formStatus.textContent = 'Draft tidak dapat disimpan di browser ini. Coba lagi.';
+        }
+    });
+
+    [searchInput, categoryFilter, sortOrder].forEach((control) => {
+        control.addEventListener('input', renderArticles);
+        control.addEventListener('change', renderArticles);
+    });
+
+    renderArticles();
+}

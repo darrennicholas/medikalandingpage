@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ $type === 'articles' ? 'Daftar artikel kesehatan IMI Medika.' : 'Berita terbaru IMI Medika.' }}">
     <title>{{ $type === 'articles' ? 'Artikel' : 'Berita' }} - Interskala Medika Indonesia</title>
-    @if ($type === 'news')
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    @endif
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/css/documentation.css', 'resources/js/app.js'])
 </head>
 <body class="documentation-page media-list-page">
@@ -52,7 +50,32 @@
                 <span aria-hidden="true"></span>
                 <p data-i18n="{{ $type === 'articles' ? 'articleListIntro' : 'newsListIntro' }}">{{ $type === 'articles' ? 'Temukan berbagai artikel kesehatan terkini yang informatif dan bermanfaat untuk meningkatkan kualitas hidup Anda' : 'Ikuti perkembangan terbaru seputar kesehatan, layanan, dan kegiatan terbaru dari IMI Medika' }}</p>
             </div>
-            @if ($type === 'news')
+            @if ($type === 'articles')
+                <div class="news-toolbar article-toolbar">
+                    <label class="news-search" for="article-search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+                        <input id="article-search" type="search" placeholder="Cari artikel..." autocomplete="off" aria-label="Cari artikel">
+                    </label>
+                    <div class="news-toolbar__actions">
+                        <details class="news-dropdown">
+                            <summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z"/></svg> Filter</summary>
+                            <div class="news-dropdown__panel"><label for="article-filter">Kategori</label><select id="article-filter"><option value="all">Semua kategori</option><option value="Edukasi">Edukasi</option><option value="Tips Kesehatan">Tips Kesehatan</option><option value="Gaya Hidup">Gaya Hidup</option></select></div>
+                        </details>
+                        <details class="news-dropdown">
+                            <summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M7 12h13M10 17h10"/></svg> Urutkan</summary>
+                            <div class="news-dropdown__panel"><label for="article-sort">Urutan</label><select id="article-sort"><option value="newest">Terbaru</option><option value="oldest">Terlama</option></select></div>
+                        </details>
+                        <button class="article-add-button" id="article-add-open" type="button"><span aria-hidden="true">＋</span> Tambah</button>
+                    </div>
+                </div>
+
+                <div class="article-list" id="article-list" aria-live="polite"></div>
+                <p class="news-no-results" id="article-no-results" hidden>Tidak ada artikel yang cocok dengan pencarian Anda.</p>
+                <div class="media-empty" id="article-empty">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>
+                    <h2 data-i18n="noArticles">Belum Ada Artikel</h2>
+                </div>
+            @else
                 <div class="news-toolbar">
                     <label class="news-search" for="news-search">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
@@ -85,14 +108,74 @@
                 </div>
                 <p class="news-no-results" id="news-no-results" hidden>Tidak ada berita yang cocok dengan pencarian Anda.</p>
                 <nav class="news-pagination" aria-label="Halaman berita"><button type="button" disabled aria-label="Halaman sebelumnya">‹</button><span class="news-pagination__active" aria-current="page">1</span><button type="button" disabled>2</button><button type="button" disabled>3</button><button type="button" disabled aria-label="Halaman berikutnya">›</button></nav>
-            @else
-                <div class="media-empty">
-                    <h2 data-i18n="noArticles">Belum Ada Artikel</h2>
-                    <a href="{{ route('documentation') }}" data-i18n="backToDocumentation">Kembali ke Dokumentasi</a>
-                </div>
             @endif
         </div>
     </main>
+
+    @if ($type === 'articles')
+        <dialog class="article-dialog" id="article-create-dialog" aria-labelledby="article-form-title">
+            <form class="article-form" id="article-create-form">
+                <div class="article-form__header">
+                    <div>
+                        <p class="article-form__eyebrow">IMI MEDIKA MEDIA</p>
+                        <h2 id="article-form-title">Tambah Artikel</h2>
+                    </div>
+                    <button class="article-form__close" id="article-form-close" type="button" aria-label="Tutup form">×</button>
+                </div>
+                <label class="article-form__field">
+                    <span>Kategori</span>
+                    <select name="category" required>
+                        <option value="" disabled selected>Pilih kategori</option>
+                        <option>Edukasi</option>
+                        <option>Tips Kesehatan</option>
+                        <option>Gaya Hidup</option>
+                    </select>
+                </label>
+                <label class="article-form__field">
+                    <span>Judul</span>
+                    <input name="title" type="text" placeholder="Masukkan judul artikel" required>
+                </label>
+                <div class="article-form__row">
+                    <label class="article-form__field">
+                        <span>Penulis</span>
+                        <input name="author" type="text" placeholder="Nama penulis" required>
+                    </label>
+                    <label class="article-form__field">
+                        <span>Tanggal</span>
+                        <input name="date" type="date" required>
+                    </label>
+                </div>
+                <label class="article-form__field">
+                    <span>Custom URL Slug / Permalink</span>
+                    <input name="slug" type="text" placeholder="judul-artikel-anda">
+                </label>
+                <label class="article-form__field">
+                    <span>Kategori &amp; Tags</span>
+                    <input name="tags" type="text" placeholder="kesehatan, edukasi">
+                </label>
+                <label class="article-form__field">
+                    <span>Isi Artikel</span>
+                    <textarea name="content" rows="6" placeholder="Tulis isi artikel di sini..." required></textarea>
+                </label>
+                <div class="article-form__row">
+                    <label class="article-form__field">
+                        <span>Gambar Cover</span>
+                        <input name="cover" type="file" accept="image/*">
+                    </label>
+                    <label class="article-form__field">
+                        <span>Alt text gambar</span>
+                        <input name="coverAlt" type="text" placeholder="Deskripsi gambar">
+                    </label>
+                </div>
+                <p class="article-form__status" id="article-form-status" role="status"></p>
+                <div class="article-form__actions">
+                    <button class="article-form__cancel" id="article-form-cancel" type="button">Batal</button>
+                    <button class="article-form__save" type="submit">Simpan</button>
+                </div>
+                <p class="article-form__note">Artikel disimpan sebagai draft di browser ini.</p>
+            </form>
+        </dialog>
+    @endif
 
     <footer class="site-footer">
         <p>© 2026 PT Interskala Medika Indonesia | Member of Interskala Group</p>

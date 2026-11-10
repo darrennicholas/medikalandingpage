@@ -383,6 +383,281 @@
     font: inherit;
 }
 
+.article-toolbar {
+    max-width: 1000px;
+    min-height: 68px;
+    margin: 0 auto 26px;
+    padding: 12px 16px;
+    border-radius: 9px;
+}
+
+.article-toolbar .news-search {
+    min-height: 42px;
+    padding: 0 12px;
+    border: 1px solid #dbe3ee;
+    border-radius: 6px;
+}
+
+.article-toolbar .news-search svg,
+.article-toolbar .news-dropdown svg {
+    width: 16px;
+    height: 16px;
+}
+
+.article-toolbar .news-toolbar__actions {
+    align-items: center;
+    gap: 9px;
+}
+
+.article-toolbar .news-dropdown summary {
+    min-height: 40px;
+    gap: 6px;
+    padding: 0 12px;
+    border: 1px solid #dbe3ee;
+    border-radius: 6px;
+    font-size: 0.82rem;
+}
+
+.article-add-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    gap: 5px;
+    padding: 0 14px;
+    border: 1px solid #2563eb;
+    border-radius: 6px;
+    background: #fff;
+    color: #1d4ed8;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.article-add-button span {
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.article-add-button:hover {
+    background: #2563eb;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.article-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    max-width: 1000px;
+    gap: 18px;
+    margin: 0 auto;
+}
+
+.article-entry {
+    padding: 22px;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(20, 30, 50, 0.08);
+}
+
+.article-entry__category {
+    display: inline-block;
+    margin-bottom: 10px;
+    padding: 4px 8px;
+    border-radius: 99px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.article-entry h2 {
+    margin-bottom: 8px;
+    color: #0f172a;
+    font-size: 1.05rem;
+}
+
+.article-entry p {
+    margin-bottom: 14px;
+    color: #64748b;
+    font-size: 0.88rem;
+}
+
+.article-entry time {
+    color: #64748b;
+    font-size: 0.75rem;
+}
+
+.media-empty#article-empty {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    max-width: 1000px;
+    min-height: 140px;
+    margin: 0 auto;
+    padding: 24px;
+    border-radius: 10px;
+}
+
+.media-empty#article-empty[hidden] {
+    display: none;
+}
+
+.media-empty#article-empty svg {
+    width: 38px;
+    height: 38px;
+    margin-bottom: 10px;
+    color: #cbd5e1;
+}
+
+.media-empty#article-empty h2 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 0.95rem;
+}
+
+.article-dialog {
+    width: min(640px, calc(100% - 28px));
+    max-width: none;
+    max-height: min(90vh, 900px);
+    padding: 0;
+    border: 0;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+}
+
+.article-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.56);
+    backdrop-filter: blur(3px);
+}
+
+.article-form {
+    display: grid;
+    gap: 14px;
+    padding: 26px;
+}
+
+.article-form__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 2px;
+}
+
+.article-form__eyebrow {
+    margin-bottom: 5px;
+    color: #2563eb;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+}
+
+.article-form__header h2 {
+    color: #0f172a;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.article-form__close {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #475569;
+    cursor: pointer;
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+.article-form__field {
+    display: grid;
+    min-width: 0;
+    gap: 6px;
+    color: #1e293b;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.article-form__field input,
+.article-form__field select,
+.article-form__field textarea {
+    width: 100%;
+    min-height: 38px;
+    padding: 9px 11px;
+    border: 1px solid #dbe3ee;
+    border-radius: 6px;
+    background: #fff;
+    color: #0f172a;
+    font: inherit;
+    font-weight: 400;
+}
+
+.article-form__field textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.article-form__field input:focus,
+.article-form__field select:focus,
+.article-form__field textarea:focus {
+    border-color: #3b82f6;
+    outline: 3px solid rgba(59, 130, 246, 0.14);
+}
+
+.article-form__row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.article-form__status {
+    min-height: 1.1em;
+    margin: 0;
+    color: #15803d;
+    font-size: 0.8rem;
+}
+
+.article-form__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.article-form__cancel,
+.article-form__save {
+    min-height: 40px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.article-form__cancel {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.article-form__save {
+    background: linear-gradient(90deg, #42a5f5, #00c9df);
+    color: #fff;
+}
+
+.article-form__note {
+    margin: -6px 0 0;
+    color: #64748b;
+    font-size: 0.72rem;
+    text-align: right;
+}
+
 .news-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -586,6 +861,28 @@
     .news-toolbar__actions {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .article-toolbar .news-toolbar__actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 7px;
+    }
+
+    .article-toolbar .news-dropdown summary,
+    .article-add-button {
+        width: 100%;
+        padding: 0 8px;
+        font-size: 0.72rem;
+    }
+
+    .article-form {
+        gap: 12px;
+        padding: 20px;
+    }
+
+    .article-form__row {
+        grid-template-columns: 1fr;
     }
 
     .news-dropdown summary {
