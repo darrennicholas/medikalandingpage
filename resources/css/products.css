@@ -601,52 +601,6 @@
     text-transform: uppercase;
 }
 
-.product-card--doa-three {
-    min-height: 294px;
-    border-radius: 12px;
-    transition: transform 0.28s ease, box-shadow 0.28s ease;
-}
-
-.product-card--doa-three:hover {
-    transform: translateY(-5px);
-}
-
-.product-card--doa-three .product-card__image-wrap {
-    height: 154px;
-    flex: 0 0 154px;
-    padding: 20px 28px 12px;
-}
-
-.product-card--doa-three .product-card__image {
-    max-width: 90%;
-    max-height: 112px;
-}
-
-.product-card--doa-three .product-card__logo {
-    top: 8px;
-    right: 8px;
-    width: 36px;
-    height: 36px;
-    padding: 3px;
-}
-
-.product-card--doa-three .product-card__watermark {
-    right: 10px;
-    bottom: 8px;
-    width: 92px;
-    opacity: 0.16;
-}
-
-.product-card--doa-three .product-card__content {
-    padding: 7px 12px 11px;
-}
-
-.product-card--doa-three .product-card__title {
-    margin-bottom: 3px;
-    font-size: 0.76rem;
-    line-height: 1.2;
-}
-
 .product-card__parameters {
     display: flex;
     flex-wrap: wrap;
@@ -665,30 +619,6 @@
     color: var(--product-blue);
     font-size: 0.56rem;
     line-height: 1;
-}
-
-.product-card--doa-three .product-card__subtitle {
-    margin-bottom: 6px;
-    font-size: 0.6rem;
-    line-height: 1.2;
-}
-
-.product-card--doa-three .product-card__badge {
-    margin-bottom: 8px;
-    padding: 3px 8px;
-    font-size: 0.52rem;
-    letter-spacing: 0;
-}
-
-.product-card--doa-three .product-card__actions {
-    gap: 6px;
-}
-
-.product-card--doa-three .product-card__buy,
-.product-card--doa-three .product-card__brochure {
-    gap: 4px;
-    padding: 5px 10px;
-    font-size: 0.58rem;
 }
 
 .product-card__actions {

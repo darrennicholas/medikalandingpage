@@ -213,7 +213,7 @@
                                                 $product = $productEntry['product'];
                                                 $isDoaThreePanel = $product['name'] === 'DOA 3 Drugs Panel Test';
                                             @endphp
-                                            <article class="product-card{{ $isDoaThreePanel ? ' product-card--doa-three' : '' }}" data-category="{{ $productEntry['category_id'] }}" data-subcategory="{{ $product['subtitle'] }}">
+                                            <article class="product-card" data-category="{{ $productEntry['category_id'] }}" data-subcategory="{{ $product['subtitle'] }}">
                                                 @if ($product['logo_bottom'])
                                                     <img class="product-card__watermark" src="{{ asset($product['logo_bottom']) }}" alt="" loading="lazy">
                                                 @endif
