@@ -224,6 +224,9 @@
                                                 </div>
                                                 <div class="product-card__content">
                                                     <h4 class="product-card__title">{{ $product['name'] }}</h4>
+                                                    @if ($isDoaThreePanel)
+                                                        <p class="product-card__subtitle">{{ $productGroup['title'] }}</p>
+                                                    @endif
                                                     @if (!empty($product['parameters']))
                                                         <div class="product-card__parameters" aria-label="Parameter tes">
                                                             @foreach ($product['parameters'] as $parameter)
@@ -233,7 +236,9 @@
                                                     @elseif ($product['parameter'])
                                                         <strong class="product-card__parameter">{{ $product['parameter'] }}</strong>
                                                     @endif
-                                                    <p class="product-card__subtitle">{{ $isDoaThreePanel ? $productGroup['title'] : $product['subtitle'] }}</p>
+                                                    @unless ($isDoaThreePanel)
+                                                        <p class="product-card__subtitle">{{ $product['subtitle'] }}</p>
+                                                    @endunless
                                                     <span class="product-card__badge">{{ $isDoaThreePanel ? 'Drugs of Abuse' : $productGroup['title'] }}</span>
                                                     <div class="product-card__actions">
                                                         <a class="product-card__buy" href="{{ $product['buy_url'] }}" target="_blank" rel="noopener noreferrer" aria-label="Beli {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-cart"/></svg><span data-i18n="buyProduct">Beli</span></a>
