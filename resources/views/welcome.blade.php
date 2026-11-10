@@ -22,7 +22,6 @@
                 <a class="nav-link nav-link--active" href="{{ route('home') }}" aria-current="page" data-i18n="home">Beranda</a>
                 <a class="nav-link" href="{{ route('about') }}" data-i18n="about">Tentang</a>
                 <a class="nav-link" href="{{ route('products') }}" data-i18n="products">Produk</a>
-                <a class="nav-link" href="{{ route('documentation') }}" data-i18n="news">Dokumentasi</a>
                 <a class="nav-link" href="https://imimedika.com/karir.php" data-i18n="careers">Karir</a>
                 <a class="nav-link" href="{{ route('contact') }}" data-i18n="contact">Kontak</a>
                 <a class="nav-link" href="{{ route('documentation') }}" data-i18n="articlesNews">Artikel &amp; Berita</a>

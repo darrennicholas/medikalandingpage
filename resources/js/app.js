@@ -206,7 +206,6 @@ const englishCopy = {
     products: 'Products',
     careers: 'Careers',
     contact: 'Contact',
-    news: 'Documentation',
     articlesNews: 'Articles & News',
     coverageTitle: 'Our Reach',
     coverageSubtitle: 'Serving all of Indonesia through an extensive distribution network',
