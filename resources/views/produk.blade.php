@@ -210,8 +210,9 @@
                                         @foreach ($groupProducts as $productEntry)
                                             @php
                                                 $product = $productEntry['product'];
+                                                $isDoaThreePanel = $product['name'] === 'DOA 3 Drugs Panel Test';
                                             @endphp
-                                            <article class="product-card" data-category="{{ $productEntry['category_id'] }}" data-subcategory="{{ $product['subtitle'] }}">
+                                            <article class="product-card{{ $isDoaThreePanel ? ' product-card--doa-three' : '' }}" data-category="{{ $productEntry['category_id'] }}" data-subcategory="{{ $product['subtitle'] }}">
                                                 @if ($product['logo_bottom'])
                                                     <img class="product-card__watermark" src="{{ asset($product['logo_bottom']) }}" alt="" loading="lazy">
                                                 @endif
@@ -223,11 +224,17 @@
                                                 </div>
                                                 <div class="product-card__content">
                                                     <h4 class="product-card__title">{{ $product['name'] }}</h4>
-                                                    @if ($product['parameter'])
+                                                    @if (!empty($product['parameters']))
+                                                        <div class="product-card__parameters" aria-label="Parameter tes">
+                                                            @foreach ($product['parameters'] as $parameter)
+                                                                <span class="product-card__parameter-chip">{{ $parameter }}</span>
+                                                            @endforeach
+                                                        </div>
+                                                    @elseif ($product['parameter'])
                                                         <strong class="product-card__parameter">{{ $product['parameter'] }}</strong>
                                                     @endif
-                                                    <p class="product-card__subtitle">{{ $product['subtitle'] }}</p>
-                                                    <span class="product-card__badge">{{ $productGroup['title'] }}</span>
+                                                    <p class="product-card__subtitle">{{ $isDoaThreePanel ? $productGroup['title'] : $product['subtitle'] }}</p>
+                                                    <span class="product-card__badge">{{ $isDoaThreePanel ? 'Drugs of Abuse' : $productGroup['title'] }}</span>
                                                     <div class="product-card__actions">
                                                         <a class="product-card__buy" href="{{ $product['buy_url'] }}" target="_blank" rel="noopener noreferrer" aria-label="Beli {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-cart"/></svg><span data-i18n="buyProduct">Beli</span></a>
                                                         <button class="product-card__brochure" type="button" data-brochure-url="{{ $product['brochure_url'] }}" data-product-name="{{ $product['name'] }}" aria-label="Lihat brosur {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span data-i18n="brochure">Brosur</span></button>
