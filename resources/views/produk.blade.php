@@ -214,7 +214,7 @@
                                                 $isDengueProduct = str_starts_with($product['name'], 'Dengue');
                                                 $usesRapidTestCardLayout = $isDoaThreePanel || $isDengueProduct;
                                             @endphp
-                                            <article class="product-card{{ $isDengueProduct ? ' product-card--dengue' : '' }}" data-category="{{ $productEntry['category_id'] }}" data-subcategory="{{ $product['subtitle'] }}">
+                                            <article class="product-card" data-category="{{ $productEntry['category_id'] }}" data-subcategory="{{ $product['subtitle'] }}">
                                                 @if ($product['logo_bottom'])
                                                     <img class="product-card__watermark" src="{{ asset($product['logo_bottom']) }}" alt="" loading="lazy">
                                                 @endif
