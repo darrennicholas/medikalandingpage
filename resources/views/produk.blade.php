@@ -211,8 +211,10 @@
                                             @php
                                                 $product = $productEntry['product'];
                                                 $isDoaThreePanel = $product['name'] === 'DOA 3 Drugs Panel Test';
+                                                $isDengueProduct = str_starts_with($product['name'], 'Dengue');
+                                                $usesRapidTestCardLayout = $isDoaThreePanel || $isDengueProduct;
                                             @endphp
-                                            <article class="product-card" data-category="{{ $productEntry['category_id'] }}" data-subcategory="{{ $product['subtitle'] }}">
+                                            <article class="product-card{{ $isDengueProduct ? ' product-card--dengue' : '' }}" data-category="{{ $productEntry['category_id'] }}" data-subcategory="{{ $product['subtitle'] }}">
                                                 @if ($product['logo_bottom'])
                                                     <img class="product-card__watermark" src="{{ asset($product['logo_bottom']) }}" alt="" loading="lazy">
                                                 @endif
@@ -224,7 +226,7 @@
                                                 </div>
                                                 <div class="product-card__content">
                                                     <h4 class="product-card__title">{{ $product['name'] }}</h4>
-                                                    @if ($isDoaThreePanel)
+                                                    @if ($usesRapidTestCardLayout)
                                                         <p class="product-card__subtitle">{{ $productGroup['title'] }}</p>
                                                     @endif
                                                     @if (!empty($product['parameters']))
@@ -236,10 +238,10 @@
                                                     @elseif ($product['parameter'])
                                                         <strong class="product-card__parameter">{{ $product['parameter'] }}</strong>
                                                     @endif
-                                                    @unless ($isDoaThreePanel)
+                                                    @unless ($usesRapidTestCardLayout)
                                                         <p class="product-card__subtitle">{{ $product['subtitle'] }}</p>
                                                     @endunless
-                                                    <span class="product-card__badge">{{ $isDoaThreePanel ? 'Drugs of Abuse' : $productGroup['title'] }}</span>
+                                                    <span class="product-card__badge">{{ $isDengueProduct ? 'Tropical Infectious Disease' : ($isDoaThreePanel ? 'Drugs of Abuse' : $productGroup['title']) }}</span>
                                                     <div class="product-card__actions">
                                                         <a class="product-card__buy" href="{{ $product['buy_url'] }}" target="_blank" rel="noopener noreferrer" aria-label="Beli {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-cart"/></svg><span data-i18n="buyProduct">Beli</span></a>
                                                         <button class="product-card__brochure" type="button" data-brochure-url="{{ $product['brochure_url'] }}" data-product-name="{{ $product['name'] }}" aria-label="Lihat brosur {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span data-i18n="brochure">Brosur</span></button>

@@ -621,6 +621,65 @@
     line-height: 1;
 }
 
+.product-card--dengue {
+    min-height: 286px;
+}
+
+.product-card--dengue .product-card__image-wrap {
+    height: 154px;
+    flex: 0 0 154px;
+    padding: 12px 20px 8px;
+}
+
+.product-card--dengue .product-card__logo {
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    padding: 3px;
+}
+
+.product-card--dengue .product-card__watermark {
+    right: 10px;
+    bottom: 8px;
+    width: 92px;
+    opacity: 0.16;
+}
+
+.product-card--dengue .product-card__content {
+    padding: 7px 12px 11px;
+}
+
+.product-card--dengue .product-card__title {
+    margin-bottom: 3px;
+    font-size: 0.76rem;
+    line-height: 1.2;
+}
+
+.product-card--dengue .product-card__subtitle {
+    margin-bottom: 6px;
+    font-size: 0.6rem;
+    line-height: 1.2;
+}
+
+.product-card--dengue .product-card__badge {
+    margin-bottom: 8px;
+    padding: 3px 8px;
+    font-size: 0.52rem;
+    letter-spacing: 0;
+}
+
+.product-card--dengue .product-card__actions {
+    gap: 6px;
+}
+
+.product-card--dengue .product-card__buy,
+.product-card--dengue .product-card__brochure {
+    gap: 4px;
+    padding: 5px 10px;
+    font-size: 0.58rem;
+}
+
 .product-card__actions {
     display: flex;
     flex-wrap: wrap;
