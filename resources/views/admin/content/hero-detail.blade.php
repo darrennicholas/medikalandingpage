@@ -1,0 +1,17 @@
+@extends('admin.layout')
+@section('title', 'Detail Banner | Hero / Banner')
+@section('page-heading', 'Detail Hero / Banner')
+@section('breadcrumb', 'Konten Landing Page  /  Beranda  /  Hero / Banner  /  Detail')
+@section('page-description', 'Pratinjau konten dan status banner beranda.')
+@section('page-actions')
+    <a class="admin-button" href="{{ route('admin.content.index', 'hero-slides') }}"><span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>Kembali</a>
+    <a class="admin-button admin-button--primary" href="{{ route('admin.content.edit', ['resource' => 'hero-slides', 'id' => $record->id]) }}"><span class="material-symbols-rounded" aria-hidden="true">edit</span>Ubah Banner</a>
+@endsection
+@section('content')
+    @if (is_array($record->draft_payload))<div class="admin-alert admin-alert--info"><span class="material-symbols-rounded" aria-hidden="true">info</span><span>Ada draft perubahan. Tampilan di bawah ini menunjukkan versi Published yang sedang dilihat pengunjung.</span></div>@endif
+    <div class="admin-editor admin-editor--detail">
+        <section class="admin-panel admin-hero-detail-preview"><div class="admin-panel__header"><div><p class="admin-eyebrow">Preview Beranda</p><h2>Banner #{{ $record->display_order }}</h2></div><span class="admin-status admin-status--{{ $record->status }}">{{ ucfirst($record->status) }}</span></div><div class="admin-hero-preview admin-hero-preview--large" @if ($mediaUrl) style="--hero-preview-image: url('{{ $mediaUrl }}')" @endif><div class="admin-hero-preview__shade"></div><div class="admin-hero-preview__content"><span class="admin-hero-preview__eyebrow">PT Interskala Medika Indonesia</span><h3>{{ $translationId?->title ?? 'Tanpa judul' }}</h3><p>{{ $translationId?->subtitle }}</p>@if ($translationId?->cta_label)<span class="admin-hero-preview__button">{{ $translationId->cta_label }} <span class="material-symbols-rounded" aria-hidden="true">arrow_forward</span></span>@endif</div></div></section>
+        <section class="admin-panel admin-hero-detail-languages"><div class="admin-panel__header"><div><p class="admin-eyebrow">Konten</p><h2>Informasi Bahasa</h2></div></div><div class="admin-editor__language" role="tablist"><button type="button" class="is-active" data-language-tab="id">Indonesia</button><button type="button" data-language-tab="en">English</button></div>@foreach (['id' => ['Bahasa Indonesia', $translationId], 'en' => ['English', $translationEn]] as $language => [$label, $translation])<div class="admin-language-panel {{ $language === 'en' ? 'is-hidden' : '' }}" data-language-panel="{{ $language }}"><dl><div><dt>Judul</dt><dd>{{ $translation?->title ?: '—' }}</dd></div><div><dt>Subjudul</dt><dd>{{ $translation?->subtitle ?: '—' }}</dd></div><div><dt>Label CTA</dt><dd>{{ $translation?->cta_label ?: '—' }}</dd></div><div><dt>URL CTA</dt><dd>{{ $record->cta_url ?: '—' }}</dd></div></dl></div>@endforeach</section>
+        <section class="admin-panel admin-hero-detail-audit"><div class="admin-panel__header"><div><p class="admin-eyebrow">Riwayat Konten</p><h2>Informasi Publikasi</h2></div></div><dl><div><dt>Status</dt><dd>{{ ucfirst($record->status) }}</dd></div><div><dt>Urutan</dt><dd>{{ $record->display_order }}</dd></div><div><dt>Dibuat</dt><dd>{{ $record->created_at?->format('d M Y, H:i') ?? '—' }}</dd></div><div><dt>Terakhir diperbarui</dt><dd>{{ $record->updated_at?->format('d M Y, H:i') ?? '—' }}</dd></div></dl></section>
+    </div>
+@endsection

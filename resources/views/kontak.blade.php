@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Hubungi PT Interskala Medika Indonesia di Factory 1 Jakarta atau Factory 2 Banten.">
-    <title>Kontak - Interskala Medika Indonesia</title>
+    @include('partials.seo', ['seo' => $seo])
     @vite(['resources/css/app.css', 'resources/css/contact.css', 'resources/js/app.js'])
 </head>
 <body class="contact-page">
@@ -22,7 +21,7 @@
 
     <header class="site-header" id="site-header">
         <div class="site-header__inner">
-            <a class="site-logo" href="{{ route('home') }}" aria-label="PT Interskala Medika Indonesia, beranda">
+            <a class="site-logo" href="{{ route('localized.home', ['locale' => app()->getLocale()]) }}" aria-label="PT Interskala Medika Indonesia, beranda">
                 <img src="{{ asset('images/medika-logo.png') }}" alt="IMI Medika" width="120" height="72">
             </a>
 
@@ -31,20 +30,14 @@
             </button>
 
             <nav class="primary-navigation" id="primary-navigation" aria-label="Navigasi utama">
-                <a class="nav-link" href="{{ route('home') }}" data-i18n="home">Beranda</a>
-                <a class="nav-link" href="{{ route('about') }}" data-i18n="about">Tentang</a>
-                <a class="nav-link" href="{{ route('products') }}" data-i18n="products">Produk</a>
-                <a class="nav-link" href="https://imimedika.com/karir.php" data-i18n="careers">Karir</a>
-                <a class="nav-link nav-link--active" href="{{ route('contact') }}" aria-current="page" data-i18n="contact">Kontak</a>
-                <a class="nav-link" href="{{ route('documentation') }}" data-i18n="articlesNews">Artikel &amp; Berita</a>
-
+            @include('partials.public-navigation')
+            @include('partials.cms-login-link')
                 <div class="language-control">
                     <span class="google-mark" aria-hidden="true">G</span>
                     <label class="sr-only" for="language-picker">Pilih bahasa</label>
                     <select id="language-picker" aria-label="Pilih bahasa">
-                        <option value="" selected>Select Language</option>
-                        <option value="id">Bahasa Indonesia</option>
-                        <option value="en">English</option>
+                        <option value="id" @selected(app()->getLocale() === 'id')>Bahasa Indonesia</option>
+                        <option value="en" @selected(app()->getLocale() === 'en')>English</option>
                     </select>
                     <span class="language-control__arrow" aria-hidden="true">▼</span>
                 </div>
@@ -60,59 +53,65 @@
                 <p data-i18n="contactPageIntro">Kami siap membantu Anda dengan segala pertanyaan dan kebutuhan mengenai produk dan layanan IMI Medika. Tim kami yang profesional siap memberikan solusi terbaik untuk Anda.</p>
             </div>
 
-            <div class="factory-grid">
-                <article class="factory-card" aria-labelledby="factory-one-title">
-                    <h2 id="factory-one-title"><svg aria-hidden="true"><use href="#icon-factory"/></svg>Factory 1</h2>
-                    <div class="factory-card__body">
-                        <div class="factory-card__address"><svg aria-hidden="true"><use href="#icon-pin"/></svg><p>Green Sedayu Bizpark Blok DM09 No.62 Kalideres, Jakarta Barat, DKI Jakarta 11840</p></div>
-                        <div class="factory-card__details">
-                            <a href="tel:+622122527790"><span class="factory-card__round-icon"><svg aria-hidden="true"><use href="#icon-phone"/></svg></span>(021) 22527790</a>
-                            <a href="https://imimedika.com" target="_blank" rel="noopener noreferrer"><span class="factory-card__round-icon"><svg aria-hidden="true"><use href="#icon-globe"/></svg></span>www.imimedika.com</a>
-                            <a href="mailto:sales@imimedika.com"><span class="factory-card__round-icon"><svg aria-hidden="true"><use href="#icon-mail"/></svg></span>sales@imimedika.com</a>
-                        </div>
-                        <div class="factory-card__hours">
-                            <h3><svg aria-hidden="true"><use href="#icon-clock"/></svg><span data-i18n="operatingHours">Jam Operasional</span></h3>
-                            <p><span data-i18n="weekdays">Senin - Jumat:</span><span>08.00 - 17.00 WIB</span></p>
-                            <p><span data-i18n="weekend">Sabtu &amp; Minggu:</span><span data-i18n="closed">Libur</span></p>
-                        </div>
-                        <iframe title="Peta Factory 1 di Kalideres, Jakarta Barat" src="https://www.google.com/maps?q=PT+Interskala+Medika+Indonesia+Green+Sedayu+Bizpark+Kalideres&amp;output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-                    </div>
-                </article>
+            @php
+                $language = app()->getLocale();
+                $contactTranslation = $contactInfo?->public_translation ?? $contactInfo?->translations->firstWhere('lang', $language) ?? $contactInfo?->translations->firstWhere('lang', 'id');
+                $mapEmbedUrl = null;
+                if ($contactInfo?->latitude !== null && $contactInfo?->longitude !== null) {
+                    $mapEmbedUrl = 'https://www.google.com/maps?q='.urlencode($contactInfo->latitude.','.$contactInfo->longitude).'&output=embed';
+                } elseif ($contactInfo?->maps_url) {
+                    $mapEmbedUrl = str_contains($contactInfo->maps_url, 'output=embed') || str_contains($contactInfo->maps_url, '/maps/embed')
+                        ? $contactInfo->maps_url
+                        : 'https://www.google.com/maps?q='.urlencode($contactInfo->maps_url).'&output=embed';
+                }
+            @endphp
 
-                <article class="factory-card" aria-labelledby="factory-two-title">
-                    <h2 id="factory-two-title"><svg aria-hidden="true"><use href="#icon-factory"/></svg>Factory 2</h2>
-                    <div class="factory-card__body">
-                        <div class="factory-card__address"><svg aria-hidden="true"><use href="#icon-pin"/></svg><p>Modern Industri XVI Blok AH No. 5B-1, Cikande Industrial Estate Kab. Serang, Banten 42186</p></div>
-                        <div class="factory-card__details">
-                            <a href="tel:+622122527790"><span class="factory-card__round-icon"><svg aria-hidden="true"><use href="#icon-phone"/></svg></span>(021) 22527790</a>
-                            <a href="https://imimedika.com" target="_blank" rel="noopener noreferrer"><span class="factory-card__round-icon"><svg aria-hidden="true"><use href="#icon-globe"/></svg></span>www.imimedika.com</a>
-                            <a href="mailto:sales@imimedika.com"><span class="factory-card__round-icon"><svg aria-hidden="true"><use href="#icon-mail"/></svg></span>sales@imimedika.com</a>
+            @if ($contactInfo)
+                <div class="factory-grid factory-grid--single">
+                    <article class="factory-card" aria-labelledby="contact-details-title">
+                        <h2 id="contact-details-title"><svg aria-hidden="true"><use href="#icon-factory"/></svg>{{ $language === 'en' ? 'Contact Details' : 'Informasi Kontak' }}</h2>
+                        <div class="factory-card__body">
+                            @if ($contactTranslation?->address)
+                                <div class="factory-card__address"><svg aria-hidden="true"><use href="#icon-pin"/></svg><p>{{ $contactTranslation->address }}</p></div>
+                            @endif
+                            <div class="factory-card__details">
+                                @if ($contactInfo->phone)<a href="tel:{{ preg_replace('/[^0-9+]/', '', $contactInfo->phone) }}"><span class="factory-card__round-icon"><svg aria-hidden="true"><use href="#icon-phone"/></svg></span>{{ $contactInfo->phone }}</a>@endif
+                                @if ($contactInfo->email)<a href="mailto:{{ $contactInfo->email }}"><span class="factory-card__round-icon"><svg aria-hidden="true"><use href="#icon-mail"/></svg></span>{{ $contactInfo->email }}</a>@endif
+                                @if ($contactInfo->maps_url)<a href="{{ $contactInfo->maps_url }}" target="_blank" rel="noopener noreferrer"><span class="factory-card__round-icon"><svg aria-hidden="true"><use href="#icon-globe"/></svg></span>{{ $language === 'en' ? 'Open location map' : 'Buka lokasi di peta' }}</a>@endif
+                            </div>
+                            @if ($contactTranslation?->office_hours)
+                                <div class="factory-card__hours">
+                                    <h3><svg aria-hidden="true"><use href="#icon-clock"/></svg><span>{{ $language === 'en' ? 'Operating Hours' : 'Jam Operasional' }}</span></h3>
+                                    <p>{{ $contactTranslation->office_hours }}</p>
+                                </div>
+                            @endif
+                            @if ($mapEmbedUrl)
+                                <iframe title="{{ $language === 'en' ? 'Company location map' : 'Peta lokasi perusahaan' }}" src="{{ $mapEmbedUrl }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                            @endif
                         </div>
-                        <div class="factory-card__hours">
-                            <h3><svg aria-hidden="true"><use href="#icon-clock"/></svg><span data-i18n="operatingHours">Jam Operasional</span></h3>
-                            <p><span data-i18n="weekdays">Senin - Jumat:</span><span>08.00 - 17.00 WIB</span></p>
-                            <p><span data-i18n="weekend">Sabtu &amp; Minggu:</span><span data-i18n="closed">Libur</span></p>
-                        </div>
-                        <iframe title="Peta Factory 2 di Cikande, Banten" src="https://www.google.com/maps?q=PT+Interskala+Medika+Indonesia+Modern+Industri+XVI+Cikande&amp;output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-                    </div>
-                </article>
-            </div>
-
-            <section class="contact-social" aria-labelledby="social-title">
-                <h2 id="social-title" data-i18n="socialTitle">Ikuti Kami di Media Sosial</h2>
-                <span class="contact-social__rule" aria-hidden="true"></span>
-                <p data-i18n="socialDescription">Tetap terhubung dengan kami melalui media sosial untuk mendapatkan informasi terbaru tentang produk, layanan, dan promo menarik dari IMI Medika.</p>
-                <div class="contact-social__links">
-                    <a href="https://www.instagram.com/medikainterskala/" target="_blank" rel="noopener noreferrer" aria-label="Instagram IMI Medika"><svg aria-hidden="true"><use href="#icon-instagram"/></svg></a>
-                    <a href="https://www.linkedin.com/company/96334258/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn IMI Medika"><svg aria-hidden="true"><use href="#icon-linkedin"/></svg></a>
-                    <a href="https://www.tiktok.com/@medikainterskala" target="_blank" rel="noopener noreferrer" aria-label="TikTok IMI Medika"><svg aria-hidden="true"><use href="#icon-tiktok"/></svg></a>
+                    </article>
                 </div>
-            </section>
+            @endif
+
+            @if ($socialLinks->isNotEmpty())
+                <section class="contact-social" aria-labelledby="social-title">
+                    <h2 id="social-title">{{ $language === 'en' ? 'Follow Us' : 'Ikuti Kami di Media Sosial' }}</h2>
+                    <span class="contact-social__rule" aria-hidden="true"></span>
+                    <div class="contact-social__links">
+                        @foreach ($socialLinks as $socialLink)
+                            @php $icon = strtolower($socialLink->platform); @endphp
+                            <a href="{{ $socialLink->url }}" target="_blank" rel="noopener noreferrer" aria-label="{{ $socialLink->platform }}">
+                                <svg aria-hidden="true"><use href="#icon-{{ in_array($icon, ['instagram', 'linkedin', 'tiktok'], true) ? $icon : 'globe' }}"/></svg>
+                            </a>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
         </div>
     </main>
 
     <footer class="site-footer">
-        <p>© 2026 PT Interskala Medika Indonesia | Member of Interskala Group</p>
+        @include('partials.site-footer', ['footer' => $footer])
     </footer>
 </body>
 </html>

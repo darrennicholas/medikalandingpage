@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Jelajahi katalog alat kesehatan PT Interskala Medika Indonesia.">
-    <title>Produk Kami - Interskala Medika Indonesia</title>
+    @include('partials.seo', ['seo' => $seo])
     @vite(['resources/css/app.css', 'resources/css/products.css', 'resources/js/app.js', 'resources/js/products.js'])
 </head>
 <body class="product-page">
@@ -21,7 +20,7 @@
 
     <header class="site-header" id="site-header">
         <div class="site-header__inner">
-            <a class="site-logo" href="{{ route('home') }}" aria-label="PT Interskala Medika Indonesia, beranda">
+            <a class="site-logo" href="{{ route('localized.home', ['locale' => app()->getLocale()]) }}" aria-label="PT Interskala Medika Indonesia, beranda">
                 <img src="{{ asset('images/medika-logo.png') }}" alt="IMI Medika" width="120" height="72">
             </a>
 
@@ -30,20 +29,14 @@
             </button>
 
             <nav class="primary-navigation" id="primary-navigation" aria-label="Navigasi utama">
-                <a class="nav-link" href="{{ route('home') }}" data-i18n="home">Beranda</a>
-                <a class="nav-link" href="{{ route('about') }}" data-i18n="about">Tentang</a>
-                <a class="nav-link nav-link--active" href="{{ route('products') }}" aria-current="page" data-i18n="products">Produk</a>
-                <a class="nav-link" href="https://imimedika.com/karir.php" data-i18n="careers">Karir</a>
-                <a class="nav-link" href="{{ route('contact') }}" data-i18n="contact">Kontak</a>
-                <a class="nav-link" href="{{ route('documentation') }}" data-i18n="articlesNews">Artikel &amp; Berita</a>
-
+            @include('partials.public-navigation')
+            @include('partials.cms-login-link')
                 <div class="language-control">
                     <span class="google-mark" aria-hidden="true">G</span>
                     <label class="sr-only" for="language-picker">Pilih bahasa</label>
                     <select id="language-picker" aria-label="Pilih bahasa">
-                        <option value="" selected>Select Language</option>
-                        <option value="id">Bahasa Indonesia</option>
-                        <option value="en">English</option>
+                        <option value="id" @selected(app()->getLocale() === 'id')>Bahasa Indonesia</option>
+                        <option value="en" @selected(app()->getLocale() === 'en')>English</option>
                     </select>
                     <span class="language-control__arrow" aria-hidden="true">▼</span>
                 </div>
@@ -67,38 +60,85 @@
             </div>
 
             @php
-                $categoryIdsByName = collect($categories)->pluck('id', 'name');
-                $molecularCategoryIds = collect([$categoryIdsByName['AKL'] ?? null, $categoryIdsByName['Molecular'] ?? null])->filter()->implode(',');
-                $rapidTestCategoryIds = collect([
-                    $categoryIdsByName['Rapid Test (Master)'] ?? null,
-                    $categoryIdsByName['Drugs Abuse'] ?? null,
-                    $categoryIdsByName['Rapid Test'] ?? null,
-                    $categoryIdsByName['Rapid Test COVID-19'] ?? null,
-                ])->filter()->implode(',');
-                $pointOfCareCategoryIds = collect([
-                    $categoryIdsByName['POCT'] ?? null,
-                    $categoryIdsByName['Glucose Meter'] ?? null,
-                    $categoryIdsByName['Point Of Care Testing'] ?? null,
-                ])->filter()->implode(',');
-                $productGroups = [
-                    ['title' => 'Molecular', 'categoryNames' => ['AKL', 'Molecular']],
-                    ['title' => 'Rapid Test (Master)', 'categoryNames' => ['Rapid Test (Master)', 'Drugs Abuse', 'Rapid Test', 'Rapid Test COVID-19']],
-                    ['title' => 'Point of Care Testing (POCT)', 'categoryNames' => ['POCT', 'Glucose Meter', 'Point Of Care Testing']],
-                    ['title' => 'Medical Instruments', 'categoryNames' => ['Instrument and Consumable']],
-                    ['title' => 'Medical Consumables', 'categoryNames' => ['Medical Consumable']],
+                $categoryNamesById = collect($categories)->pluck('name', 'id');
+                $idsForCategoryNames = fn (array $names): string => collect($categories)
+                    ->filter(fn (array $category): bool => in_array($category['name'], $names, true))
+                    ->pluck('id')
+                    ->implode(',');
+                $sidebarGroups = [
+                    [
+                        'title' => 'Molecular',
+                        'filter' => 'molecular',
+                        'category_ids' => $idsForCategoryNames(['Molecular']),
+                        'children' => [
+                            ['label' => 'PCR', 'filter' => 'PCR'],
+                            ['label' => 'Extraction', 'filter' => 'Extraction|Ekstraksi'],
+                        ],
+                    ],
+                    [
+                        'title' => 'Rapid Test (Master)',
+                        'filter' => 'rapid-test-master',
+                        'category_ids' => $idsForCategoryNames(['Rapid Test', 'Rapid Test (Master)', 'Rapid Test COVID-19', 'Drugs Abuse']),
+                        'children' => [
+                            ['label' => 'Infeksius HIV Series', 'filter' => 'HIV|Syphilis'],
+                            ['label' => 'Infeksius Hepatitis', 'filter' => 'Hepatitis|HBsAg|Anti HBs|Anti-HCV|HAV|HBV'],
+                            ['label' => 'Infeksius Tropical', 'filter' => 'Malaria|Dengue|Chikungunya|Typhoid'],
+                            ['label' => 'Tumor Marker', 'filter' => 'Tumor Marker'],
+                            ['label' => 'Covid', 'filter' => 'Covid'],
+                            ['label' => 'Drugs of Abuse', 'filter' => 'DOA'],
+                        ],
+                    ],
+                    [
+                        'title' => 'Point of Care Testing (POCT)',
+                        'filter' => 'point-of-care',
+                        'category_ids' => $idsForCategoryNames(['Point of Care Testing (POCT)', 'POCT']),
+                        'children' => [
+                            ['label' => 'Glucose', 'filter' => 'Glucose'],
+                            ['label' => 'Cholesterol', 'filter' => 'Cholesterol'],
+                            ['label' => 'Uric Acid', 'filter' => 'Uric Acid'],
+                            ['label' => 'Lipid', 'filter' => 'Lipid'],
+                        ],
+                    ],
+                    [
+                        'title' => 'Medical Instruments',
+                        'filter' => 'medical-instruments',
+                        'category_ids' => $idsForCategoryNames(['Medical Instruments', 'Instrument and Consumable']),
+                        'children' => [
+                            ['label' => 'Urine Analyzer and Strips', 'filter' => 'Urine Analyzer'],
+                            ['label' => 'Chemistry Analyzer and Reagent', 'filter' => 'Chemistry Analyzer'],
+                            ['label' => 'Electrolyte Analyzer and Reagent', 'filter' => 'Electrolyte Analyzer'],
+                            ['label' => 'Hematology Analyzer and Reagent', 'filter' => 'Hematology Analyzer'],
+                        ],
+                    ],
+                    [
+                        'title' => 'Medical Consumables',
+                        'filter' => 'medical-consumables',
+                        'category_ids' => $idsForCategoryNames(['Medical Consumables', 'Medical Consumable']),
+                        'children' => [
+                            ['label' => 'Filtertips dkk', 'filter' => 'Filtertips'],
+                            ['label' => 'Blood Vacuum tube', 'filter' => 'Blood Vacuum tube'],
+                            ['label' => 'Swab', 'filter' => 'Swab'],
+                        ],
+                    ],
                 ];
+                $sidebarGroups = collect($sidebarGroups)->filter(fn ($group) => $group['category_ids'] !== '')->values()->all();
+                $groupedCategoryIds = collect($sidebarGroups)->flatMap(fn ($group) => explode(',', $group['category_ids']))->all();
+                foreach ($categories as $category) {
+                    if (!in_array((string) $category['id'], $groupedCategoryIds, true)) {
+                        $sidebarGroups[] = ['title' => $category['name'], 'filter' => $category['id'], 'category_ids' => $category['id'], 'children' => []];
+                    }
+                }
+                $displayCategories = collect($categories)->filter(fn ($category) => count($category['products']) > 0 || (request()->routeIs('admin.content.preview') && request()->route('resource') === 'product-categories' && (string) request()->route('id') === (string) $category['id']));
             @endphp
 
             <div class="product-filter-controls" hidden>
                 <select id="filter-kategori" aria-label="Filter kategori produk">
-                    <option value="molecular">Molecular</option>
-                    <option value="rapid-test-master" selected>Rapid Test (Master)</option>
-                    <option value="point-of-care">Point of Care Testing (POCT)</option>
-                    <option value="medical-instruments">Medical Instruments</option>
-                    <option value="medical-consumables">Medical Consumables</option>
-                    <option value="all" data-i18n="allCategories">-- Semua Kategori --</option>
+                    <option value="all" selected data-i18n="allCategories">-- Semua Kategori --</option>
                     @foreach ($categories as $category)
                         <option value="{{ $category['id'] }}">{{ $category['name'] }}</option>
+                    @endforeach
+                    @foreach ($sidebarGroups as $sidebarGroup)
+                        <option value="{{ $sidebarGroup['filter'] }}">{{ $sidebarGroup['title'] }}</option>
                     @endforeach
                 </select>
                 <select id="filter-subkategori" aria-label="Filter subkategori produk" disabled>
@@ -107,155 +147,112 @@
                 <button id="reset-filters" type="button">Reset Filter</button>
             </div>
 
-            <div class="product-catalog__layout">
+            <div class="product-catalog__layout" data-catalog-mode="{{ $catalogMode ? 'all' : 'featured' }}">
                 <aside class="product-sidebar" aria-label="Kategori produk">
                     <div class="product-sidebar__heading">
                         <h2 data-i18n="categoryLabel">Kategori Produk</h2>
                         <span aria-hidden="true"></span>
                     </div>
 
-                    <button class="product-sidebar__category product-sidebar__category--all" type="button" data-category-filter="all" aria-pressed="false" data-i18n="allCategories">Semua Produk</button>
-
+                    <button class="product-sidebar__category product-sidebar__category--all" type="button" data-category-filter="all" aria-pressed="true" data-i18n="allCategories">Semua Produk</button>
                     <nav class="product-sidebar__list" aria-label="Pilih kategori produk">
-                        <div class="product-sidebar__group">
-                            <div class="product-sidebar__category-row">
-                                <button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-filter="molecular" data-category-ids="{{ $molecularCategoryIds }}" data-category-title="Molecular" aria-pressed="false">Molecular</button>
-                                <button class="product-sidebar__toggle" type="button" data-category-toggle aria-expanded="false" aria-controls="molecular-subcategories" aria-label="Tampilkan subkategori Molecular"><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                        @foreach ($sidebarGroups as $groupIndex => $sidebarGroup)
+                            @php
+                                $sidebarCategoryIds = $sidebarGroup['category_ids'] !== '' ? $sidebarGroup['category_ids'] : $sidebarGroup['filter'];
+                                $submenuId = 'product-subcategories-'.$groupIndex;
+                            @endphp
+                            <div class="product-sidebar__group">
+                                <div class="product-sidebar__category-row">
+                                    <button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-filter="{{ $sidebarGroup['filter'] }}" data-category-ids="{{ $sidebarCategoryIds }}" data-category-title="{{ $sidebarGroup['title'] }}" aria-pressed="false">{{ $sidebarGroup['title'] }}</button>
+                                    <button class="product-sidebar__toggle" type="button" data-category-toggle aria-expanded="false" aria-controls="{{ $submenuId }}" aria-label="Tampilkan subkategori {{ $sidebarGroup['title'] }}"><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                </div>
+                                <div class="product-sidebar__children" id="{{ $submenuId }}" hidden>
+                                    @foreach ($sidebarGroup['children'] as $childCategory)
+                                        <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $sidebarGroup['filter'] }}" data-category-ids="{{ $sidebarCategoryIds }}" data-category-title="{{ $sidebarGroup['title'] }}" data-product-filter="{{ $childCategory['filter'] }}" aria-pressed="false">{{ $childCategory['label'] }} <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                    @endforeach
+                                </div>
                             </div>
-                            <div class="product-sidebar__children" id="molecular-subcategories" hidden>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="molecular" data-category-ids="{{ $molecularCategoryIds }}" data-product-filter="PCR" data-category-title="Molecular" aria-pressed="false">PCR <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="molecular" data-category-ids="{{ $molecularCategoryIds }}" data-product-filter="Extraction|Ekstraksi" data-category-title="Molecular" aria-pressed="false">Extraction <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                            </div>
-                        </div>
-
-                        <div class="product-sidebar__group">
-                            <div class="product-sidebar__category-row">
-                                <button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-filter="rapid-test-master" data-category-ids="{{ $rapidTestCategoryIds }}" data-category-title="Rapid Test (Master)" aria-pressed="true">Rapid Test (Master)</button>
-                                <button class="product-sidebar__toggle" type="button" data-category-toggle aria-expanded="true" aria-controls="rapid-test-subcategories" aria-label="Tampilkan subkategori Rapid Test (Master)"><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                            </div>
-                            <div class="product-sidebar__children" id="rapid-test-subcategories">
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Rapid Test'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Rapid Test'] ?? '' }}" data-product-filter="HIV|Syphilis" data-category-title="Rapid Test (Master)" aria-pressed="false">Infeksius HIV Series <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Rapid Test'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Rapid Test'] ?? '' }}" data-product-filter="Hepatitis|HBsAg|Anti HBs|Anti-HCV|HAV|HBV" data-category-title="Rapid Test (Master)" aria-pressed="false">Infeksius Hepatitis <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Rapid Test'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Rapid Test'] ?? '' }}" data-product-filter="Malaria|Dengue|Chikungunya|Typhoid" data-category-title="Rapid Test (Master)" aria-pressed="false">Infeksius Tropical <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Rapid Test'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Rapid Test'] ?? '' }}" data-product-filter="Tumor Marker" data-category-title="Rapid Test (Master)" aria-pressed="false">Tumor Marker <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Rapid Test COVID-19'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Rapid Test COVID-19'] ?? '' }}" data-category-title="Rapid Test (Master)" aria-pressed="false">Covid <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Drugs Abuse'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Drugs Abuse'] ?? '' }}" data-category-title="Rapid Test (Master)" aria-pressed="false">Drugs of Abuse <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                            </div>
-                        </div>
-
-                        <div class="product-sidebar__group">
-                            <div class="product-sidebar__category-row">
-                                <button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-filter="point-of-care" data-category-ids="{{ $pointOfCareCategoryIds }}" data-category-title="Point of Care Testing (POCT)" aria-pressed="false">Point of Care Testing (POCT)</button>
-                                <button class="product-sidebar__toggle" type="button" data-category-toggle aria-expanded="false" aria-controls="poct-subcategories" aria-label="Tampilkan subkategori Point of Care Testing"><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                            </div>
-                            <div class="product-sidebar__children" id="poct-subcategories" hidden>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['POCT'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['POCT'] ?? '' }}" data-product-filter="Glucose" data-category-title="Point of Care Testing (POCT)" aria-pressed="false">Glucose <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['POCT'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['POCT'] ?? '' }}" data-product-filter="Cholesterol" data-category-title="Point of Care Testing (POCT)" aria-pressed="false">Cholesterol <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['POCT'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['POCT'] ?? '' }}" data-product-filter="Uric Acid" data-category-title="Point of Care Testing (POCT)" aria-pressed="false">Uric Acid <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['POCT'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['POCT'] ?? '' }}" data-product-filter="Lipid" data-category-title="Point of Care Testing (POCT)" aria-pressed="false">Lipid <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                            </div>
-                        </div>
-
-                        <div class="product-sidebar__group">
-                            <div class="product-sidebar__category-row">
-                                <button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-filter="medical-instruments" data-category-ids="{{ $categoryIdsByName['Instrument and Consumable'] ?? '' }}" data-category-title="Medical Instruments" aria-pressed="false">Medical Instruments</button>
-                                <button class="product-sidebar__toggle" type="button" data-category-toggle aria-expanded="false" aria-controls="instrument-subcategories" aria-label="Tampilkan subkategori Medical Instruments"><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                            </div>
-                            <div class="product-sidebar__children" id="instrument-subcategories" hidden>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Instrument and Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Instrument and Consumable'] ?? '' }}" data-category-title="Medical Instruments" data-product-filter="Urine Analyzer" aria-pressed="false">Urine Analyzer and Strips <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Instrument and Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Instrument and Consumable'] ?? '' }}" data-category-title="Medical Instruments" data-product-filter="Chemistry Analyzer" aria-pressed="false">Chemistry Analyzer and Reagent <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Instrument and Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Instrument and Consumable'] ?? '' }}" data-category-title="Medical Instruments" data-product-filter="Electrolyte Analyzer" aria-pressed="false">Electrolyte Analyzer and Reagent <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Instrument and Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Instrument and Consumable'] ?? '' }}" data-category-title="Medical Instruments" data-product-filter="Hematology Analyzer" aria-pressed="false">Hematology Analyzer and Reagent <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                            </div>
-                        </div>
-
-                        <div class="product-sidebar__group">
-                            <div class="product-sidebar__category-row">
-                                <button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-filter="medical-consumables" data-category-ids="{{ $categoryIdsByName['Medical Consumable'] ?? '' }}" data-category-title="Medical Consumables" aria-pressed="false">Medical Consumables</button>
-                                <button class="product-sidebar__toggle" type="button" data-category-toggle aria-expanded="false" aria-controls="consumable-subcategories" aria-label="Tampilkan subkategori Medical Consumables"><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                            </div>
-                            <div class="product-sidebar__children" id="consumable-subcategories" hidden>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Medical Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Medical Consumable'] ?? '' }}" data-category-title="Medical Consumables" data-product-filter="Filtertips" aria-pressed="false">Filtertips dkk <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Medical Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Medical Consumable'] ?? '' }}" data-category-title="Medical Consumables" data-product-filter="Blood Vacuum tube" aria-pressed="false">Blood Vacuum tube <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                                <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $categoryIdsByName['Medical Consumable'] ?? 'all' }}" data-category-ids="{{ $categoryIdsByName['Medical Consumable'] ?? '' }}" data-category-title="Medical Consumables" data-product-filter="Swab" aria-pressed="false">Swab <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
-                            </div>
-                        </div>
+                        @endforeach
                     </nav>
                 </aside>
-
                 <div class="product-results-area">
+                    @if ($catalogMode)<form method="GET" class="product-catalog-search"><input type="search" name="q" value="{{ request('q') }}" placeholder="Cari produk...">@if(request('category'))<input type="hidden" name="category" value="{{ request('category') }}">@endif @if(request('subcategory'))<input type="hidden" name="subcategory" value="{{ request('subcategory') }}">@endif<button type="submit">Cari</button></form>@endif
                     <p class="product-results sr-only" id="product-results" aria-live="polite"></p>
                     <h2 class="product-active-heading" id="product-active-heading"></h2>
                     <p class="product-no-matches" id="product-no-matches" data-i18n="emptyCategory" hidden>Belum ada produk dalam kategori ini.</p>
                     <div id="product-categories">
-                        @foreach ($productGroups as $groupIndex => $productGroup)
-                            @php
-                                $groupCategories = collect($categories)
-                                    ->filter(fn ($category) => in_array($category['name'], $productGroup['categoryNames'], true))
-                                    ->values();
-                                $groupCategoryIds = $groupCategories->pluck('id')->implode(',');
-                                $groupProducts = $groupCategories
-                                    ->flatMap(fn ($category) => collect($category['products'])->map(fn ($product) => [
-                                        'product' => $product,
-                                        'category_id' => $category['id'],
-                                    ]))
-                                    ->values();
-                            @endphp
-                            <section class="product-category-section" data-category-ids="{{ $groupCategoryIds }}" aria-labelledby="category-group-{{ $groupIndex }}">
-                                <h3 class="product-category-section__title" id="category-group-{{ $groupIndex }}">{{ $productGroup['title'] }}</h3>
-                                @if ($groupProducts->isEmpty())
-                                    <p class="product-category-section__empty" data-i18n="emptyCategory">Belum ada produk dalam kategori ini.</p>
-                                @else
-                                    <div class="product-grid">
-                                        @foreach ($groupProducts as $productEntry)
-                                            @php
-                                                $product = $productEntry['product'];
-                                                $isDoaThreePanel = $product['name'] === 'DOA 3 Drugs Panel Test';
-                                                $isDengueProduct = str_starts_with($product['name'], 'Dengue');
-                                                $usesRapidTestCardLayout = $isDoaThreePanel || $isDengueProduct;
-                                            @endphp
-                                            <article class="product-card" data-category="{{ $productEntry['category_id'] }}" data-subcategory="{{ $product['subtitle'] }}">
-                                                @if ($product['logo_bottom'])
-                                                    <img class="product-card__watermark" src="{{ asset($product['logo_bottom']) }}" alt="" loading="lazy">
+                        @foreach ($displayCategories as $categoryIndex => $category)
+                            <section class="product-category-section" data-category-filter="{{ $category['id'] }}" data-category-ids="{{ $category['id'] }}" aria-labelledby="category-group-{{ $categoryIndex }}">
+                                <h3 class="product-category-section__title" id="category-group-{{ $categoryIndex }}">{{ $category['name'] }}</h3>
+                                @if (count($category['products']) > 0)
+                                <div class="product-grid">
+                                    @foreach ($category['products'] as $product)
+                                        @php
+                                            $isDrugAbuse = strcasecmp($category['name'], 'Drugs Abuse') === 0;
+                                            $productImageName = basename($product['image']);
+                                            $isDoaSevenProductImage = $productImageName === 'doa-7-new-cutout.png';
+                                            $isCompactProductImage = in_array($productImageName, ['doa-10-cup.png', 'doa-3-amp-thc-meth-new.png', 'doa-3-amp-thc-mop-new.png', 'doa-3-revamp-1.png', 'doa-5-new.png', 'doa-6-new.png', 'doa-7-new.png'], true);
+                                            $isAlignedDoaProductImage = in_array($productImageName, ['doa-10-cup.png', 'doa-3-amp-thc-meth-new.png', 'doa-3-amp-thc-mop-new.png', 'doa-3-revamp-1.png', 'doa-5-new.png', 'doa-6-new.png', 'doa-7-new.png'], true);
+                                            $isCompactProductImageLarger = $productImageName === 'doa-3-amp-thc-mop-new.png';
+                                            $compactProductImageSizeClass = match ($productImageName) {
+                                                'doa-5-new.png' => ' product-card__image--compact-size-small',
+                                                'doa-6-new.png' => ' product-card__image--compact-size-medium',
+                                                'doa-7-new.png' => ' product-card__image--compact-size-large',
+                                                default => '',
+                                            };
+                                            $parameterLabels = collect($product['parameters'] ?? []);
+                                            $categoryLabel = $category['name'];
+                                        @endphp
+                                        <article class="product-card" data-category="{{ $category['id'] }}" data-subcategory="{{ $product['subcategory'] }}">
+                                            @if ($product['logo_bottom'])
+                                                <img class="product-card__watermark" src="{{ $product['logo_bottom'] }}" alt="" loading="lazy">
+                                            @endif
+                                            <div class="product-card__image-wrap">
+                                                @if ($product['image'])
+                                                    <img class="product-card__image{{ $isDoaSevenProductImage ? ' product-card__image--doa-seven-right' : '' }}{{ $isAlignedDoaProductImage ? ' product-card__image--doa-aligned' : '' }}{{ $isCompactProductImage ? ' product-card__image--compact' : '' }}{{ $isCompactProductImageLarger ? ' product-card__image--compact-larger' : '' }}{{ $compactProductImageSizeClass }}" src="{{ $product['image'] }}" alt="{{ $product['image_alt'] ?: $product['name'] }}" loading="lazy">
+                                                @else
+                                                    <span class="product-card__image-empty">{{ app()->getLocale() === 'en' ? 'Product image unavailable' : 'Gambar produk belum tersedia' }}</span>
                                                 @endif
-                                                <div class="product-card__image-wrap">
-                                                    <img class="product-card__image" src="{{ asset($product['image']) }}" alt="{{ $product['name'] }}" loading="lazy">
-                                                    @if ($product['logo_top'])
-                                                        <span class="product-card__logo"><img src="{{ asset($product['logo_top']) }}" alt="" loading="lazy"></span>
-                                                    @endif
-                                                </div>
-                                                <div class="product-card__content">
-                                                    <h4 class="product-card__title">{{ $product['name'] }}</h4>
-                                                    @if ($usesRapidTestCardLayout)
-                                                        <p class="product-card__subtitle">{{ $productGroup['title'] }}</p>
-                                                    @endif
-                                                    @if (!empty($product['parameters']))
-                                                        <div class="product-card__parameters" aria-label="Parameter tes">
-                                                            @foreach ($product['parameters'] as $parameter)
-                                                                <span class="product-card__parameter-chip">{{ $parameter }}</span>
-                                                            @endforeach
-                                                        </div>
-                                                    @elseif ($product['parameter'])
-                                                        <strong class="product-card__parameter">{{ $product['parameter'] }}</strong>
-                                                    @endif
-                                                    @unless ($usesRapidTestCardLayout)
-                                                        <p class="product-card__subtitle">{{ $product['subtitle'] }}</p>
-                                                    @endunless
-                                                    <span class="product-card__badge">{{ $isDengueProduct ? 'Tropical Infectious Disease' : ($isDoaThreePanel ? 'Drugs of Abuse' : $productGroup['title']) }}</span>
-                                                    <div class="product-card__actions">
-                                                        <a class="product-card__buy" href="{{ $product['buy_url'] }}" target="_blank" rel="noopener noreferrer" aria-label="Beli {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-cart"/></svg><span data-i18n="buyProduct">Beli</span></a>
-                                                        <button class="product-card__brochure" type="button" data-brochure-url="{{ $product['brochure_url'] }}" data-product-name="{{ $product['name'] }}" aria-label="Lihat brosur {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span data-i18n="brochure">Brosur</span></button>
+                                                @if ($product['logo_top'])
+                                                    <span class="product-card__logo"><img src="{{ $product['logo_top'] }}" alt="" loading="lazy"></span>
+                                                @endif
+                                            </div>
+                                            <div class="product-card__content">
+                                                <h4 class="product-card__title" title="{{ $product['name'] }}">{{ $product['name'] }}</h4>
+                                                @if ($parameterLabels->isNotEmpty())
+                                                    <div class="product-card__parameters" aria-label="Parameter produk">
+                                                        @foreach ($parameterLabels as $parameterLabel)
+                                                            <span class="product-card__parameter-chip">{{ trim($parameterLabel) }}</span>
+                                                        @endforeach
                                                     </div>
+                                                @endif
+                                                <p class="product-card__subtitle">{{ $isDrugAbuse ? 'Rapid Test (Master)' : $product['subtitle'] }}</p>
+                                                <span class="product-card__badge">{{ $categoryLabel }}</span>
+                                                <div class="product-card__actions">
+                                                    <a class="product-card__buy" href="{{ $product['buy_url'] }}" target="_blank" rel="noopener noreferrer" aria-label="Beli {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-cart"/></svg><span data-i18n="buyProduct">Beli</span></a>
+                                                    @if (!empty($product['brochure_url']))
+                                                        <button class="product-card__brochure" type="button" data-brochure-url="{{ $product['brochure_url'] }}" data-product-name="{{ $product['name'] }}" aria-label="Preview brosur {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span data-i18n="brochure">Brosur</span></button>
+                                                    @else
+                                                        <button class="product-card__brochure" type="button" disabled aria-label="Brosur {{ $product['name'] }} belum tersedia"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span data-i18n="brochure">Brosur</span></button>
+                                                    @endif
                                                 </div>
-                                            </article>
-                                        @endforeach
-                                    </div>
+                                            </div>
+                                        </article>
+                                    @endforeach
+                                </div>
+                                @else
+                                    <p class="product-category-section__empty">{{ app()->getLocale() === 'en' ? 'No products in this category yet.' : 'Belum ada produk dalam kategori ini.' }}</p>
                                 @endif
                             </section>
                         @endforeach
                     </div>
 
-                    <nav class="product-pagination" id="product-pagination" aria-label="Halaman produk"></nav>
+                    <nav class="product-pagination" id="product-pagination" aria-label="Halaman produk">@if ($catalogMode)<span>Menampilkan {{ $catalogPage->firstItem() ?? 0 }}–{{ $catalogPage->lastItem() ?? 0 }} dari {{ $catalogPage->total() }}</span> @if ($catalogPage->previousPageUrl())<a href="{{ $catalogPage->previousPageUrl() }}">‹ Sebelumnya</a>@endif @if ($catalogPage->nextPageUrl())<a href="{{ $catalogPage->nextPageUrl() }}">Berikutnya ›</a>@endif @endif</nav>
+                    @if ($catalogMode)
+                        <a class="product-catalog__all-link" href="{{ route('localized.products', ['locale' => app()->getLocale()]) }}">Kembali ke Produk Unggulan</a>
+                    @else
+                        <a class="product-catalog__all-link" href="{{ route('localized.products.all', ['locale' => app()->getLocale()]) }}">Lihat Semua Produk</a>
+                    @endif
                 </div>
             </div>
         </section>
@@ -270,14 +267,14 @@
             </div>
             <div class="product-modal__body">
                 <iframe id="brochure-frame" title="Preview brosur produk" loading="lazy" hidden></iframe>
-                <div class="product-modal__error" id="brochure-error" hidden><svg aria-hidden="true"><use href="#icon-pdf"/></svg><h3 data-i18n="brochureUnavailable">Gagal Memuat Brosur</h3><p data-i18n="brochureUnavailableMessage">File PDF tidak dapat ditampilkan. Silakan download langsung.</p></div>
+                <div class="product-modal__error" id="brochure-error" hidden><svg aria-hidden="true"><use href="#icon-pdf"/></svg><h3 data-i18n="brochureUnavailable">Gagal Memuat Brosur</h3><p data-i18n="brochureUnavailableMessage">File PDF tidak dapat ditampilkan.</p></div>
             </div>
-            <div class="product-modal__footer"><span data-i18n="brochureHint">Klik kanan pada PDF untuk zoom atau download</span><a id="brochure-download" href="#" target="_blank" rel="noopener noreferrer"><svg aria-hidden="true"><use href="#icon-download"/></svg><span data-i18n="downloadPdf">Download PDF</span></a></div>
+            <div class="product-modal__footer"><span>Perbesar brosur dengan membuka PDF lengkap di tab baru.</span><a id="brochure-open-pdf" href="#" target="_blank" rel="noopener noreferrer" hidden aria-label="Buka PDF di tab baru"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span>Buka PDF di tab baru</span></a></div>
         </div>
     </div>
 
     <footer class="site-footer">
-        <p>© 2026 PT Interskala Medika Indonesia | Member of Interskala Group</p>
+        @include('partials.site-footer', ['footer' => $footer])
     </footer>
 </body>
 </html>

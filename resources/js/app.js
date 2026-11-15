@@ -193,99 +193,18 @@ if (certificateTrack && certificateDots) {
     }
 }
 
-const originalCopy = new Map(
-    Array.from(document.querySelectorAll('[data-i18n]'), (element) => [
-        element.dataset.i18n,
-        element.textContent,
-    ]),
-);
-
-const englishCopy = {
-    home: 'Home',
-    about: 'About',
-    products: 'Products',
-    careers: 'Careers',
-    contact: 'Contact',
-    articlesNews: 'Articles & News',
-    coverageTitle: 'Our Reach',
-    coverageSubtitle: 'Serving all of Indonesia through an extensive distribution network',
-    salesNetwork: 'Sales Network',
-    coverageDescription: 'PT Interskala Medika Indonesia has a distribution network covering all regions of Indonesia, from Sabang to Merauke. We are committed to providing quality medical devices to every corner of the country.',
-    provinces: 'Provinces',
-    cities: 'Cities/Regencies',
-    partners: 'Partners',
-    contactTitle: 'Ready to Help With Your Medical Equipment Needs',
-    contactSubtitle: 'Please contact us for further information',
-    contactButton: 'Contact Us!',
-    brandTitle: 'Our Brands',
-    brandSubtitle: 'Working with trusted brands',
-    aboutTagline: 'IMPORTER | DISTRIBUTOR | MEDICAL DEVICE MANUFACTURER',
-    aboutTitle: 'About Us',
-    aboutDescriptionOne: 'PT Interskala Medika Indonesia imports, distributes, and manufactures medical devices, especially diagnostic and in vitro (IVD) products. With CE and ISO certifications, we are committed to providing safe, high-quality products that meet international standards and support better healthcare.',
-    aboutDescriptionTwo: 'We keep innovating in technology, efficiency, and accessibility, backed by experience, an extensive distribution network, and a professional team. PT Interskala Medika Indonesia is ready to be a strategic partner for healthcare institutions, laboratories, and medical providers throughout Indonesia.',
-    visionMissionTitle: 'Vision & Mission',
-    visionTitle: 'Vision',
-    visionDescription: 'To be a leading strategic partner in providing globally standardized medical device solutions for a more reliable and sustainable healthcare future in Indonesia.',
-    missionTitle: 'Mission',
-    missionDescriptionOne: 'Provide high-quality medical instruments that meet international standards for precise healthcare.',
-    missionDescriptionTwo: 'Develop innovative and competitive diagnostic solutions that meet healthcare facility needs effectively.',
-    missionDescriptionThree: 'Build long-term customer relationships through integrity, professionalism, and sustainable service.',
-    yearsExperience: 'Years of Experience',
-    aboutPartners: 'Partners',
-    provinceReach: 'Provinces Reached',
-    certificatesTitle: 'Certificates & Awards',
-    certificatesSubtitle: 'Recognition of our commitment to quality and international standards',
-    productTagline: 'WE BRING THE FUTURE HEALTH CARE',
-    productHeading: 'Find Our Best Products',
-    productDescription: 'Explore our range of high-quality products for your medical and healthcare needs',
-    categoryLabel: 'Category',
-    allCategories: '-- All Categories --',
-    subcategoryLabel: 'Subcategory',
-    allSubcategories: '-- All Subcategories --',
-    resetFilter: 'Reset Filter',
-    emptyCategory: 'No products are available in this category yet.',
-    buyProduct: 'Buy',
-    brochure: 'Brochure',
-    brochurePreview: 'Brochure Preview',
-    brochureUnavailable: 'Could Not Load Brochure',
-    brochureUnavailableMessage: 'The PDF could not be displayed. Please download it directly.',
-    brochureHint: 'Right-click the PDF to zoom or download',
-    downloadPdf: 'Download PDF',
-    contactPageTitle: 'Contact Us',
-    contactPageIntro: 'We are ready to help with any questions and needs related to IMI Medika products and services. Our professional team is ready to provide the best solution for you.',
-    operatingHours: 'Operating Hours',
-    weekdays: 'Monday - Friday:',
-    weekend: 'Saturday & Sunday:',
-    closed: 'Closed',
-    socialTitle: 'Follow Us on Social Media',
-    socialDescription: 'Stay connected with us on social media for the latest information about IMI Medika products, services, and promotions.',
-    documentationTitle: 'DOCUMENTATION',
-    documentationIntro: 'Discover the latest articles and news about healthcare',
-    exploreNow: 'EXPLORE NOW',
-    mediaHeading: 'IMI MEDIKA MEDIA',
-    articleCardTitle: 'Articles',
-    newsCardTitle: 'News',
-    readMore: 'Read More',
-    articlesAvailable: 'Available Articles',
-    latestNews: 'Latest News',
-    articleListTitle: 'Articles',
-    newsListTitle: 'Latest News',
-    articleListIntro: 'Discover informative health articles to help improve your quality of life',
-    newsListIntro: 'Follow the latest updates on healthcare, services, and IMI Medika activities',
-    noArticles: 'No Articles Yet',
-    noNews: 'No News Yet',
-    noNewsDescription: 'Add your first news story to share with website visitors.',
-    backToDocumentation: 'Back to Documentation',
-};
-
 document.querySelector('#language-picker')?.addEventListener('change', (event) => {
-    const isEnglish = event.target.value === 'en';
-    document.documentElement.lang = isEnglish ? 'en' : 'id';
+    const language = event.target.value;
+    if (!['id', 'en'].includes(language)) return;
 
-    document.querySelectorAll('[data-i18n]').forEach((element) => {
-        const key = element.dataset.i18n;
-        element.textContent = isEnglish ? englishCopy[key] : originalCopy.get(key);
-    });
+    const alternate = document.querySelector(`link[rel="alternate"][hreflang="${language}"]`);
+    if (alternate?.href) {
+        window.location.assign(alternate.href + window.location.search + window.location.hash);
+        return;
+    }
+    const currentPath = window.location.pathname.replace(/^\/(id|en)(?=\/|$)/, '');
+    const localizedPath = '/' + language + currentPath;
+    window.location.assign(localizedPath + window.location.search + window.location.hash);
 });
 
 const newsGrid = document.querySelector('#news-grid');
@@ -329,29 +248,196 @@ if (newsGrid) {
 }
 
 const articleForm = document.querySelector('#article-create-form');
+const articleStorageKey = 'imi-medika-article-drafts';
+const createArticleId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+const readSavedArticles = () => {
+    try {
+        const savedArticles = JSON.parse(window.localStorage.getItem(articleStorageKey) ?? '[]');
+
+        if (!Array.isArray(savedArticles)) {
+            return [];
+        }
+
+        let updated = false;
+        savedArticles.forEach((article) => {
+            if (!article.id) {
+                article.id = createArticleId();
+                updated = true;
+            }
+        });
+        if (updated) {
+            window.localStorage.setItem(articleStorageKey, JSON.stringify(savedArticles));
+        }
+        return savedArticles;
+    } catch {
+        return [];
+    }
+};
+
+const showArticleAlert = ({ titleText, messageText, type = 'success', confirmText = 'Oke', cancelText = '' }) => new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'imi-sweet-alert';
+    overlay.setAttribute('role', 'alertdialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'imi-sweet-alert-title');
+    overlay.setAttribute('aria-describedby', 'imi-sweet-alert-message');
+
+    const closeAlert = (result) => {
+        if (overlay.classList.contains('is-closing')) {
+            return;
+        }
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            overlay.remove();
+            resolve(result);
+
+            return;
+        }
+
+        overlay.classList.add('is-closing');
+        overlay.addEventListener('animationend', () => {
+            overlay.remove();
+            resolve(result);
+        }, { once: true });
+    };
+
+    const dialog = document.createElement('div');
+    dialog.className = 'imi-sweet-alert__dialog';
+
+    const icon = document.createElement('span');
+    icon.className = `imi-sweet-alert__icon imi-sweet-alert__icon--${type}`;
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = type === 'success' ? '✓' : type === 'warning' ? '!' : '×';
+
+    const title = document.createElement('h2');
+    title.className = 'imi-sweet-alert__title';
+    title.id = 'imi-sweet-alert-title';
+    title.textContent = titleText;
+
+    const message = document.createElement('p');
+    message.className = 'imi-sweet-alert__message';
+    message.id = 'imi-sweet-alert-message';
+    message.textContent = messageText;
+
+    const actions = document.createElement('div');
+    actions.className = 'imi-sweet-alert__actions';
+
+    if (cancelText) {
+        const cancelButton = document.createElement('button');
+        cancelButton.className = 'imi-sweet-alert__cancel';
+        cancelButton.type = 'button';
+        cancelButton.textContent = cancelText;
+        cancelButton.addEventListener('click', () => {
+            closeAlert(false);
+        }, { once: true });
+        actions.appendChild(cancelButton);
+    }
+
+    const confirmButton = document.createElement('button');
+    confirmButton.className = `imi-sweet-alert__confirm${type === 'warning' ? ' imi-sweet-alert__confirm--warning' : ''}`;
+    confirmButton.type = 'button';
+    confirmButton.textContent = confirmText;
+    confirmButton.addEventListener('click', () => {
+        closeAlert(true);
+    }, { once: true });
+    actions.appendChild(confirmButton);
+
+    dialog.append(icon, title, message, actions);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    confirmButton.focus();
+});
 
 if (articleForm) {
-    const articleDialog = document.querySelector('#article-create-dialog');
-    const articleList = document.querySelector('#article-list');
+    const formStatus = document.querySelector('#article-form-status');
+
+    articleForm.elements.date.value = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+    articleForm.elements.title.addEventListener('input', () => {
+        if (!articleForm.elements.slug.value.trim()) {
+            articleForm.elements.slug.value = articleForm.elements.title.value
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-|-$/g, '');
+        }
+    });
+
+    articleForm.querySelectorAll('[data-editor-prefix], [data-editor-wrap]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const editor = articleForm.elements.content;
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const selectedText = editor.value.slice(start, end);
+            const wrapper = button.dataset.editorWrap;
+            const prefix = button.dataset.editorPrefix;
+            const replacement = wrapper
+                ? `${wrapper}${selectedText || 'teks'}${wrapper}`
+                : `${prefix}${selectedText}`;
+
+            editor.setRangeText(replacement, start, end, 'select');
+            editor.focus();
+        });
+    });
+
+    articleForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formData = new FormData(articleForm);
+        const coverFile = formData.get('cover');
+        const saveButton = articleForm.querySelector('.article-form__save');
+
+        saveButton.disabled = true;
+        formStatus.textContent = '';
+
+        try {
+            let coverImage = '';
+
+            if (coverFile instanceof File && coverFile.size > 0) {
+                const bitmap = await createImageBitmap(coverFile);
+                const scale = Math.min(1, 1200 / bitmap.width, 900 / bitmap.height);
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(bitmap.width * scale);
+                canvas.height = Math.round(bitmap.height * scale);
+                canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+                coverImage = canvas.toDataURL('image/jpeg', 0.82);
+                bitmap.close();
+            }
+
+            const newArticle = {
+                id: createArticleId(),
+                category: String(formData.get('category')),
+                title: String(formData.get('title')).trim(),
+                author: String(formData.get('author')).trim(),
+                date: String(formData.get('date')),
+                slug: String(formData.get('slug')).trim(),
+                tags: String(formData.get('tags')).trim(),
+                content: String(formData.get('content')).trim(),
+                coverAlt: String(formData.get('coverAlt')).trim(),
+                coverName: coverFile?.name ?? '',
+                coverImage,
+            };
+
+            window.localStorage.setItem(articleStorageKey, JSON.stringify([newArticle, ...readSavedArticles()]));
+            await showArticleAlert({ titleText: 'Berhasil!', messageText: 'Artikel berhasil ditambahkan.' });
+            window.location.assign(articleForm.dataset.listUrl);
+        } catch {
+            formStatus.textContent = 'Draft tidak dapat disimpan di browser ini. Coba lagi.';
+            saveButton.disabled = false;
+        }
+    });
+}
+
+const articleList = document.querySelector('#article-list');
+
+if (articleList) {
     const emptyState = document.querySelector('#article-empty');
     const noResults = document.querySelector('#article-no-results');
     const searchInput = document.querySelector('#article-search');
     const categoryFilter = document.querySelector('#article-filter');
     const sortOrder = document.querySelector('#article-sort');
-    const formStatus = document.querySelector('#article-form-status');
-    const storageKey = 'imi-medika-article-drafts';
-
-    const readArticles = () => {
-        try {
-            const storedArticles = JSON.parse(window.localStorage.getItem(storageKey) ?? '[]');
-
-            return Array.isArray(storedArticles) ? storedArticles : [];
-        } catch {
-            return [];
-        }
-    };
-
-    const articles = readArticles();
+    const articles = readSavedArticles();
 
     const createTextElement = (tagName, className, text) => {
         const element = document.createElement(tagName);
@@ -380,19 +466,86 @@ if (articleForm) {
         visibleArticles.forEach((article) => {
             const card = document.createElement('article');
             card.className = 'article-entry';
-            card.appendChild(createTextElement('span', 'article-entry__category', article.category));
-            card.appendChild(createTextElement('h2', '', article.title));
-            card.appendChild(createTextElement('p', '', `${article.content.slice(0, 170)}${article.content.length > 170 ? '…' : ''}`));
+            const cover = document.createElement('div');
+            cover.className = 'article-entry__cover';
 
-            const meta = document.createElement('div');
-            meta.className = 'article-entry__meta';
-            meta.appendChild(createTextElement('span', '', article.author));
+            if (article.coverImage) {
+                const image = document.createElement('img');
+                image.src = article.coverImage;
+                image.alt = article.coverAlt || article.title;
+                image.loading = 'lazy';
+                cover.appendChild(image);
+            } else {
+                cover.classList.add('article-entry__cover--empty');
+                cover.setAttribute('aria-hidden', 'true');
+            }
+
+            card.appendChild(cover);
+
+            const body = document.createElement('div');
+            body.className = 'article-entry__body';
+            body.appendChild(createTextElement('h2', '', article.title));
 
             const date = document.createElement('time');
             date.dateTime = article.date;
             date.textContent = new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium' }).format(new Date(`${article.date}T00:00:00`));
-            meta.appendChild(date);
-            card.appendChild(meta);
+            body.appendChild(date);
+
+            const content = createTextElement('p', 'article-entry__content', article.content);
+            body.appendChild(content);
+
+            const actions = document.createElement('div');
+            actions.className = 'article-entry__actions';
+
+            content.classList.add('is-collapsed');
+            const readMore = document.createElement('a');
+            readMore.className = 'article-entry__read-more';
+            readMore.textContent = 'Selengkapnya';
+            readMore.href = `${articleList.dataset.detailUrl}?id=${encodeURIComponent(article.id)}`;
+            actions.appendChild(readMore);
+
+            const deleteArticle = document.createElement('button');
+            deleteArticle.className = 'article-entry__delete';
+            deleteArticle.type = 'button';
+            deleteArticle.textContent = 'Hapus';
+            deleteArticle.setAttribute('aria-label', `Hapus artikel ${article.title}`);
+            deleteArticle.addEventListener('click', async () => {
+                const shouldDelete = await showArticleAlert({
+                    titleText: 'Hapus artikel?',
+                    messageText: `Artikel "${article.title}" akan dihapus dari daftar. Tindakan ini tidak dapat dibatalkan.`,
+                    type: 'warning',
+                    confirmText: 'Ya, hapus',
+                    cancelText: 'Batal',
+                });
+
+                if (!shouldDelete) {
+                    return;
+                }
+
+                const articleIndex = articles.indexOf(article);
+
+                if (articleIndex === -1) {
+                    return;
+                }
+
+                articles.splice(articleIndex, 1);
+
+                try {
+                    window.localStorage.setItem(articleStorageKey, JSON.stringify(articles));
+                    renderArticles();
+                } catch {
+                    articles.splice(articleIndex, 0, article);
+                    await showArticleAlert({
+                        titleText: 'Gagal menghapus',
+                        messageText: 'Artikel tidak dapat dihapus dari penyimpanan browser.',
+                        type: 'error',
+                    });
+                }
+            });
+            actions.appendChild(deleteArticle);
+            body.appendChild(actions);
+
+            card.appendChild(body);
             articleList.appendChild(card);
         });
 
@@ -400,68 +553,37 @@ if (articleForm) {
         noResults.hidden = articles.length === 0 || visibleArticles.length > 0;
     };
 
-    const closeArticleDialog = () => {
-        articleDialog.close();
-        formStatus.textContent = '';
-    };
-
-    document.querySelector('#article-add-open').addEventListener('click', () => {
-        articleDialog.showModal();
-        articleForm.elements.date.value = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-    });
-
-    ['#article-form-close', '#article-form-cancel'].forEach((selector) => {
-        document.querySelector(selector).addEventListener('click', closeArticleDialog);
-    });
-
-    articleDialog.addEventListener('click', (event) => {
-        if (event.target === articleDialog) {
-            closeArticleDialog();
-        }
-    });
-
-    articleForm.elements.title.addEventListener('input', () => {
-        if (!articleForm.elements.slug.value.trim()) {
-            articleForm.elements.slug.value = articleForm.elements.title.value
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '-')
-                .replace(/^-|-$/g, '');
-        }
-    });
-
-    articleForm.addEventListener('submit', (event) => {
-        event.preventDefault();
-        const formData = new FormData(articleForm);
-        const newArticle = {
-            category: String(formData.get('category')),
-            title: String(formData.get('title')).trim(),
-            author: String(formData.get('author')).trim(),
-            date: String(formData.get('date')),
-            slug: String(formData.get('slug')).trim(),
-            tags: String(formData.get('tags')).trim(),
-            content: String(formData.get('content')).trim(),
-            coverAlt: String(formData.get('coverAlt')).trim(),
-            coverName: formData.get('cover')?.name ?? '',
-        };
-
-        try {
-            articles.unshift(newArticle);
-            window.localStorage.setItem(storageKey, JSON.stringify(articles));
-            renderArticles();
-            articleForm.reset();
-            closeArticleDialog();
-        } catch {
-            articles.shift();
-            formStatus.textContent = 'Draft tidak dapat disimpan di browser ini. Coba lagi.';
-        }
-    });
-
     [searchInput, categoryFilter, sortOrder].forEach((control) => {
         control.addEventListener('input', renderArticles);
         control.addEventListener('change', renderArticles);
     });
 
     renderArticles();
+}
+
+const articleDetail = document.querySelector('#article-detail');
+
+if (articleDetail) {
+    const articleId = new URLSearchParams(window.location.search).get('id');
+    const article = readSavedArticles().find((item) => item.id === articleId);
+    const missingMessage = document.querySelector('#article-detail-missing');
+
+    if (article) {
+        document.querySelector('#article-detail-title').textContent = article.title;
+        const date = document.querySelector('#article-detail-date');
+        date.dateTime = article.date;
+        date.textContent = new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).format(new Date(`${article.date}T00:00:00`));
+        document.querySelector('#article-detail-author').textContent = article.author || '';
+        document.querySelector('#article-detail-content').textContent = article.content;
+        const cover = document.querySelector('#article-detail-cover');
+        if (article.coverImage) {
+            cover.src = article.coverImage;
+            cover.alt = article.coverAlt || article.title;
+            cover.hidden = false;
+        }
+        document.title = `${article.title} - Interskala Medika Indonesia`;
+        articleDetail.hidden = false;
+    } else {
+        missingMessage.hidden = false;
+    }
 }

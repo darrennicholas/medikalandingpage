@@ -1,16 +1,15 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Tentang PT Interskala Medika Indonesia, visi, misi, dan sertifikasi kami.">
-    <title>Tentang Kami - Interskala Medika Indonesia</title>
+    @include('partials.seo', ['seo' => $seo])
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="about-page">
     <header class="site-header" id="site-header">
         <div class="site-header__inner">
-            <a class="site-logo" href="{{ route('home') }}" aria-label="PT Interskala Medika Indonesia, beranda">
+            <a class="site-logo" href="{{ route('localized.home', ['locale' => app()->getLocale()]) }}" aria-label="PT Interskala Medika Indonesia, beranda">
                 <img src="{{ asset('images/medika-logo.png') }}" alt="IMI Medika" width="120" height="72">
             </a>
 
@@ -19,20 +18,14 @@
             </button>
 
             <nav class="primary-navigation" id="primary-navigation" aria-label="Navigasi utama">
-                <a class="nav-link" href="{{ route('home') }}" data-i18n="home">Beranda</a>
-                <a class="nav-link nav-link--active" href="{{ route('about') }}" aria-current="page" data-i18n="about">Tentang</a>
-                <a class="nav-link" href="{{ route('products') }}" data-i18n="products">Produk</a>
-                <a class="nav-link" href="https://imimedika.com/karir.php" data-i18n="careers">Karir</a>
-                <a class="nav-link" href="{{ route('contact') }}" data-i18n="contact">Kontak</a>
-                <a class="nav-link" href="{{ route('documentation') }}" data-i18n="articlesNews">Artikel &amp; Berita</a>
-
+            @include('partials.public-navigation')
+            @include('partials.cms-login-link')
                 <div class="language-control">
                     <span class="google-mark" aria-hidden="true">G</span>
                     <label class="sr-only" for="language-picker">Pilih bahasa</label>
                     <select id="language-picker" aria-label="Pilih bahasa">
-                        <option value="" selected>Select Language</option>
-                        <option value="id">Bahasa Indonesia</option>
-                        <option value="en">English</option>
+                        <option value="id" @selected(app()->getLocale() === 'id')>Bahasa Indonesia</option>
+                        <option value="en" @selected(app()->getLocale() === 'en')>English</option>
                     </select>
                     <span class="language-control__arrow" aria-hidden="true">▼</span>
                 </div>
@@ -49,81 +42,106 @@
             </div>
         </section>
 
-        <section class="about-intro" aria-labelledby="about-intro-title">
-            <div class="container">
-                <div class="section-title">
-                    <h2 id="about-intro-title" data-i18n="aboutTitle">Tentang Kami</h2>
-                </div>
+        @php
+            $aboutBlock = $blocks->get('about_company');
+            $visionBlock = $blocks->get('about_vision');
+            $visionText = $visionBlock['body'] ?? null;
+        @endphp
 
-                <div class="about-intro__content">
-                    <img class="about-intro__image" src="{{ asset('images/gambartentangmedika.jpeg') }}" alt="Tim PT Interskala Medika Indonesia" loading="lazy">
-                    <div class="about-intro__copy">
-                        <h3>PT Interskala Medika Indonesia</h3>
-                        <p data-i18n="aboutDescriptionOne">PT Interskala Medika Indonesia adalah perusahaan impor, distribusi, dan manufaktur alat kesehatan, khususnya produk diagnostik dan in vitro (IVD). Dengan sertifikasi CE dan ISO, kami berkomitmen menghadirkan produk aman, berkualitas, dan sesuai standar internasional untuk mendukung pelayanan kesehatan yang lebih baik.</p>
-                        <p data-i18n="aboutDescriptionTwo">Kami terus berinovasi dalam teknologi, efisiensi, dan aksesibilitas, serta didukung oleh pengalaman, jaringan distribusi luas, dan tim profesional. PT Interskala Medika Indonesia siap menjadi mitra strategis bagi institusi kesehatan, laboratorium, dan penyedia layanan medis di seluruh Indonesia.</p>
+        @if ($aboutBlock && (!empty($aboutBlock['title']) || !empty($aboutBlock['body']) || !empty($aboutBlock['image_url'])))
+            <section class="about-intro" aria-labelledby="about-intro-title">
+                <div class="container">
+                    <div class="section-title">
+                        <h2 id="about-intro-title">{{ $aboutBlock['title'] ?: (app()->getLocale() === 'en' ? 'About Us' : 'Tentang Kami') }}</h2>
+                        @if (!empty($aboutBlock['subtitle']))<p>{{ $aboutBlock['subtitle'] }}</p>@endif
+                    </div>
+                    <div class="about-intro__content">
+                        @if (!empty($aboutBlock['image_url']))
+                            <img class="about-intro__image" src="{{ $aboutBlock['image_url'] }}" alt="{{ $aboutBlock['image_alt'] ?: $aboutBlock['title'] }}" loading="lazy">
+                        @endif
+                        @if (!empty($aboutBlock['body']))
+                            <div class="about-intro__copy">{!! $aboutBlock['body'] !!}</div>
+                        @endif
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        @endif
 
-        <section class="vision-mission" aria-labelledby="vision-mission-title">
-            <div class="container">
-                <div class="section-title">
-                    <h2 id="vision-mission-title" data-i18n="visionMissionTitle">Visi &amp; Misi</h2>
+        @if (!empty($visionText) || $missions->isNotEmpty())
+            <section class="vision-mission" aria-labelledby="vision-mission-title">
+                <div class="container">
+                    <div class="section-title">
+                        <h2 id="vision-mission-title">{{ $language === 'en' ? 'Vision & Mission' : 'Visi & Misi' }}</h2>
+                    </div>
+                    <div class="vision-mission__cards">
+                        @if (!empty($visionText))
+                            <article class="vision-card">
+                                <span class="vision-card__icon" aria-hidden="true">
+                                    <svg viewBox="0 0 64 64" fill="none"><path d="M5 32s10-16 27-16 27 16 27 16S49 48 32 48 5 32 5 32Z" stroke="currentColor" stroke-width="5"/><circle cx="32" cy="32" r="10" stroke="currentColor" stroke-width="5"/><circle cx="32" cy="32" r="3" fill="currentColor"/></svg>
+                                </span>
+                                <h3>{{ $visionBlock['title'] ?: ($language === 'en' ? 'Vision' : 'Visi') }}</h3>
+                                <div>{!! $visionText !!}</div>
+                            </article>
+                        @endif
+                        @if ($missions->isNotEmpty())
+                            <article class="vision-card vision-card--mission">
+                                <span class="vision-card__icon" aria-hidden="true">
+                                    <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="25" stroke="currentColor" stroke-width="5"/><circle cx="32" cy="32" r="15" stroke="currentColor" stroke-width="5"/><circle cx="32" cy="32" r="5" fill="currentColor"/></svg>
+                                </span>
+                                <h3>{{ $language === 'en' ? 'Mission' : 'Misi' }}</h3>
+                                <div>
+                                    @foreach ($missions as $mission)
+                                        @php $missionTranslation = $mission->public_translation ?? $mission->translations->firstWhere('lang', $language) ?? $mission->translations->firstWhere('lang', 'id'); @endphp
+                                        @if ($missionTranslation?->text)<p>{{ $missionTranslation->text }}</p>@endif
+                                    @endforeach
+                                </div>
+                            </article>
+                        @endif
+                    </div>
                 </div>
-                <div class="vision-mission__cards">
-                    <article class="vision-card">
-                        <span class="vision-card__icon" aria-hidden="true">
-                            <svg viewBox="0 0 64 64" fill="none"><path d="M5 32s10-16 27-16 27 16 27 16S49 48 32 48 5 32 5 32Z" stroke="currentColor" stroke-width="5"/><circle cx="32" cy="32" r="10" stroke="currentColor" stroke-width="5"/><circle cx="32" cy="32" r="3" fill="currentColor"/></svg>
-                        </span>
-                        <h3 data-i18n="visionTitle">Visi</h3>
-                        <p data-i18n="visionDescription">Menjadi mitra strategis terdepan dalam menghadirkan solusi alat kesehatan berstandar global bagi masa depan kesehatan Indonesia yang lebih andal dan berkelanjutan</p>
-                    </article>
-                    <article class="vision-card vision-card--mission">
-                        <span class="vision-card__icon" aria-hidden="true">
-                            <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="25" stroke="currentColor" stroke-width="5"/><circle cx="32" cy="32" r="15" stroke="currentColor" stroke-width="5"/><circle cx="32" cy="32" r="5" fill="currentColor"/></svg>
-                        </span>
-                        <h3 data-i18n="missionTitle">Misi</h3>
-                        <p><span data-i18n="missionDescriptionOne">Menghadirkan instrumen medis berkualitas tinggi yang memenuhi standar internasional demi pelayanan kesehatan yang presisi.</span><span data-i18n="missionDescriptionTwo">Mengembangkan solusi diagnostik yang inovatif dan kompetitif untuk memenuhi kebutuhan fasilitas kesehatan secara efektif.</span><span data-i18n="missionDescriptionThree">Membangun relasi jangka panjang dengan pelanggan melalui integritas, profesionalisme, dan layanan yang berkelanjutan.</span></p>
-                    </article>
+            </section>
+        @endif
+
+        @if ($summary)
+            <section class="about-stats" aria-label="{{ $language === 'en' ? 'Company statistics' : 'Statistik perusahaan' }}">
+                <div class="container about-stats__grid">
+                    @if ($yearsEstablished !== null)<div class="about-stats__card"><strong>{{ $yearsEstablished }}</strong><span>{{ $language === 'en' ? 'Years in business' : 'Tahun Pengalaman' }}</span></div>@endif
+                    <div class="about-stats__card"><strong>{{ number_format($summary->partner_count) }}</strong><span>{{ $language === 'en' ? 'Partners' : 'Mitra' }}</span></div>
+                    <div class="about-stats__card"><strong>{{ $summary->province_count }}</strong><span>{{ $language === 'en' ? 'Provinces covered' : 'Jangkauan Provinsi' }}</span></div>
                 </div>
-            </div>
-        </section>
+            </section>
+        @endif
 
-        <section class="about-stats" aria-label="Statistik perusahaan">
-            <div class="container about-stats__grid">
-                <div class="about-stats__card"><strong>5</strong><span data-i18n="yearsExperience">Tahun Pengalaman</span></div>
-                <div class="about-stats__card"><strong>5000</strong><span data-i18n="aboutPartners">Mitra</span></div>
-                <div class="about-stats__card"><strong>34</strong><span data-i18n="provinceReach">Jangkauan Provinsi</span></div>
-            </div>
-        </section>
-
-        <section class="certificates" aria-labelledby="certificates-title">
-            <div class="container">
-                <div class="section-title">
-                    <h2 id="certificates-title" data-i18n="certificatesTitle">Sertifikat &amp; Penghargaan</h2>
-                    <p data-i18n="certificatesSubtitle">Pengakuan atas komitmen kami terhadap kualitas dan standar internasional</p>
-                </div>
-
-                <div class="certificate-carousel" aria-label="Sertifikat perusahaan">
-                    <div class="certificate-carousel__viewport">
-                        <div class="certificate-carousel__track" id="certificate-track">
-                            <article class="certificate-card"><h3>Cara Distribusi Alat Kesehatan yang Baik</h3><span>KEMENKES</span><img src="{{ asset('images/cdakb.png') }}" alt="Sertifikat CDAKB Kemenkes" loading="lazy"></article>
-                            <article class="certificate-card"><h3>ISO 9001:2015</h3><span>TERAKREDITASI</span><img src="{{ asset('images/iso-9001.png') }}" alt="Sertifikat ISO 9001:2015 terakreditasi" loading="lazy"></article>
-                            <article class="certificate-card"><h3>CDAKB</h3><span>KEMENTERIAN KESEHATAN</span><img src="{{ asset('images/cdakb.png') }}" alt="Sertifikat CDAKB Kementerian Kesehatan" loading="lazy"></article>
-                            <article class="certificate-card"><h3>ISO 9001:2015</h3><span>TUV NORD</span><img src="{{ asset('images/iso-9001.png') }}" alt="Sertifikat ISO 9001:2015 TUV Nord" loading="lazy"></article>
-                            <article class="certificate-card"><h3>Tingkat Komponen Dalam Negeri</h3><span>KEMENPERIN</span><img src="{{ asset('images/tkdn.png') }}" alt="Sertifikat TKDN Kemenperin" loading="lazy"></article>
-                            <article class="certificate-card"><h3>CDAKB</h3><span>KEMENKES RI</span><img src="{{ asset('images/cdakb.png') }}" alt="Sertifikat CDAKB Kemenkes RI" loading="lazy"></article>
+        @if ($certificates->isNotEmpty())
+            <section class="certificates" aria-labelledby="certificates-title">
+                <div class="container">
+                    <div class="section-title">
+                        <h2 id="certificates-title">{{ $language === 'en' ? 'Certificates & Awards' : 'Sertifikat & Penghargaan' }}</h2>
+                    </div>
+                    <div class="certificate-carousel" aria-label="{{ $language === 'en' ? 'Company certificates' : 'Sertifikat perusahaan' }}">
+                        <div class="certificate-carousel__viewport">
+                            <div class="certificate-carousel__track" id="certificate-track">
+                                @foreach ($certificates as $certificate)
+                                    @php $certificateTranslation = $certificate->public_translation ?? $certificate->translations->firstWhere('lang', $language) ?? $certificate->translations->firstWhere('lang', 'id'); @endphp
+                                    @if ($certificate->public_image_url)
+                                        <article class="certificate-card">
+                                            <h3>{{ $certificateTranslation?->title }}</h3>
+                                            @if ($certificate->issued_year)<span>{{ $certificate->issued_year }}</span>@endif
+                                            <img src="{{ $certificate->public_image_url }}" alt="{{ $certificate->public_image_alt ?: $certificateTranslation?->title }}" loading="lazy">
+                                            @if ($certificateTranslation?->description)<p>{{ $certificateTranslation->description }}</p>@endif
+                                        </article>
+                                    @endif
+                                @endforeach
+                            </div>
                         </div>
+                        <div class="certificate-carousel__dots" id="certificate-dots" aria-label="{{ $language === 'en' ? 'Select certificate' : 'Pilih sertifikat' }}"></div>
                     </div>
-                    <div class="certificate-carousel__dots" id="certificate-dots" aria-label="Pilih sertifikat"></div>
                 </div>
-            </div>
-        </section>
-    </main>
+            </section>
+        @endif    </main>
 
     <footer class="site-footer">
-        <p>© 2026 PT Interskala Medika Indonesia | Member of Interskala Group</p>
+        @include('partials.site-footer', ['footer' => $footer])
     </footer>
 </body>
 </html>

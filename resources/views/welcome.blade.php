@@ -1,16 +1,15 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="PT Interskala Medika Indonesia melayani kebutuhan alat kesehatan di seluruh Indonesia.">
-    <title>PT Interskala Medika Indonesia</title>
+    @include('partials.seo', ['seo' => $seo])
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
     <header class="site-header" id="site-header">
         <div class="site-header__inner">
-            <a class="site-logo" href="{{ route('home') }}" aria-label="PT Interskala Medika Indonesia, beranda">
+            <a class="site-logo" href="{{ route('localized.home', ['locale' => app()->getLocale()]) }}" aria-label="PT Interskala Medika Indonesia, beranda">
                 <img src="{{ asset('images/medika-logo.png') }}" alt="IMI Medika" width="120" height="72">
             </a>
 
@@ -19,20 +18,14 @@
             </button>
 
             <nav class="primary-navigation" id="primary-navigation" aria-label="Navigasi utama">
-                <a class="nav-link nav-link--active" href="{{ route('home') }}" aria-current="page" data-i18n="home">Beranda</a>
-                <a class="nav-link" href="{{ route('about') }}" data-i18n="about">Tentang</a>
-                <a class="nav-link" href="{{ route('products') }}" data-i18n="products">Produk</a>
-                <a class="nav-link" href="https://imimedika.com/karir.php" data-i18n="careers">Karir</a>
-                <a class="nav-link" href="{{ route('contact') }}" data-i18n="contact">Kontak</a>
-                <a class="nav-link" href="{{ route('documentation') }}" data-i18n="articlesNews">Artikel &amp; Berita</a>
-
+            @include('partials.public-navigation')
+            @include('partials.cms-login-link')
                 <div class="language-control">
                     <span class="google-mark" aria-hidden="true">G</span>
                     <label class="sr-only" for="language-picker">Pilih bahasa</label>
                     <select id="language-picker" aria-label="Pilih bahasa">
-                        <option value="" selected>Select Language</option>
-                        <option value="id">Bahasa Indonesia</option>
-                        <option value="en">English</option>
+                        <option value="id" @selected(app()->getLocale() === 'id')>Bahasa Indonesia</option>
+                        <option value="en" @selected(app()->getLocale() === 'en')>English</option>
                     </select>
                     <span class="language-control__arrow" aria-hidden="true">▼</span>
                 </div>
@@ -40,80 +33,99 @@
         </div>
     </header>
 
-    <main>
-        <section class="hero" id="beranda" aria-labelledby="hero-title">
-            <div class="container hero__content">
-                <h1 id="hero-title">PT INTERSKALA MEDIKA INDONESIA</h1>
-                <p>WE BRING THE FUTURE HEALTHCARE</p>
-            </div>
-        </section>
-
-        <section class="coverage" id="jangkauan" aria-labelledby="coverage-title">
-            <div class="container">
-                <div class="section-title">
-                    <h2 id="coverage-title" data-i18n="coverageTitle">Jangkauan Kami</h2>
-                    <p data-i18n="coverageSubtitle">Melayani seluruh Indonesia dengan jaringan distribusi yang luas</p>
-                </div>
-
-                <div class="coverage__content">
-                    <div class="coverage__info">
-                        <h3 data-i18n="salesNetwork">Jaringan Penjualan</h3>
-                        <p data-i18n="coverageDescription">PT Interskala Medika Indonesia memiliki jaringan distribusi yang mencakup seluruh wilayah Indonesia, dari Sabang sampai Merauke. Kami berkomitmen untuk menyediakan alat kesehatan berkualitas ke setiap pelosok negeri.</p>
-
-                        <div class="coverage__stats" aria-label="Statistik jangkauan">
-                            <div class="stat-card"><strong>34</strong><span data-i18n="provinces">Provinsi</span></div>
-                            <div class="stat-card"><strong>500+</strong><span data-i18n="cities">Kota/Kabupaten</span></div>
-                            <div class="stat-card"><strong>5000+</strong><span data-i18n="partners">Mitra</span></div>
+        <main>
+        @if ($slides->isNotEmpty())
+            <section class="hero{{ $slides->count() > 1 ? ' hero--slider' : '' }}" id="beranda" aria-labelledby="hero-title" data-hero-slider>
+                @foreach ($slides as $slideIndex => $slide)
+                    <div class="hero__slide" data-hero-slide @if ($slideIndex !== 0) hidden @endif aria-hidden="{{ $slideIndex === 0 ? 'false' : 'true' }}">
+                        <div class="container hero__content">
+                            @if ($slide->public_title)<h1 id="hero-title">{{ $slide->public_title }}</h1>@endif
+                            @if ($slide->public_subtitle)<p>{{ $slide->public_subtitle }}</p>@endif
+                            @if ($slide->public_cta_label && $slide->cta_url)<a class="contact-cta__button" href="{{ $slide->cta_url }}">{{ $slide->public_cta_label }}</a>@endif
                         </div>
                     </div>
+                @endforeach
+            </section>
+        @endif
 
-                    <figure class="coverage__map">
-                        <img src="{{ asset('images/coverage-map.jpg') }}" alt="Peta jangkauan PT Interskala Medika Indonesia" loading="lazy" width="1300" height="591">
-                        <figcaption>PT Interskala Medika Indonesia</figcaption>
-                    </figure>
-                </div>
-            </div>
-        </section>
-
-        <section class="contact-cta" id="kontak" aria-labelledby="contact-title">
-            <div class="container">
-                <h2 id="contact-title" data-i18n="contactTitle">Siap Membantu Kebutuhan Alat Kesehatan Anda</h2>
-                <p data-i18n="contactSubtitle">Jangan ragu untuk menghubungi kami untuk informasi lebih lanjut</p>
-                <a class="contact-cta__button" href="{{ route('contact') }}" data-i18n="contactButton">Hubungi Kami!</a>
-            </div>
-        </section>
-
-        <section class="brands" id="brand" aria-labelledby="brand-title">
-            <div class="container">
-                <div class="section-title">
-                    <h2 id="brand-title" data-i18n="brandTitle">Brand Kami</h2>
-                    <p data-i18n="brandSubtitle">Bekerja sama dengan merek-merek terpercaya</p>
-                </div>
-
-                <div class="brand-carousel" aria-label="Brand mitra">
-                    <div class="brand-carousel__viewport">
-                        <div class="brand-carousel__track" id="brand-track">
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/indocheck.png') }}" alt="Indocheck" loading="lazy"></div>
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/g-scientific.png') }}" alt="G Scientific" loading="lazy"></div>
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/diagnose.png') }}" alt="Diagnose" loading="lazy"></div>
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/vitrogen.png') }}" alt="Vitrogen" loading="lazy"></div>
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/genomic.png') }}" alt="Genomic" loading="lazy"></div>
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/mkcells.png') }}" alt="MKCells" loading="lazy"></div>
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/dr-plus.png') }}" alt="DR Plus" loading="lazy"></div>
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/is.png') }}" alt="IS" loading="lazy"></div>
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/logix.png') }}" alt="Logix" loading="lazy"></div>
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/tamatech.png') }}" alt="Tamatech" loading="lazy"></div>
-                            <div class="brand-carousel__slide"><img src="{{ asset('images/brands/medicheck.png') }}" alt="Medicheck" loading="lazy"></div>
-                        </div>
+        @if ($blocks->has('home_coverage'))
+            @php($coverage = $blocks->get('home_coverage'))
+            <section class="coverage" id="jangkauan" aria-labelledby="coverage-title">
+                <div class="container">
+                    <div class="section-title">
+                        <h2 id="coverage-title">{{ $coverage['title'] }}</h2>
+                        @if ($coverage['subtitle'])<p>{{ $coverage['subtitle'] }}</p>@endif
                     </div>
-                    <div class="brand-carousel__dots" id="brand-dots" aria-label="Pilih brand"></div>
+                    <div class="coverage__content">
+                        <div class="coverage__info">
+                            @if ($coverage['subtitle'])<h3>{{ $coverage['subtitle'] }}</h3>@endif
+                            @if ($coverage['body'])<div>{!! $coverage['body'] !!}</div>@endif
+                            @if (! empty($coverage['metrics']))
+                                <div class="coverage__stats" aria-label="{{ app()->getLocale() === 'en' ? 'Coverage statistics' : 'Statistik jangkauan' }}">
+                                    @foreach ($coverage['metrics'] as $metric)
+                                        @if (filled($metric['value'] ?? null) && filled($metric['label'] ?? null))
+                                            <div class="stat-card"><strong>{{ $metric['value'] }}</strong><span>{{ $metric['label'] }}</span></div>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            @elseif ($summary)
+                                <div class="coverage__stats" aria-label="Statistik jangkauan">
+                                    <div class="stat-card"><strong>{{ $summary->province_count }}</strong><span>{{ app()->getLocale() === 'en' ? 'Provinces' : 'Provinsi' }}</span></div>
+                                    <div class="stat-card"><strong>{{ number_format($summary->partner_count) }}</strong><span>{{ app()->getLocale() === 'en' ? 'Partners' : 'Mitra' }}</span></div>
+                                </div>
+                            @endif
+                        </div>
+                        @if ($coverage['image_url'])<figure class="coverage__map"><img src="{{ $coverage['image_url'] }}" alt="{{ $coverage['image_alt'] ?? '' }}" loading="lazy" width="1300" height="591"></figure>@endif
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        @endif
+
+        @if ($blocks->has('home_cta'))
+            @php($homeCta = $blocks->get('home_cta'))
+            <section class="contact-cta" id="kontak" aria-labelledby="contact-title">
+                <div class="container">
+                    @if ($homeCta['title'])<h2 id="contact-title">{{ $homeCta['title'] }}</h2>@endif
+                    @if ($homeCta['body'])<div>{{ $homeCta['body'] }}</div>@endif
+                    @if (! empty($homeCta['buttons']))
+                        <div class="contact-cta__actions">
+                            @foreach ($homeCta['buttons'] as $button)
+                                @if (filled($button['label'] ?? null) && filled($button['url'] ?? null))
+                                    @php($buttonUrl = $button['url'])
+                                    @php($isExternalButton = Illuminate\Support\Str::startsWith($buttonUrl, ['https://', 'http://']))
+                                    <a class="contact-cta__button contact-cta__button--{{ $button['style'] ?? 'primary' }}" href="{{ $buttonUrl }}" @if ($isExternalButton) target="_blank" rel="noopener noreferrer" @endif>
+                                        @if (filled($button['icon'] ?? null))<span class="material-symbols-rounded" aria-hidden="true">{{ $button['icon'] }}</span>@endif
+                                        {{ $button['label'] }}
+                                    </a>
+                                @endif
+                            @endforeach
+                        </div>
+                    @elseif ($homeCta['cta_label'] && $homeCta['cta_url'])<a class="contact-cta__button" href="{{ $homeCta['cta_url'] }}">{{ $homeCta['cta_label'] }}</a>@endif
+                </div>
+            </section>
+        @endif
+
+        @if ($brands->isNotEmpty())
+            <section class="brands" id="brand" aria-labelledby="brand-title">
+                <div class="container">
+                    <div class="section-title"><h2 id="brand-title">{{ app()->getLocale() === 'en' ? 'Our Brands' : 'Brand Kami' }}</h2></div>
+                    <div class="brand-carousel" aria-label="Brand mitra">
+                        <div class="brand-carousel__viewport">
+                            <div class="brand-carousel__track" id="brand-track">
+                                @foreach ($brands as $brand)
+                                    @if ($brand->public_logo_url)<div class="brand-carousel__slide brand-carousel__slide--{{ \Illuminate\Support\Str::slug($brand->name) }}"><img src="{{ $brand->public_logo_url }}" alt="{{ $brand->public_logo_alt ?: $brand->name }}" loading="lazy"></div>@endif
+                                @endforeach
+                            </div>
+                        </div>
+                        <div class="brand-carousel__dots" id="brand-dots" aria-label="Pilih brand"></div>
+                    </div>
+                </div>
+            </section>
+        @endif
     </main>
 
     <footer class="site-footer">
-        <p>© 2026 PT Interskala Medika Indonesia | Member of Interskala Group</p>
+        @include('partials.site-footer', ['footer' => $footer])
     </footer>
 </body>
 </html>

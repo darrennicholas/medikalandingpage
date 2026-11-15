@@ -29,6 +29,7 @@
                 <a class="nav-link" href="{{ route('contact') }}" data-i18n="contact">Kontak</a>
                 <a class="nav-link nav-link--active" href="{{ route('documentation') }}" data-i18n="articlesNews">Artikel &amp; Berita</a>
 
+                @include('partials.cms-login-link')
                 <div class="language-control">
                     <span class="google-mark" aria-hidden="true">G</span>
                     <label class="sr-only" for="language-picker">Pilih bahasa</label>
@@ -45,6 +46,10 @@
 
     <main class="documentation-main media-list-main">
         <div class="container">
+            <a class="media-list-back" href="{{ route('documentation') }}">
+                <span aria-hidden="true">←</span>
+                <span>Kembali ke Artikel &amp; Berita</span>
+            </a>
             <div class="documentation-heading">
                 <h1 data-i18n="{{ $type === 'articles' ? 'articleListTitle' : 'newsListTitle' }}">{{ $type === 'articles' ? 'Daftar Artikel' : 'Berita Terkini' }}</h1>
                 <span aria-hidden="true"></span>
@@ -65,11 +70,11 @@
                             <summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M7 12h13M10 17h10"/></svg> Urutkan</summary>
                             <div class="news-dropdown__panel"><label for="article-sort">Urutan</label><select id="article-sort"><option value="newest">Terbaru</option><option value="oldest">Terlama</option></select></div>
                         </details>
-                        <button class="article-add-button" id="article-add-open" type="button"><span aria-hidden="true">＋</span> Tambah</button>
+                        <a class="article-add-button" href="{{ route('articles.create') }}"><span aria-hidden="true">＋</span> Tambah</a>
                     </div>
                 </div>
 
-                <div class="article-list" id="article-list" aria-live="polite"></div>
+                <div class="article-list" id="article-list" data-detail-url="{{ route('articles.detail') }}" aria-live="polite"></div>
                 <p class="news-no-results" id="article-no-results" hidden>Tidak ada artikel yang cocok dengan pencarian Anda.</p>
                 <div class="media-empty" id="article-empty">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>
@@ -95,14 +100,14 @@
 
                 <div class="news-grid" id="news-grid">
                     <article class="news-card" data-title="Interskala Medika Indonesia dan Interskala Sehat Sejahtera Hadir di Hospital Expo 2026" data-year="2026" data-date="2026-10-21">
-                        <a class="news-card__image" href="https://imimedika.com/detail_berita.php?id=6" aria-label="Baca berita Hospital Expo 2026">
+                        <a class="news-card__image" href="{{ route('news.hospital-expo') }}" aria-label="Baca berita Hospital Expo 2026">
                             <img src="{{ asset('images/hospital-expo-2026.jpg') }}" alt="Tim Interskala Medika Indonesia dan Interskala Sehat Sejahtera di Hospital Expo 2026" loading="lazy" width="6240" height="4160">
                         </a>
                         <div class="news-card__body">
-                            <h2><a href="https://imimedika.com/detail_berita.php?id=6">Interskala Medika Indonesia dan Interskala Sehat Sejahtera Hadir di Hospital Expo 2026</a></h2>
+                            <h2><a href="{{ route('news.hospital-expo') }}">Interskala Medika Indonesia dan Interskala Sehat Sejahtera Hadir di Hospital Expo 2026</a></h2>
                             <p>Interskala Medika Indonesia dan Interskala Sehat Sejahtera Hadir di Hospital Expo 2026 Memperkenalkan solusi alat...</p>
                             <div class="news-card__meta"><span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2C5.9 14 2 17.1 2 21v1h20v-1c0-3.9-3.9-7-10-7Z"/></svg> Abdurrahman Panji Virgian</span><time datetime="2026-10-21"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6M17 2v6M3 10h18"/></svg> 21 Oct 2026</time></div>
-                            <a class="news-card__read-more" href="https://imimedika.com/detail_berita.php?id=6">Baca Selengkapnya <span aria-hidden="true">→</span></a>
+                            <a class="news-card__read-more" href="{{ route('news.hospital-expo') }}">Baca Selengkapnya <span aria-hidden="true">→</span></a>
                         </div>
                     </article>
                 </div>
@@ -111,71 +116,6 @@
             @endif
         </div>
     </main>
-
-    @if ($type === 'articles')
-        <dialog class="article-dialog" id="article-create-dialog" aria-labelledby="article-form-title">
-            <form class="article-form" id="article-create-form">
-                <div class="article-form__header">
-                    <div>
-                        <p class="article-form__eyebrow">IMI MEDIKA MEDIA</p>
-                        <h2 id="article-form-title">Tambah Artikel</h2>
-                    </div>
-                    <button class="article-form__close" id="article-form-close" type="button" aria-label="Tutup form">×</button>
-                </div>
-                <label class="article-form__field">
-                    <span>Kategori</span>
-                    <select name="category" required>
-                        <option value="" disabled selected>Pilih kategori</option>
-                        <option>Edukasi</option>
-                        <option>Tips Kesehatan</option>
-                        <option>Gaya Hidup</option>
-                    </select>
-                </label>
-                <label class="article-form__field">
-                    <span>Judul</span>
-                    <input name="title" type="text" placeholder="Masukkan judul artikel" required>
-                </label>
-                <div class="article-form__row">
-                    <label class="article-form__field">
-                        <span>Penulis</span>
-                        <input name="author" type="text" placeholder="Nama penulis" required>
-                    </label>
-                    <label class="article-form__field">
-                        <span>Tanggal</span>
-                        <input name="date" type="date" required>
-                    </label>
-                </div>
-                <label class="article-form__field">
-                    <span>Custom URL Slug / Permalink</span>
-                    <input name="slug" type="text" placeholder="judul-artikel-anda">
-                </label>
-                <label class="article-form__field">
-                    <span>Kategori &amp; Tags</span>
-                    <input name="tags" type="text" placeholder="kesehatan, edukasi">
-                </label>
-                <label class="article-form__field">
-                    <span>Isi Artikel</span>
-                    <textarea name="content" rows="6" placeholder="Tulis isi artikel di sini..." required></textarea>
-                </label>
-                <div class="article-form__row">
-                    <label class="article-form__field">
-                        <span>Gambar Cover</span>
-                        <input name="cover" type="file" accept="image/*">
-                    </label>
-                    <label class="article-form__field">
-                        <span>Alt text gambar</span>
-                        <input name="coverAlt" type="text" placeholder="Deskripsi gambar">
-                    </label>
-                </div>
-                <p class="article-form__status" id="article-form-status" role="status"></p>
-                <div class="article-form__actions">
-                    <button class="article-form__cancel" id="article-form-cancel" type="button">Batal</button>
-                    <button class="article-form__save" type="submit">Simpan</button>
-                </div>
-                <p class="article-form__note">Artikel disimpan sebagai draft di browser ini.</p>
-            </form>
-        </dialog>
-    @endif
 
     <footer class="site-footer">
         <p>© 2026 PT Interskala Medika Indonesia | Member of Interskala Group</p>

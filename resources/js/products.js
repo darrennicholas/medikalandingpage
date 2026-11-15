@@ -11,8 +11,9 @@ const categoryFilterButtons = Array.from(document.querySelectorAll('[data-catego
 const categoryToggleButtons = Array.from(document.querySelectorAll('[data-category-toggle]'));
 const brochureModal = document.querySelector('#product-modal');
 
-if (categorySelect && subcategorySelect && resetFilters && productResults && productPagination) {
+if (categorySelect && subcategorySelect && resetFilters && productResults && productPagination && document.querySelector('.product-catalog__layout')?.dataset.catalogMode !== 'all') {
     const pageSize = 12;
+    const catalogMode = document.querySelector('.product-catalog__layout')?.dataset.catalogMode === 'all';
     const productEntries = productSections.flatMap((section) =>
         Array.from(section.querySelectorAll('.product-card'), (card) => ({ card, section })),
     );
@@ -131,7 +132,7 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
             && (selectedSubcategory === 'all' || card.dataset.subcategory === selectedSubcategory)
             && (productFilterTerms.length === 0 || productFilterTerms.some((term) => card.textContent.toLowerCase().includes(term))),
         );
-        const shouldPaginate = selectedCategory !== 'all';
+        const shouldPaginate = catalogMode;
         const totalPages = shouldPaginate ? Math.ceil(matchingEntries.length / pageSize) : 1;
         currentPage = Math.min(currentPage, Math.max(totalPages, 1));
         const firstIndex = (currentPage - 1) * pageSize;
@@ -139,6 +140,17 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
             ? matchingEntries.slice(firstIndex, firstIndex + pageSize)
             : matchingEntries;
         const visibleCards = new Set(visibleEntries.map(({ card }) => card));
+        const selectedSections = productSections.filter((section) => {
+            if (selectedCategory === 'all') {
+                return true;
+            }
+
+            const sectionCategoryIds = section.dataset.categoryIds.split(',').filter(Boolean);
+
+            return section.dataset.categoryFilter === selectedCategory
+                || sectionCategoryIds.some((categoryId) => selectedCategoryIds.includes(categoryId));
+        });
+        const hasVisibleEmptySection = selectedSections.some((section) => section.querySelector('.product-category-section__empty'));
 
         productEntries.forEach(({ card }) => {
             card.hidden = !visibleCards.has(card);
@@ -146,18 +158,13 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
 
         productSections.forEach((section) => {
             const hasVisibleCard = visibleEntries.some((entry) => entry.section === section);
-            const sectionCategoryIds = section.dataset.categoryIds.split(',').filter(Boolean);
-            const isEmptySection = section.querySelectorAll('.product-card').length === 0;
-            const selectedEmptyCategory = isEmptySection
-                && (selectedCategory === 'all' || sectionCategoryIds.some((categoryId) => selectedCategoryIds.includes(categoryId)));
-            section.hidden = !hasVisibleCard && !selectedEmptyCategory;
+            const shouldShowEmptyCategory = selectedSections.includes(section)
+                && section.querySelector('.product-category-section__empty');
+
+            section.hidden = !hasVisibleCard && !shouldShowEmptyCategory;
         });
 
-        const hasSelectedEmptyCategory = productSections.some((section) =>
-            section.querySelectorAll('.product-card').length === 0
-            && (selectedCategory === 'all' || section.dataset.categoryIds.split(',').some((categoryId) => selectedCategoryIds.includes(categoryId))),
-        );
-        productNoMatches.hidden = matchingEntries.length > 0 || hasSelectedEmptyCategory;
+        productNoMatches.hidden = matchingEntries.length > 0 || hasVisibleEmptySection;
 
         productResults.replaceChildren();
         const count = document.createElement('strong');
@@ -277,12 +284,34 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
     renderProducts();
 }
 
+if (document.querySelector('.product-catalog__layout')?.dataset.catalogMode === 'all') {
+    document.querySelectorAll('button[data-category-filter]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const url = new URL(window.location.href);
+            const category = button.dataset.categoryIds || button.dataset.categoryFilter;
+            if (category && category !== 'all') url.searchParams.set('category', category);
+            else url.searchParams.delete('category');
+            if (button.dataset.productFilter) url.searchParams.set('subcategory', button.dataset.productFilter);
+            else url.searchParams.delete('subcategory');
+            url.searchParams.delete('page');
+            window.location.assign(url);
+        });
+    });
+    document.querySelectorAll('[data-category-toggle]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const children = document.getElementById(button.getAttribute('aria-controls'));
+            if (!children) return;
+            const expanded = button.getAttribute('aria-expanded') === 'true';
+            button.setAttribute('aria-expanded', String(!expanded));
+            children.hidden = expanded;
+        });
+    });
+}
+
 if (brochureModal) {
     const frame = brochureModal.querySelector('#brochure-frame');
-    const error = brochureModal.querySelector('#brochure-error');
-    const errorMessage = error.querySelector('p');
     const productName = brochureModal.querySelector('#brochure-product-name');
-    const downloadLink = brochureModal.querySelector('#brochure-download');
+    const openPdfLink = brochureModal.querySelector('#brochure-open-pdf');
     const closeButton = brochureModal.querySelector('.product-modal__close');
     let previousFocus;
 
@@ -293,29 +322,22 @@ if (brochureModal) {
         previousFocus?.focus();
     };
 
-    document.querySelectorAll('.product-card__brochure').forEach((button) => {
+    document.querySelectorAll('.product-card__brochure[data-brochure-url]').forEach((button) => {
         button.addEventListener('click', () => {
-            const brochureUrl = button.dataset.brochureUrl.trim();
-            const driveFile = brochureUrl.match(/drive\.google\.com\/file\/d\/([^/]+)/);
-            previousFocus = button;
-            productName.textContent = button.dataset.productName;
-            brochureModal.hidden = false;
-            document.body.classList.add('modal-open');
-            frame.hidden = !brochureUrl;
-            error.hidden = Boolean(brochureUrl);
-            downloadLink.hidden = !brochureUrl;
+            const brochureUrl = button.dataset.brochureUrl?.trim() || '';
 
-            if (brochureUrl) {
-                frame.src = driveFile
-                    ? `https://drive.google.com/file/d/${driveFile[1]}/preview`
-                    : brochureUrl;
-                downloadLink.href = brochureUrl;
-            } else {
-                errorMessage.textContent = document.documentElement.lang === 'en'
-                    ? 'A brochure is not available for this product yet.'
-                    : 'Brosur untuk produk ini belum tersedia.';
+            if (!brochureUrl) {
+                return;
             }
 
+            previousFocus = button;
+            productName.textContent = button.dataset.productName || '';
+            frame.src = brochureUrl;
+            frame.hidden = false;
+            openPdfLink.href = brochureUrl;
+            openPdfLink.hidden = false;
+            brochureModal.hidden = false;
+            document.body.classList.add('modal-open');
             closeButton.focus();
         });
     });
