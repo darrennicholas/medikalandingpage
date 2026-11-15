@@ -276,6 +276,10 @@ class AdminResourceController extends Controller
             return response()->json(['success' => false, 'message' => 'Kategori masih memiliki produk. Pindahkan atau hapus produk terlebih dahulu.'], 422);
         }
 
+        if ($record instanceof MissionItem && MissionItem::query()->count() <= 1) {
+            return response()->json(['success' => false, 'message' => 'Minimal satu poin misi harus tersedia.'], 422);
+        }
+
         $oldValues = $this->activitySnapshot($record);
 
         if ($record instanceof Product) {
@@ -411,7 +415,7 @@ class AdminResourceController extends Controller
         }
 
         $record = $query->firstOrFail();
-        abort_if($resource === 'job-openings' && $record->source === 'oneis', 403, 'Lowongan dari ONEIS hanya dapat dikelola melalui integrasi fase 2.');
+        abort_if($resource === 'job-openings' && $record->source === 'oneis', 403, 'Lowongan dari sistem eksternal hanya dapat dikelola melalui integrasi fase 2.');
 
         return $record;
     }
@@ -459,12 +463,19 @@ class AdminResourceController extends Controller
                 : str_replace('required', 'nullable', $rule);
         }
 
+        if ($resource === 'product-categories') {
+            foreach (['id', 'en'] as $language) {
+                $rules['translations.'.$language.'.name'] = ['nullable', 'string', 'max:80', Rule::unique('product_category_translations', 'name')->where('lang', $language)->ignore($record?->getKey(), 'product_category_id')];
+            }
+        }
+
         if ($resource === 'products') {
+            $rules['category_id'] = ['nullable', 'integer', Rule::exists('product_categories', 'id')->where('status', 'published')->whereNull('deleted_at')];
             $rules['brochure'] = 'nullable|file|mimetypes:application/pdf';
         }
 
         if ($resource === 'job-openings' && $record?->source === 'oneis') {
-            throw ValidationException::withMessages(['source' => 'Lowongan dari ONEIS tidak dapat diubah di CMS.']);
+            throw ValidationException::withMessages(['source' => 'Lowongan dari sistem eksternal tidak dapat diubah di CMS.']);
         }
 
         $validated = $request->validate($rules);
@@ -501,6 +512,10 @@ class AdminResourceController extends Controller
             }
         }
         $status = $validated['status'] ?? $record?->getAttribute('status') ?? 'published';
+
+        if ($resource === 'products' && $status === 'published' && ! ProductCategory::query()->whereKey($validated['category_id'] ?? $record?->category_id)->where('status', 'published')->exists()) {
+            throw ValidationException::withMessages(['category_id' => 'Pilih kategori yang aktif sebelum publikasi.']);
+        }
 
         if (in_array($status, ['published', 'open'], true)) {
             $idTranslation = $translations['id'] ?? [];
@@ -683,12 +698,10 @@ class AdminResourceController extends Controller
                 }
             }
             if (in_array($resource, ['product-categories', 'products', 'documentations'], true)) {
-                $attributes['slug'] = $this->uniqueSlug(
-                    $translationClass,
-                    $record,
-                    $language,
-                    (string) ($attributes['slug'] ?? Str::slug((string) ($attributes['name'] ?? $attributes['title'] ?? ''))),
-                );
+                $candidate = (string) ($attributes['slug'] ?? Str::slug((string) ($attributes['name'] ?? $attributes['title'] ?? '')));
+                $attributes['slug'] = filled($candidate)
+                    ? $this->uniqueSlug($translationClass, $record, $language, $candidate)
+                    : null;
             }
 
             $record->translations()->updateOrCreate(['lang' => $language], $attributes);
@@ -744,6 +757,10 @@ class AdminResourceController extends Controller
 
     private function assertPublishable(string $resource, Model $record): void
     {
+        if ($resource === 'products') {
+            abort_unless(ProductCategory::query()->whereKey($record->getAttribute('category_id'))->where('status', 'published')->exists(), 422, 'Pilih kategori yang aktif sebelum publikasi.');
+        }
+
         if (isset(self::TRANSLATIONS[$resource])) {
             $translation = $record->translations()->where('lang', 'id')->first();
             abort_if($translation === null, 422, 'Konten bahasa Indonesia wajib diisi sebelum publikasi.');

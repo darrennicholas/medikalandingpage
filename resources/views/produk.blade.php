@@ -55,8 +55,8 @@
 
         <section class="product-catalog container" id="products" aria-labelledby="product-catalog-title">
             <div class="product-heading">
-                <h2 id="product-catalog-title" data-i18n="productHeading">Temukan Produk Terbaik Kami</h2>
-                <p data-i18n="productDescription">Jelajahi berbagai kategori produk berkualitas tinggi untuk kebutuhan medis dan kesehatan Anda</p>
+                <h2 id="product-catalog-title" data-i18n="productHeading">{{ app()->getLocale() === 'en' ? 'Discover Our Products' : 'Temukan Produk Terbaik Kami' }}</h2>
+                <p data-i18n="productDescription">{{ app()->getLocale() === 'en' ? 'Explore our range of quality products for healthcare and medical needs' : 'Jelajahi berbagai kategori produk berkualitas tinggi untuk kebutuhan medis dan kesehatan Anda' }}</p>
             </div>
 
             @php
@@ -80,9 +80,9 @@
                         'filter' => 'rapid-test-master',
                         'category_ids' => $idsForCategoryNames(['Rapid Test', 'Rapid Test (Master)', 'Rapid Test COVID-19', 'Drugs Abuse']),
                         'children' => [
-                            ['label' => 'Infeksius HIV Series', 'filter' => 'HIV|Syphilis'],
-                            ['label' => 'Infeksius Hepatitis', 'filter' => 'Hepatitis|HBsAg|Anti HBs|Anti-HCV|HAV|HBV'],
-                            ['label' => 'Infeksius Tropical', 'filter' => 'Malaria|Dengue|Chikungunya|Typhoid'],
+                            ['label' => app()->getLocale() === 'en' ? 'Infectious Disease: HIV Series' : 'Infeksius HIV Series', 'filter' => 'HIV|Syphilis'],
+                            ['label' => app()->getLocale() === 'en' ? 'Infectious Disease: Hepatitis' : 'Infeksius Hepatitis', 'filter' => 'Hepatitis|HBsAg|Anti HBs|Anti-HCV|HAV|HBV'],
+                            ['label' => app()->getLocale() === 'en' ? 'Infectious Disease: Tropical' : 'Infeksius Tropical', 'filter' => 'Malaria|Dengue|Chikungunya|Typhoid'],
                             ['label' => 'Tumor Marker', 'filter' => 'Tumor Marker'],
                             ['label' => 'Covid', 'filter' => 'Covid'],
                             ['label' => 'Drugs of Abuse', 'filter' => 'DOA'],
@@ -115,7 +115,7 @@
                         'filter' => 'medical-consumables',
                         'category_ids' => $idsForCategoryNames(['Medical Consumables', 'Medical Consumable']),
                         'children' => [
-                            ['label' => 'Filtertips dkk', 'filter' => 'Filtertips'],
+                            ['label' => app()->getLocale() === 'en' ? 'Filter Tips and More' : 'Filtertips dkk', 'filter' => 'Filtertips'],
                             ['label' => 'Blood Vacuum tube', 'filter' => 'Blood Vacuum tube'],
                             ['label' => 'Swab', 'filter' => 'Swab'],
                         ],
@@ -128,12 +128,12 @@
                         $sidebarGroups[] = ['title' => $category['name'], 'filter' => $category['id'], 'category_ids' => $category['id'], 'children' => []];
                     }
                 }
-                $displayCategories = collect($categories)->filter(fn ($category) => count($category['products']) > 0 || (request()->routeIs('admin.content.preview') && request()->route('resource') === 'product-categories' && (string) request()->route('id') === (string) $category['id']));
+                $displayCategories = collect($categories);
             @endphp
 
             <div class="product-filter-controls" hidden>
                 <select id="filter-kategori" aria-label="Filter kategori produk">
-                    <option value="all" selected data-i18n="allCategories">-- Semua Kategori --</option>
+                    <option value="all" selected data-i18n="allCategories">{{ app()->getLocale() === 'en' ? '-- All Categories --' : '-- Semua Kategori --' }}</option>
                     @foreach ($categories as $category)
                         <option value="{{ $category['id'] }}">{{ $category['name'] }}</option>
                     @endforeach
@@ -142,7 +142,7 @@
                     @endforeach
                 </select>
                 <select id="filter-subkategori" aria-label="Filter subkategori produk" disabled>
-                    <option value="all" data-i18n="allSubcategories">-- Semua Subkategori --</option>
+                    <option value="all" data-i18n="allSubcategories">{{ app()->getLocale() === 'en' ? '-- All Subcategories --' : '-- Semua Subkategori --' }}</option>
                 </select>
                 <button id="reset-filters" type="button">Reset Filter</button>
             </div>
@@ -150,11 +150,11 @@
             <div class="product-catalog__layout" data-catalog-mode="{{ $catalogMode ? 'all' : 'featured' }}">
                 <aside class="product-sidebar" aria-label="Kategori produk">
                     <div class="product-sidebar__heading">
-                        <h2 data-i18n="categoryLabel">Kategori Produk</h2>
+                        <h2 data-i18n="categoryLabel">{{ app()->getLocale() === 'en' ? 'Product Categories' : 'Kategori Produk' }}</h2>
                         <span aria-hidden="true"></span>
                     </div>
 
-                    <button class="product-sidebar__category product-sidebar__category--all" type="button" data-category-filter="all" aria-pressed="true" data-i18n="allCategories">Semua Produk</button>
+                    <button class="product-sidebar__category product-sidebar__category--all" type="button" data-category-filter="all" aria-pressed="true" data-i18n="allCategories">{{ app()->getLocale() === 'en' ? 'All Products' : 'Semua Produk' }}</button>
                     <nav class="product-sidebar__list" aria-label="Pilih kategori produk">
                         @foreach ($sidebarGroups as $groupIndex => $sidebarGroup)
                             @php
@@ -176,10 +176,10 @@
                     </nav>
                 </aside>
                 <div class="product-results-area">
-                    @if ($catalogMode)<form method="GET" class="product-catalog-search"><input type="search" name="q" value="{{ request('q') }}" placeholder="Cari produk...">@if(request('category'))<input type="hidden" name="category" value="{{ request('category') }}">@endif @if(request('subcategory'))<input type="hidden" name="subcategory" value="{{ request('subcategory') }}">@endif<button type="submit">Cari</button></form>@endif
+                    @if ($catalogMode)<form method="GET" class="product-catalog-search"><input type="search" name="q" value="{{ request('q') }}" placeholder="{{ app()->getLocale() === 'en' ? 'Search products...' : 'Cari produk...' }}">@if(request('category'))<input type="hidden" name="category" value="{{ request('category') }}">@endif @if(request('subcategory'))<input type="hidden" name="subcategory" value="{{ request('subcategory') }}">@endif<button type="submit">{{ app()->getLocale() === 'en' ? 'Search' : 'Cari' }}</button></form>@endif
                     <p class="product-results sr-only" id="product-results" aria-live="polite"></p>
                     <h2 class="product-active-heading" id="product-active-heading"></h2>
-                    <p class="product-no-matches" id="product-no-matches" data-i18n="emptyCategory" hidden>Belum ada produk dalam kategori ini.</p>
+                    <p class="product-no-matches" id="product-no-matches" data-i18n="emptyCategory" hidden>{{ app()->getLocale() === 'en' ? 'No products in this category yet.' : 'Belum ada produk dalam kategori ini.' }}</p>
                     <div id="product-categories">
                         @foreach ($displayCategories as $categoryIndex => $category)
                             <section class="product-category-section" data-category-filter="{{ $category['id'] }}" data-category-ids="{{ $category['id'] }}" aria-labelledby="category-group-{{ $categoryIndex }}">
@@ -229,11 +229,11 @@
                                                 <p class="product-card__subtitle">{{ $isDrugAbuse ? 'Rapid Test (Master)' : $product['subtitle'] }}</p>
                                                 <span class="product-card__badge">{{ $categoryLabel }}</span>
                                                 <div class="product-card__actions">
-                                                    <a class="product-card__buy" href="{{ $product['buy_url'] }}" target="_blank" rel="noopener noreferrer" aria-label="Beli {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-cart"/></svg><span data-i18n="buyProduct">Beli</span></a>
+                                                    <a class="product-card__buy" href="{{ $product['buy_url'] }}" target="_blank" rel="noopener noreferrer" aria-label="Beli {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-cart"/></svg><span data-i18n="buyProduct">{{ app()->getLocale() === 'en' ? 'Buy' : 'Beli' }}</span></a>
                                                     @if (!empty($product['brochure_url']))
-                                                        <button class="product-card__brochure" type="button" data-brochure-url="{{ $product['brochure_url'] }}" data-product-name="{{ $product['name'] }}" aria-label="Preview brosur {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span data-i18n="brochure">Brosur</span></button>
+                                                        <button class="product-card__brochure" type="button" data-brochure-url="{{ $product['brochure_url'] }}" data-product-name="{{ $product['name'] }}" aria-label="Preview brosur {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span data-i18n="brochure">{{ app()->getLocale() === 'en' ? 'Brochure' : 'Brosur' }}</span></button>
                                                     @else
-                                                        <button class="product-card__brochure" type="button" disabled aria-label="Brosur {{ $product['name'] }} belum tersedia"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span data-i18n="brochure">Brosur</span></button>
+                                                        <button class="product-card__brochure" type="button" disabled aria-label="Brosur {{ $product['name'] }} belum tersedia"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span data-i18n="brochure">{{ app()->getLocale() === 'en' ? 'Brochure' : 'Brosur' }}</span></button>
                                                     @endif
                                                 </div>
                                             </div>
@@ -247,11 +247,11 @@
                         @endforeach
                     </div>
 
-                    <nav class="product-pagination" id="product-pagination" aria-label="Halaman produk">@if ($catalogMode)<span>Menampilkan {{ $catalogPage->firstItem() ?? 0 }}–{{ $catalogPage->lastItem() ?? 0 }} dari {{ $catalogPage->total() }}</span> @if ($catalogPage->previousPageUrl())<a href="{{ $catalogPage->previousPageUrl() }}">‹ Sebelumnya</a>@endif @if ($catalogPage->nextPageUrl())<a href="{{ $catalogPage->nextPageUrl() }}">Berikutnya ›</a>@endif @endif</nav>
+                    <nav class="product-pagination" id="product-pagination" aria-label="Halaman produk">@if ($catalogMode)<span>{{ app()->getLocale() === 'en' ? 'Showing' : 'Menampilkan' }} {{ $catalogPage->firstItem() ?? 0 }}–{{ $catalogPage->lastItem() ?? 0 }} {{ app()->getLocale() === 'en' ? 'of' : 'dari' }} {{ $catalogPage->total() }}</span> @if ($catalogPage->previousPageUrl())<a href="{{ $catalogPage->previousPageUrl() }}">{{ app()->getLocale() === 'en' ? '‹ Previous' : '‹ Sebelumnya' }}</a>@endif @if ($catalogPage->nextPageUrl())<a href="{{ $catalogPage->nextPageUrl() }}">{{ app()->getLocale() === 'en' ? 'Next ›' : 'Berikutnya ›' }}</a>@endif @endif</nav>
                     @if ($catalogMode)
-                        <a class="product-catalog__all-link" href="{{ route('localized.products', ['locale' => app()->getLocale()]) }}">Kembali ke Produk Unggulan</a>
+                        <a class="product-catalog__all-link" href="{{ route('localized.products', ['locale' => app()->getLocale()]) }}">{{ app()->getLocale() === 'en' ? 'Back to Featured Products' : 'Kembali ke Produk Unggulan' }}</a>
                     @else
-                        <a class="product-catalog__all-link" href="{{ route('localized.products.all', ['locale' => app()->getLocale()]) }}">Lihat Semua Produk</a>
+                        <a class="product-catalog__all-link" href="{{ route('localized.products.all', ['locale' => app()->getLocale()]) }}" data-catalog-link>{{ app()->getLocale() === 'en' ? 'View All Products' : 'Lihat Semua Produk' }}</a>
                     @endif
                 </div>
             </div>
@@ -262,14 +262,14 @@
         <div class="product-modal__backdrop" data-close-modal></div>
         <div class="product-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="brochure-modal-title">
             <div class="product-modal__header">
-                <div class="product-modal__heading"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><div><strong id="brochure-modal-title" data-i18n="brochurePreview">Preview Brosur</strong><span id="brochure-product-name"></span></div></div>
+                <div class="product-modal__heading"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><div><strong id="brochure-modal-title" data-i18n="brochurePreview">{{ app()->getLocale() === 'en' ? 'Brochure Preview' : 'Preview Brosur' }}</strong><span id="brochure-product-name"></span></div></div>
                 <button class="product-modal__close" type="button" data-close-modal aria-label="Tutup pratinjau brosur"><svg aria-hidden="true"><use href="#icon-close"/></svg></button>
             </div>
             <div class="product-modal__body">
                 <iframe id="brochure-frame" title="Preview brosur produk" loading="lazy" hidden></iframe>
-                <div class="product-modal__error" id="brochure-error" hidden><svg aria-hidden="true"><use href="#icon-pdf"/></svg><h3 data-i18n="brochureUnavailable">Gagal Memuat Brosur</h3><p data-i18n="brochureUnavailableMessage">File PDF tidak dapat ditampilkan.</p></div>
+                <div class="product-modal__error" id="brochure-error" hidden><svg aria-hidden="true"><use href="#icon-pdf"/></svg><h3 data-i18n="brochureUnavailable">{{ app()->getLocale() === 'en' ? 'Unable to Load Brochure' : 'Gagal Memuat Brosur' }}</h3><p data-i18n="brochureUnavailableMessage">{{ app()->getLocale() === 'en' ? 'The PDF file could not be displayed.' : 'File PDF tidak dapat ditampilkan.' }}</p></div>
             </div>
-            <div class="product-modal__footer"><span>Perbesar brosur dengan membuka PDF lengkap di tab baru.</span><a id="brochure-open-pdf" href="#" target="_blank" rel="noopener noreferrer" hidden aria-label="Buka PDF di tab baru"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span>Buka PDF di tab baru</span></a></div>
+            <div class="product-modal__footer"><span>{{ app()->getLocale() === 'en' ? 'Open the full PDF in a new tab to enlarge the brochure.' : 'Perbesar brosur dengan membuka PDF lengkap di tab baru.' }}</span><a id="brochure-open-pdf" href="#" target="_blank" rel="noopener noreferrer" hidden aria-label="Buka PDF di tab baru"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span>{{ app()->getLocale() === 'en' ? 'Open PDF in a new tab' : 'Buka PDF di tab baru' }}</span></a></div>
         </div>
     </div>
 

@@ -133,7 +133,7 @@ class ProductController extends Controller
         $selected = clone $selected;
         foreach ($fallback->getAttributes() as $field => $value) {
             if (! in_array($field, ['id', 'lang', 'created_at', 'updated_at'], true) && blank($selected->getAttribute($field))) {
-                $selected->setAttribute($field, $value);
+                $selected->setAttribute($field, $fallback->getAttribute($field));
             }
         }
 

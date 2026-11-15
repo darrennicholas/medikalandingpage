@@ -1,5 +1,109 @@
 const csrfToken = document.querySelector('input[name="_token"]')?.value || '';
 
+if (document.body.classList.contains('admin-body')) {
+    const menu = document.createElement('div');
+    menu.className = 'admin-select-menu';
+    menu.id = 'admin-select-menu';
+    menu.hidden = true;
+    menu.setAttribute('role', 'listbox');
+    document.body.append(menu);
+    let activeSelect = null;
+    let activeIndex = -1;
+
+    const closeSelectMenu = () => {
+        if (activeSelect) {
+            activeSelect.setAttribute('aria-expanded', 'false');
+            activeSelect.removeAttribute('aria-controls');
+        }
+        activeSelect = null;
+        menu.hidden = true;
+    };
+    const highlightOption = (index) => {
+        activeIndex = index;
+        menu.querySelectorAll('button').forEach((button, buttonIndex) => button.classList.toggle('is-active', buttonIndex === index));
+        menu.querySelectorAll('button')[index]?.scrollIntoView({ block: 'nearest' });
+    };
+    const chooseOption = (index) => {
+        const option = activeSelect?.options[index];
+        if (!option || option.disabled || option.parentElement?.disabled) return;
+        const select = activeSelect;
+        const changed = select.selectedIndex !== index;
+        select.selectedIndex = index;
+        closeSelectMenu();
+        select.focus({ preventScroll: true });
+        if (changed) {
+            select.dispatchEvent(new Event('input', { bubbles: true }));
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    };
+    const openSelectMenu = (select) => {
+        if (select.disabled || select.multiple || select.size > 1) return;
+        if (activeSelect === select && !menu.hidden) { closeSelectMenu(); return; }
+        closeSelectMenu();
+        activeSelect = select;
+        menu.replaceChildren();
+        const style = getComputedStyle(select);
+        menu.style.font = style.font;
+        menu.style.color = style.color;
+        Array.from(select.options).forEach((option, index) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'admin-select-menu__option';
+            button.textContent = option.textContent.trim();
+            button.disabled = option.disabled || Boolean(option.parentElement?.disabled);
+            button.setAttribute('role', 'option');
+            button.setAttribute('aria-selected', String(index === select.selectedIndex));
+            button.addEventListener('pointerdown', (event) => event.preventDefault());
+            button.addEventListener('click', () => chooseOption(index));
+            menu.append(button);
+        });
+        const rect = select.getBoundingClientRect();
+        const below = window.innerHeight - rect.bottom - 8;
+        const above = rect.top - 8;
+        const opensAbove = below < 180 && above > below;
+        const height = Math.max(70, Math.min(280, opensAbove ? above : below));
+        menu.style.left = `${Math.max(4, rect.left)}px`;
+        menu.style.width = `${Math.min(rect.width, window.innerWidth - 8)}px`;
+        menu.style.maxHeight = `${height}px`;
+        menu.style.top = opensAbove ? 'auto' : `${rect.bottom + 4}px`;
+        menu.style.bottom = opensAbove ? `${window.innerHeight - rect.top + 4}px` : 'auto';
+        menu.hidden = false;
+        select.setAttribute('aria-expanded', 'true');
+        select.setAttribute('aria-controls', menu.id);
+        highlightOption(Math.max(0, select.selectedIndex));
+    };
+    document.addEventListener('pointerdown', (event) => {
+        const select = event.target.closest('.admin-body select:not([multiple])');
+        if (!select || select.disabled || select.size > 1) return;
+        event.preventDefault();
+        select.focus({ preventScroll: true });
+        openSelectMenu(select);
+    });
+    document.addEventListener('click', (event) => {
+        if (activeSelect && event.target !== activeSelect && !menu.contains(event.target)) closeSelectMenu();
+    });
+    document.addEventListener('keydown', (event) => {
+        const select = event.target.closest('.admin-body select:not([multiple])');
+        if (!select || select.disabled || select.size > 1) return;
+        if (activeSelect !== select) {
+            if (['ArrowDown', 'ArrowUp', ' ', 'Enter'].includes(event.key)) { event.preventDefault(); openSelectMenu(select); }
+            return;
+        }
+        if (event.key === 'Escape' || event.key === 'Tab') { closeSelectMenu(); if (event.key === 'Escape') event.preventDefault(); return; }
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); chooseOption(activeIndex); return; }
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            const buttons = Array.from(menu.querySelectorAll('button'));
+            const direction = event.key === 'ArrowDown' ? 1 : -1;
+            let next = activeIndex;
+            do { next += direction; } while (next >= 0 && next < buttons.length && buttons[next].disabled);
+            if (next >= 0 && next < buttons.length) highlightOption(next);
+        }
+    });
+    window.addEventListener('resize', closeSelectMenu);
+    document.addEventListener('scroll', (event) => { if (!menu.contains(event.target)) closeSelectMenu(); }, true);
+}
+
 const responseMessage = async (response) => {
     const result = await response.json().catch(() => ({}));
     if (!response.ok || result.success === false) {
@@ -12,13 +116,11 @@ const responseMessage = async (response) => {
 
 const showError = (element, message) => {
     hideGlobalLoading();
-    if (!element) {
-        showSweetAlert({ icon: 'error', title: 'Permintaan gagal', text: message });
-        return;
+    if (element) {
+        element.textContent = message;
+        element.hidden = false;
     }
-
-    element.textContent = message;
-    element.hidden = false;
+    showSweetAlert({ icon: 'error', title: 'Permintaan gagal', text: message });
 };
 
 const loadingModal = document.querySelector('[data-global-loading]');
@@ -44,31 +146,43 @@ const withGlobalLoading = async (message, task) => {
     }
 };
 
-const closeSweetAlert = () => {
+const closeSweetAlert = (confirmed = false) => {
     if (sweetAlert) sweetAlert.hidden = true;
-    sweetAlertResolver?.();
+    sweetAlertResolver?.(confirmed);
     sweetAlertResolver = null;
 };
 
-const showSweetAlert = ({ icon = 'success', title = 'Berhasil', text = '' } = {}) => new Promise((resolve) => {
+const showSweetAlert = ({ icon = 'success', title = 'Berhasil', text = '', showCancel = false, confirmText = 'Oke', cancelText = 'Batal' } = {}) => new Promise((resolve) => {
     hideGlobalLoading();
     if (!sweetAlert) {
+        if (showCancel) {
+            resolve(false);
+            return;
+        }
         window.alert(text || title);
-        resolve();
+        resolve(true);
         return;
     }
 
     const titleElement = sweetAlert.querySelector('[data-sweet-alert-title]');
     const messageElement = sweetAlert.querySelector('[data-sweet-alert-message]');
+    const confirmButton = sweetAlert.querySelector('[data-sweet-alert-confirm]');
+    const cancelButton = sweetAlert.querySelector('[data-sweet-alert-cancel]');
     sweetAlertResolver = resolve;
     sweetAlert.dataset.state = icon;
     if (titleElement) titleElement.textContent = title;
     if (messageElement) messageElement.textContent = text;
+    if (confirmButton) confirmButton.textContent = confirmText;
+    if (cancelButton) {
+        cancelButton.textContent = cancelText;
+        cancelButton.hidden = !showCancel;
+    }
     sweetAlert.hidden = false;
-    sweetAlert.querySelector('[data-sweet-alert-confirm]')?.focus();
+    (showCancel ? cancelButton : confirmButton)?.focus();
 });
 
-document.querySelectorAll('[data-sweet-alert-confirm]').forEach((button) => button.addEventListener('click', closeSweetAlert));
+document.querySelectorAll('[data-sweet-alert-confirm]').forEach((button) => button.addEventListener('click', () => closeSweetAlert(true)));
+document.querySelectorAll('[data-sweet-alert-cancel]').forEach((button) => button.addEventListener('click', () => closeSweetAlert(false)));
 
 document.addEventListener('change', (event) => {
     const mediaSelect = event.target.closest('[data-media-preview-select]');
@@ -348,11 +462,33 @@ const reindexRepeater = (list) => {
 const initializeLiveEditor = (form) => {
     const editorType = form.dataset.liveEditor;
     const previewPanel = form.querySelector('.admin-editor-preview');
+    const contentBlockKey = form.querySelector('[name="block_key"]')?.value;
+    const autoResizeTextareas = [...form.querySelectorAll('textarea[data-auto-resize]')];
+    const resizeTextarea = (textarea) => {
+        textarea.style.height = 'auto';
+        textarea.style.height = `${textarea.scrollHeight}px`;
+    };
+
+    autoResizeTextareas.forEach((textarea) => {
+        resizeTextarea(textarea);
+        textarea.addEventListener('input', () => resizeTextarea(textarea));
+    });
 
     const updatePreview = () => {
         const activePanel = form.querySelector('[data-language-panel]:not(.is-hidden)') || form.querySelector('[data-language-panel="id"]');
         const language = activePanel?.dataset.languagePanel || 'id';
-        const valueFor = (name) => activePanel?.querySelector(`[data-preview-field="${name}"]`)?.value?.trim() || '';
+        const valueFor = (name) => {
+            const value = activePanel?.querySelector(`[data-preview-field="${name}"]`)?.value?.trim() || '';
+            if (contentBlockKey === 'about_company' && name === 'body') {
+                return value
+                    .replace(/<\/p\s*>\s*<p\b[^>]*>/gi, '\n\n')
+                    .replace(/<br\s*\/?>/gi, '\n')
+                    .replace(/<[^>]*>/g, '')
+                    .trim();
+            }
+
+            return value;
+        };
         const setText = (name, fallback = '', hideWhenEmpty = false) => {
             const output = form.querySelector(`[data-preview-output="${name}"]`);
             if (output) {
@@ -558,6 +694,13 @@ const submitContentForm = async (form, event) => {
     const errors = form.querySelector('[data-form-errors]');
     errors.hidden = true;
     const submitButton = event.submitter;
+    if (submitButton?.dataset.saveStatus === 'draft' && submitButton.formNoValidate) {
+        const requiredFields = [...form.querySelectorAll('[required]')];
+        requiredFields.forEach((field) => { field.required = false; });
+        const valid = form.reportValidity();
+        requiredFields.forEach((field) => { field.required = true; });
+        if (!valid) return;
+    }
     const resource = form.dataset.resource;
     const isEditing = form.dataset.isEditing === '1';
     const formData = new FormData(form);
@@ -763,17 +906,38 @@ document.querySelectorAll('[data-admin-form]').forEach((form) => form.addEventLi
 
 document.querySelectorAll('[data-status-url]').forEach((button) => {
     button.addEventListener('click', async () => {
-        if (!window.confirm(`Ubah status konten menjadi ${button.dataset.nextStatus}?`)) return;
+        const nextStatus = button.dataset.nextStatus;
+        const statusDescription = {
+            published: 'dipublikasikan',
+            unpublished: 'tidak dipublikasikan',
+            open: 'dibuka',
+            closed: 'ditutup',
+            active: 'diaktifkan',
+            inactive: 'dinonaktifkan',
+        }[nextStatus] || nextStatus;
+        const confirmed = await showSweetAlert({
+            icon: 'info',
+            title: 'Konfirmasi perubahan status',
+            text: `Status konten akan diubah menjadi ${statusDescription}. Lanjutkan?`,
+            showCancel: true,
+            confirmText: 'Ya, ubah status',
+            cancelText: 'Batal',
+        });
+        if (!confirmed) return;
+
+        button.disabled = true;
         try {
             const result = await withGlobalLoading('Memperbarui status...', async () => responseMessage(await fetch(button.dataset.statusUrl, {
                 method: 'PATCH',
                 headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                body: JSON.stringify({ status: button.dataset.nextStatus }),
+                body: JSON.stringify({ status: nextStatus }),
             })));
             await showSweetAlert({ icon: 'success', title: 'Status diperbarui', text: result.message || 'Status konten berhasil diperbarui.' });
             window.location.reload();
         } catch (error) {
             await showSweetAlert({ icon: 'error', title: 'Status gagal diperbarui', text: error.message });
+        } finally {
+            button.disabled = false;
         }
     });
 });
@@ -1223,6 +1387,9 @@ document.querySelectorAll('[data-contact-preview]').forEach((input) => {
     });
 });
 
+const flashError = document.querySelector('[data-admin-flash-error]')?.dataset.adminFlashError;
+if (flashError) showSweetAlert({ icon: 'error', title: 'Permintaan gagal', text: flashError });
+
 const flashSuccess = document.querySelector('[data-admin-flash-success]')?.dataset.adminFlashSuccess;
 if (flashSuccess) {
     showSweetAlert({ icon: 'success', title: 'Berhasil', text: flashSuccess });
@@ -1270,7 +1437,7 @@ document.querySelectorAll('[data-count-for]').forEach((counter) => {
     const updateCounter = () => {
         counter.textContent = `${field.value.length}/${field.maxLength} karakter`;
         const preview = document.querySelector(`[data-seo-preview-${counter.dataset.countFor === 'meta_title' ? 'title' : 'description'}]`);
-        if (preview) preview.textContent = field.value.trim() || (counter.dataset.countFor === 'meta_title' ? 'Judul halaman | ONEIS Healthcare Indonesia' : 'Informasi resmi ONEIS Healthcare Indonesia.');
+        if (preview) preview.textContent = field.value.trim() || (counter.dataset.countFor === 'meta_title' ? 'Judul halaman | PT Interskala Medika Indonesia' : 'Informasi resmi PT Interskala Medika Indonesia.');
     };
     field.addEventListener('input', updateCounter);
     updateCounter();
@@ -1293,5 +1460,51 @@ document.querySelectorAll('[data-permission-default]').forEach((button) => {
             const module = checkbox.name.match(/^permissions\[([^\]]+)\]/)?.[1];
             checkbox.checked = (defaults[module] || []).includes(checkbox.value);
         });
+    });
+});
+
+// Generate editable slugs for content forms.
+document.querySelectorAll('.admin-cms-form').forEach((form) => {
+    for (const language of ['id', 'en']) {
+        const source = form.querySelector(`[name="translations[${language}][name]"], [name="translations[${language}][title]"]`);
+        const slug = form.querySelector(`[name="translations[${language}][slug]"]`);
+        if (!source || !slug) continue;
+        let edited = Boolean(slug.value);
+        slug.addEventListener('input', () => { edited = Boolean(slug.value); });
+        source.addEventListener('input', () => { if (!edited) slug.value = source.value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); });
+    }
+});
+document.querySelectorAll('[data-rich-toolbar]').forEach((toolbar) => {
+    const field = toolbar.parentElement.querySelector('textarea');
+    if (!field) return;
+    const editor = document.createElement('div');
+    editor.className = 'admin-rich-editor';
+    editor.contentEditable = 'true';
+    editor.setAttribute('role', 'textbox');
+    editor.setAttribute('aria-multiline', 'true');
+    const parsed = new DOMParser().parseFromString(field.value, 'text/html');
+    parsed.querySelectorAll('script,style,iframe,object').forEach((node) => node.remove());
+    parsed.querySelectorAll('*').forEach((node) => [...node.attributes].forEach((attribute) => {
+        if (attribute.name.startsWith('on') || (attribute.name === 'href' && !/^(https:\/\/|\/(?!\/))/i.test(attribute.value))) node.removeAttribute(attribute.name);
+    }));
+    editor.innerHTML = parsed.body.innerHTML;
+    field.hidden = true;
+    field.required = false;
+    field.after(editor);
+    const sync = () => { field.value = editor.innerHTML; field.dispatchEvent(new Event('input', { bubbles: true })); };
+    editor.addEventListener('input', sync);
+    toolbar.addEventListener('mousedown', (event) => event.preventDefault());
+    toolbar.addEventListener('click', (event) => {
+        const tag = event.target.closest('[data-rich-tag]')?.dataset.richTag;
+        if (!tag) return;
+        editor.focus();
+        if (tag === 'a') {
+            const url = window.prompt('Masukkan URL HTTPS atau tautan internal:');
+            if (!url || !/^(https:\/\/|\/(?!\/))/i.test(url)) return;
+            document.execCommand('createLink', false, url);
+        } else {
+            document.execCommand({ strong: 'bold', em: 'italic', ul: 'insertUnorderedList' }[tag], false);
+        }
+        sync();
     });
 });

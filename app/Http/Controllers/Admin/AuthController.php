@@ -199,19 +199,9 @@ class AuthController extends Controller
     public function editPassword(Request $request): View
     {
         $user = $request->user()->loadMissing('role');
-        $userAgent = (string) $request->userAgent();
-        $browser = match (true) {
-            str_contains($userAgent, 'Edg/') => 'Microsoft Edge',
-            str_contains($userAgent, 'Chrome/') => 'Google Chrome',
-            str_contains($userAgent, 'Firefox/') => 'Mozilla Firefox',
-            str_contains($userAgent, 'Safari/') => 'Safari',
-            default => 'Browser saat ini',
-        };
 
         return view('admin.profile.password', [
             'user' => $user,
-            'currentBrowser' => $browser,
-            'currentIp' => $request->ip(),
         ]);
     }
 

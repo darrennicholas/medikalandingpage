@@ -32,12 +32,13 @@
             <label class="admin-brand-manager__search" for="brand-search">Cari Brand
                 <span class="admin-brand-manager__search-control"><span class="material-symbols-rounded" aria-hidden="true">search</span><input id="brand-search" type="search" name="q" value="{{ request('q') }}" placeholder="Cari nama brand..."></span>
             </label>
+            <label>Baris <select name="per_page">@foreach ([10, 25, 50] as $size)<option value="{{ $size }}" @selected((int) request('per_page', 10) === $size)>{{ $size }}</option>@endforeach</select></label>
             <button class="admin-button" type="submit"><span class="material-symbols-rounded" aria-hidden="true">filter_alt</span>Terapkan</button>
         </form>
 
         <div class="admin-table-wrap" data-reorder-list="{{ implode(',', $brandIds) }}" data-reorder-resource="brands">
             <table class="admin-table admin-brand-table">
-                <thead><tr><th>Action</th><th>Urutan</th><th>Logo</th><th>Nama Brand</th><th>Link Website</th><th>Status</th><th>Dibuat / Diperbarui</th></tr></thead>
+                <thead><tr><th>Aksi</th><th>Urutan</th><th>Logo</th><th>Nama Brand</th><th>Link Website</th><th>Status</th><th>Dibuat / Diperbarui</th></tr></thead>
                 <tbody>
                     @forelse ($records as $record)
                         @php
@@ -63,20 +64,6 @@
                 </tbody>
             </table>
         </div>
-        <div class="admin-brand-manager__footer">
-            <p>Showing {{ $records->firstItem() ?? 0 }} to {{ $records->lastItem() ?? 0 }} of {{ $records->total() }} results</p>
-            <nav class="admin-brand-manager__pagination" aria-label="Navigasi daftar brand">
-                @if ($records->previousPageUrl())
-                    <a href="{{ $records->previousPageUrl() }}">« Previous</a>
-                @else
-                    <span aria-disabled="true">« Previous</span>
-                @endif
-                @if ($records->nextPageUrl())
-                    <a href="{{ $records->nextPageUrl() }}">Next »</a>
-                @else
-                    <span aria-disabled="true">Next »</span>
-                @endif
-            </nav>
-        </div>
+        @include('admin.partials.pagination', ['paginator' => $records, 'label' => 'brand'])
     </section>
 @endsection

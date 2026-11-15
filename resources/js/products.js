@@ -52,6 +52,16 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
             ? ''
             : activeFilterButton?.dataset.categoryTitle || activeFilterButton?.textContent.trim() || '';
         productResultsArea.classList.toggle('is-category-filtered', !isAllProducts);
+        const catalogLink = document.querySelector('[data-catalog-link]');
+        if (catalogLink) {
+            const url = new URL(catalogLink.href);
+            const ids = getSelectedCategoryIds().filter((id) => /^\d+$/.test(id));
+            if (!isAllProducts && ids.length) url.searchParams.set('category', ids.join(','));
+            else url.searchParams.delete('category');
+            if (selectedProductFilter) url.searchParams.set('subcategory', selectedProductFilter);
+            else url.searchParams.delete('subcategory');
+            catalogLink.href = url.toString();
+        }
     };
 
     const populateSubcategories = () => {
@@ -323,13 +333,23 @@ if (brochureModal) {
     };
 
     document.querySelectorAll('.product-card__brochure[data-brochure-url]').forEach((button) => {
-        button.addEventListener('click', () => {
+        button.addEventListener('click', async () => {
             const brochureUrl = button.dataset.brochureUrl?.trim() || '';
 
             if (!brochureUrl) {
                 return;
             }
 
+            try {
+                const url = new URL(brochureUrl, window.location.href);
+                if (url.origin === window.location.origin) {
+                    const response = await fetch(url, { method: 'HEAD' });
+                    if (!response.ok && response.status !== 405 && response.status !== 501) throw new Error('unavailable');
+                }
+            } catch {
+                window.showPublicError?.(document.documentElement.lang === 'en' ? 'The brochure could not be loaded. Please try again.' : 'Brosur tidak dapat dimuat. Silakan coba lagi.');
+                return;
+            }
             previousFocus = button;
             productName.textContent = button.dataset.productName || '';
             frame.src = brochureUrl;
@@ -341,6 +361,8 @@ if (brochureModal) {
             closeButton.focus();
         });
     });
+
+    frame.addEventListener('error', () => window.showPublicError?.(document.documentElement.lang === 'en' ? 'The brochure could not be loaded.' : 'Brosur tidak dapat dimuat.'));
 
     brochureModal.addEventListener('click', (event) => {
         if (event.target.closest('[data-close-modal]')) {

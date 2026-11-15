@@ -142,10 +142,7 @@
             </table>
         </div>
 
-        <footer class="admin-category-manager__footer">
-            <p>Menampilkan {{ $records->firstItem() ?? 0 }}–{{ $records->lastItem() ?? 0 }} dari {{ $records->total() }} kategori</p>
-            {{ $records->onEachSide(1)->links() }}
-        </footer>
+        @include('admin.partials.pagination', ['paginator' => $records, 'label' => 'kategori'])
     </section>
 
     <div class="admin-category-modal" data-category-modal data-next-order="{{ count($categoryIds) + 1 }}" hidden>

@@ -322,8 +322,6 @@ class CmsInitialContentSeeder extends Seeder
                 'size_bytes' => File::size($fullPath),
                 'width' => $image[0],
                 'height' => $image[1],
-                'alt_text_id' => (string) $altId,
-                'alt_text_en' => (string) $altEn,
             ],
         );
     }

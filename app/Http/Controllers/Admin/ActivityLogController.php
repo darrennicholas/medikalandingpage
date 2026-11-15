@@ -23,7 +23,7 @@ class ActivityLogController extends Controller
             ->when($validated['user_id'] ?? null, fn ($query, int $userId) => $query->where('user_id', $userId))
             ->when($validated['action'] ?? null, fn ($query, string $action) => $query->where('action', $action))
             ->when($validated['entity_type'] ?? null, fn ($query, string $entity) => $query->where('entity_type', 'like', '%'.$entity.'%'))
-            ->latest('created_at')->paginate(25)->withQueryString();
+            ->latest('created_at')->paginate(in_array(request()->integer('per_page'), [10, 25, 50], true) ? request()->integer('per_page') : 10)->withQueryString();
 
         return view('admin.logs.index', [
             'logs' => $logs,

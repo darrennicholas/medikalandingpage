@@ -19,14 +19,16 @@
         <label>Pelaku (User)<select name="user_id"><option value="">Semua User</option>@foreach ($users as $user)<option value="{{ $user->id }}" @selected(request('user_id') == $user->id)>{{ $user->name }}</option>@endforeach</select></label>
         <label>Jenis aksi<input name="action" value="{{ request('action') }}" placeholder="login_failed, update"></label>
         <label>Modul / entitas<input name="entity_type" value="{{ request('entity_type') }}" placeholder="Produk, User"></label>
+        <label>Baris <select name="per_page">@foreach ([10, 25, 50] as $size)<option value="{{ $size }}" @selected((int) request('per_page', 10) === $size)>{{ $size }}</option>@endforeach</select></label>
         <button class="admin-button admin-button--primary" type="submit">Terapkan Filter</button>
         @if (request()->query())<a class="admin-button" href="{{ route('admin.activity-logs') }}">Reset</a>@endif
     </form>
-    <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Waktu (WIB)</th><th>User / Pelaku</th><th>Aksi</th><th>Modul / Entitas</th><th>IP Address</th><th>Detail</th></tr></thead><tbody>
+    <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Aksi</th><th>Waktu (WIB)</th><th>User / Pelaku</th><th>Jenis Aksi</th><th>Modul / Entitas</th><th>Ringkasan Perubahan</th><th>IP Address</th></tr></thead><tbody>
         @forelse ($logs as $log)
-            <tr><td>{{ $log->created_at?->format('d/m/Y') }}<small class="admin-table-subline">{{ $log->created_at?->format('H:i:s') }} WIB</small></td><td>{{ $log->user?->name ?? 'Sistem' }}</td><td><span class="admin-status admin-status--{{ str_contains($log->action, 'failed') ? 'locked' : 'draft' }}">{{ strtoupper(str_replace(['_', '.'], ' ', $log->action)) }}</span></td><td>{{ class_basename($log->entity_type ?? '-') }} #{{ $log->entity_id ?? '-' }}</td><td>{{ $log->ip_address ?? '—' }}</td><td><details><summary>Lihat detail</summary><div class="admin-log-detail"><strong>Waktu:</strong> {{ $log->created_at?->format('d M Y H:i:s') }}<strong>User agent</strong><pre>{{ $log->user_agent ?? 'Tidak tersedia' }}</pre><strong>Sebelum</strong><pre>{{ json_encode($log->old_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre><strong>Sesudah</strong><pre>{{ json_encode($log->new_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre></div></details></td></tr>
-        @empty<tr><td colspan="6">Tidak ada aktivitas pada filter ini.</td></tr>@endforelse
+            <tr><td><details class="admin-log-details"><summary class="admin-icon-button" aria-label="Lihat detail log" title="Lihat detail"><span class="material-symbols-rounded" aria-hidden="true">visibility</span></summary><div class="admin-log-detail"><strong>Waktu:</strong> {{ $log->created_at?->format('d M Y H:i:s') }}<strong>User agent</strong><pre>{{ $log->user_agent ?? 'Tidak tersedia' }}</pre><strong>Sebelum</strong><pre>{{ json_encode($log->old_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre><strong>Sesudah</strong><pre>{{ json_encode($log->new_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre></div></details></td><td>{{ $log->created_at?->format('d/m/Y') }}<small class="admin-table-subline">{{ $log->created_at?->format('H:i:s') }} WIB</small></td><td>{{ $log->user?->name ?? 'Sistem' }}</td><td><span class="admin-status admin-status--{{ str_contains($log->action, 'failed') ? 'locked' : 'draft' }}">{{ strtoupper(str_replace(['_', '.'], ' ', $log->action)) }}</span></td><td>{{ class_basename($log->entity_type ?? '-') }} #{{ $log->entity_id ?? '-' }}</td><td>{{ $log->ip_address ?? '—' }}</td></tr>
+        @empty<tr><td colspan="7">Tidak ada aktivitas pada filter ini.</td></tr>@endforelse
     </tbody></table></div>
-    <div class="admin-list-footer"><span>Menampilkan {{ $logs->firstItem() ?? 0 }}–{{ $logs->lastItem() ?? 0 }} dari {{ $logs->total() }} log</span>{{ $logs->links() }}</div>
+    @include('admin.partials.pagination', ['paginator' => $logs, 'label' => 'log'])
 </section>
 @endsection
+        

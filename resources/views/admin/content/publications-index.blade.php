@@ -28,7 +28,7 @@
             @if ($isDocs)<td>@if ($record->cover?->admin_preview_url)<button class="admin-product-image" type="button" data-preview-url="{{ $record->cover->admin_preview_url }}"><img src="{{ $record->cover->admin_preview_url }}" alt="{{ $translation?->title }}"></button>@else<span class="admin-product-image admin-product-image--empty"><span class="material-symbols-rounded">image</span></span>@endif</td>@endif
             <td class="admin-product-name"><strong>{{ $translation?->title ?? 'Tanpa judul' }}</strong></td><td><span class="admin-publication-type">{{ $isDocs ? ($record->type === 'article' ? 'Artikel' : 'Foto Kegiatan') : $record->employment_type }}</span></td>@if (! $isDocs)<td>{{ $record->location }}</td>@endif<td>{{ ($isDocs ? $record->event_date : $record->posted_at)?->format('d M Y') ?? '—' }}</td><td>{{ $isDocs ? $record->gallery_count.' foto' : ($record->closing_date?->format('d M Y') ?? '—') }}</td><td><span class="admin-status admin-status--{{ $record->status }}">{{ ucfirst($record->status) }}</span></td></tr>
         @empty<tr><td colspan="8" class="admin-empty">Belum ada data yang sesuai.</td></tr>@endforelse
-        </tbody></table></div><footer class="admin-product-pagination"><p>Menampilkan {{ $records->firstItem() ?? 0 }}–{{ $records->lastItem() ?? 0 }} dari {{ $records->total() }}</p>{{ $records->links() }}</footer>
+        </tbody></table></div>@include('admin.partials.pagination', ['paginator' => $records, 'label' => $isDocs ? 'dokumentasi' : 'lowongan'])
     </section>
 </section>
 @endsection

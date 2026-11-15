@@ -247,6 +247,7 @@ section[id] {
 }
 
 .hero__slide {
+    position: relative;
     display: flex;
     width: 100%;
     height: 100%;
@@ -254,6 +255,7 @@ section[id] {
     justify-content: center;
 }
 
+.hero__slide[hidden] { display: none; }
 .hero__content {
     position: relative;
     z-index: 1;
@@ -1381,3 +1383,26 @@ section[id] {
         animation-duration: 0.01ms !important;
     }
 }
+
+.public-lightbox { max-width:none; max-height:none; width:100%; height:100%; padding:0; border:0; background:transparent; color:white; }
+.public-lightbox::backdrop { background:rgba(8,19,40,.9); }
+.public-lightbox__content { width:100%; height:100%; display:flex; align-items:center; justify-content:center; gap:1rem; padding:3rem 1rem; }
+.public-lightbox figure { margin:0; text-align:center; min-width:0; }
+.public-lightbox figure img { max-width:min(85vw,1100px); max-height:75vh; width:auto; height:auto; object-fit:contain; }
+.public-lightbox figcaption { margin-top:.75rem; color:white; }
+.public-lightbox button { border:0; border-radius:50%; width:44px; height:44px; background:#fff; color:#183a85; font-size:2rem; line-height:1; cursor:pointer; flex-shrink:0; }
+.public-lightbox__close { position:absolute; top:1rem; right:1rem; }
+.public-lightbox button[hidden] { display:none; }
+
+.imi-sweet-alert { position:fixed; inset:0; z-index:9999; display:grid; place-items:center; padding:20px; background:rgba(8,19,40,.55); }
+.imi-sweet-alert__dialog { width:min(100%,420px); padding:32px; background:#fff; color:#1b2a44; border-radius:18px; text-align:center; box-shadow:0 18px 50px rgba(0,0,0,.2); }
+.imi-sweet-alert__icon { display:grid; place-items:center; width:60px; height:60px; margin:0 auto 16px; border:3px solid #dd4554; border-radius:50%; color:#dd4554; font-size:38px; }
+.imi-sweet-alert__icon--success { color:#07845e; border-color:#07845e; }
+.imi-sweet-alert__icon--warning { color:#c68500; border-color:#c68500; }
+.imi-sweet-alert__message { margin:12px 0 22px; white-space:pre-line; }
+.imi-sweet-alert__actions { display:flex; justify-content:center; gap:10px; }
+.imi-sweet-alert__confirm, .imi-sweet-alert__cancel { padding:10px 24px; border:0; border-radius:8px; background:#2554cd; color:#fff; cursor:pointer; }
+.imi-sweet-alert__cancel { background:#e9eef9; color:#263b5e; }
+
+.imi-sweet-alert.is-closing { animation: public-alert-close .15s ease forwards; }
+@keyframes public-alert-close { to { opacity:0; } }

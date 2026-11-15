@@ -18,6 +18,7 @@
         <select name="role"><option value="">Semua Role</option>@foreach ($roles as $role)<option value="{{ $role->name }}" @selected(request('role') === $role->name)>{{ ucfirst($role->name) }}</option>@endforeach</select>
         <select name="status"><option value="">Semua Status</option>@foreach (['active' => 'Active', 'inactive' => 'Inactive', 'locked' => 'Locked'] as $key => $label)<option value="{{ $key }}" @selected(request('status') === $key)>{{ $label }}</option>@endforeach</select>
         <input type="search" name="q" value="{{ request('q') }}" placeholder="Cari nama atau email...">
+        <label>Baris <select name="per_page">@foreach ([10, 25, 50] as $size)<option value="{{ $size }}" @selected((int) request('per_page', 10) === $size)>{{ $size }}</option>@endforeach</select></label>
         <button class="admin-button" type="submit">Terapkan</button>
         @if (request()->query())<a class="admin-button" href="{{ route('admin.users.index') }}">Reset Filter</a>@endif
     </form>
@@ -27,6 +28,7 @@
             <td><strong>{{ $user->name }}</strong>@if (auth()->id() === $user->id)<span class="admin-status admin-status--published">Anda</span>@endif</td><td>{{ $user->email }}</td><td><span class="admin-status admin-status--draft">{{ ucfirst($user->role?->name ?? 'Tanpa role') }}</span></td><td><span class="admin-status admin-status--{{ $user->status }}">{{ ucfirst($user->status) }}</span></td><td>{{ $user->last_login_at?->format('d M Y, H:i') ?? 'Belum pernah login' }}</td></tr>
         @empty<tr><td colspan="{{ auth()->user()->hasRole('superadmin') ? 6 : 5 }}">Tidak ada akun yang cocok dengan filter ini.</td></tr>@endforelse
     </tbody></table></div>
-    <div class="admin-list-footer"><span>Menampilkan {{ $users->firstItem() ?? 0 }}–{{ $users->lastItem() ?? 0 }} dari {{ $users->total() }} user</span>{{ $users->links() }}</div>
+    @include('admin.partials.pagination', ['paginator' => $users, 'label' => 'user'])
 </section>
 @endsection
+        

@@ -25,9 +25,9 @@
     @endphp
     <div class="admin-shell" data-admin-shell>
         <aside class="admin-sidebar" aria-label="Navigasi CMS">
-            <a class="admin-brand" href="{{ route('admin.dashboard') }}" aria-label="ONEIS CMS Dashboard">
+            <a class="admin-brand" href="{{ route('admin.dashboard') }}" aria-label="Dashboard CMS">
                 <span class="admin-brand__logo"><img src="{{ asset('images/medika-logo.png') }}" alt=""></span>
-                <span class="admin-brand__copy"><strong>ONEIS</strong><small>CMS LANDING PAGE</small></span>
+                <span class="admin-brand__copy"><strong>IMI Medika</strong><small>CMS LANDING PAGE</small></span>
             </a>
 
             <label class="admin-sidebar-search">
@@ -178,7 +178,7 @@
                     </section>
                 @endif
                 @if (session('status'))<span data-admin-flash-success="{{ session('status') }}" hidden></span>@endif
-                @if ($errors->any())
+                @if ($errors->any())<span data-admin-flash-error="{{ $errors->first() }}" hidden></span>
                     <div class="admin-alert admin-alert--error" role="alert"><span class="material-symbols-rounded" aria-hidden="true">error</span><span>{{ $errors->first() }}</span></div>
                 @endif
                 @yield('content')

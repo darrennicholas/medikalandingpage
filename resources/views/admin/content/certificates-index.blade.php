@@ -40,20 +40,6 @@
                 <tr><td colspan="7" class="admin-empty">Belum ada sertifikat yang sesuai filter.</td></tr>
             @endforelse
         </tbody></table></div>
-        <div class="admin-brand-manager__footer admin-certificate-footer">
-            <p>Showing {{ $records->firstItem() ?? 0 }} to {{ $records->lastItem() ?? 0 }} of {{ $records->total() }} results</p>
-            <nav class="admin-certificate-footer__pagination" aria-label="Navigasi daftar sertifikat">
-                @if ($records->previousPageUrl())
-                    <a href="{{ $records->previousPageUrl() }}">« Previous</a>
-                @else
-                    <span aria-disabled="true">« Previous</span>
-                @endif
-                @if ($records->nextPageUrl())
-                    <a href="{{ $records->nextPageUrl() }}">Next »</a>
-                @else
-                    <span aria-disabled="true">Next »</span>
-                @endif
-            </nav>
-        </div>
+        @include('admin.partials.pagination', ['paginator' => $records, 'label' => 'sertifikat'])
     </section>
 @endsection

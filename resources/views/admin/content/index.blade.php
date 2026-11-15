@@ -15,7 +15,7 @@
 @endphp
 @section('title', $isBrochureFocus ? 'Spesifikasi & Brosur' : $pageTitle)
 @section('page-heading', $isBrochureFocus ? 'Spesifikasi & Brosur' : $pageTitle)
-@section('breadcrumb', $isHeroResource ? 'Pengaturan Konten  /  Beranda  /  Hero / Banner' : 'ONEIS CMS  /  Konten Landing Page  /  '.$pageTitle)
+@section('breadcrumb', $isHeroResource ? 'Pengaturan Konten  /  Beranda  /  Hero / Banner' : 'CMS  /  Konten Landing Page  /  '.$pageTitle)
 @section('page-description', $isHeroResource ? 'Kelola slide utama pada halaman beranda' : '')
 @section('page-actions')
     <a class="admin-button admin-button--primary" href="{{ route('admin.content.create', array_merge(['resource' => $resource], $isContentBlockFocus || $isBrochureFocus ? ['section' => $activeContentBlockSection ?? 'specifications-brochures'] : [])) }}"><span class="material-symbols-rounded" aria-hidden="true">add</span>{{ $isProductResource ? 'Tambah Produk' : 'Tambah Data' }}</a>
@@ -34,6 +34,7 @@
     </section>
 
     <section class="admin-panel admin-hero-panel">
+        <p>1 slide aktif ditampilkan sebagai gambar tunggal; lebih dari 1 slide aktif ditampilkan sebagai slider.</p>
         <form class="admin-hero-toolbar" method="GET" action="{{ route('admin.content.index', $resource) }}">
             <label>Status<select name="status"><option value="">Semua Status</option>@foreach (['published' => 'Published', 'draft' => 'Draft', 'unpublished' => 'Unpublish'] as $key => $label)<option value="{{ $key }}" @selected(request('status') === $key)>{{ $label }}</option>@endforeach</select></label>
             <label>Tampilkan<select name="per_page"><option value="10" @selected(request('per_page', 10) == 10)>10 data</option><option value="25" @selected(request('per_page') == 25)>25 data</option><option value="50" @selected(request('per_page') == 50)>50 data</option></select></label>
@@ -73,7 +74,7 @@
                 </tbody>
             </table>
         </div>
-        <div class="admin-hero-pagination">{{ $records->links() }}</div>
+        @include('admin.partials.pagination', ['paginator' => $records, 'label' => 'banner'])
     </section>
 @elseif ($isProductResource)
     @php
@@ -154,7 +155,7 @@
                     </tbody>
                 </table>
             </div>
-            <footer class="admin-product-pagination"><p>Menampilkan <strong>{{ $records->firstItem() ?? 0 }}–{{ $records->lastItem() ?? 0 }}</strong> dari <strong>{{ $records->total() }}</strong> produk</p>{{ $records->links() }}</footer>
+            @include('admin.partials.pagination', ['paginator' => $records, 'label' => 'produk'])
         </section>
     </section>
 @else
@@ -208,7 +209,7 @@
                 <tr><td colspan="{{ 4 + (int) $hasMediaPreview + (int) $isBrochureFocus }}" class="admin-empty">Belum ada data {{ $isBrochureFocus ? 'produk' : strtolower($pageTitle) }}.</td></tr>
             @endforelse
         </tbody></table></div>
-        {{ $records->links() }}
+        @include('admin.partials.pagination', ['paginator' => $records, 'label' => $isBrochureFocus ? 'produk' : 'konten'])
     </section>
 @endif
 @endsection

@@ -26,7 +26,7 @@
                 <h1>Masuk ke Admin Panel</h1>
                 <p>Kelola konten landing page company profile.</p>
             </div>
-            @if ($errors->any())
+            @if ($errors->any())<span data-admin-flash-error="{{ $errors->first() }}" hidden></span>
                 <div class="admin-alert admin-alert--error" role="alert"><span class="material-symbols-rounded" aria-hidden="true">error</span><span>{{ $errors->first() }}</span></div>
             @endif
             <form method="POST" action="{{ route('admin.login.store') }}" class="admin-form admin-login-form" data-admin-login-form>

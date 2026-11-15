@@ -120,7 +120,6 @@ class CmsProductSeeder extends Seeder
                 'size_bytes' => File::exists($fullPath) ? File::size($fullPath) : 0,
                 'width' => $imageInfo[0] ?? null,
                 'height' => $imageInfo[1] ?? null,
-                'alt_text_id' => pathinfo($fileName, PATHINFO_FILENAME),
             ],
         );
     }

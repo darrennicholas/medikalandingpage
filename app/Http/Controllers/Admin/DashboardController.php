@@ -108,7 +108,7 @@ class DashboardController extends Controller
                         ->where('translation_id.lang', '=', 'id');
                 });
             if ($translationTable['hasStatus'] ?? true) {
-                $contentQuery->where('content.status', 'published');
+                $contentQuery->where('content.status', $translationTable['table'] === 'job_openings' ? 'open' : 'published');
             }
             if ($translationTable['hasSoftDeletes'] ?? true) {
                 $contentQuery->whereNull('content.deleted_at');

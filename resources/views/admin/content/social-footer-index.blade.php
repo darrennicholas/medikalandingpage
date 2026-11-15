@@ -37,6 +37,7 @@
     <form class="admin-toolbar" method="GET" action="{{ route('admin.content.index', 'social-links') }}">
         <label>Status<select name="status"><option value="">Semua Status</option>@foreach (['published' => 'Published', 'draft' => 'Draft', 'unpublished' => 'Unpublished'] as $status => $label)<option value="{{ $status }}" @selected(request('status') === $status)>{{ $label }}</option>@endforeach</select></label>
         <label class="admin-toolbar__search"><span class="material-symbols-rounded" aria-hidden="true">search</span><input type="search" name="q" value="{{ request('q') }}" placeholder="Cari platform atau URL..."></label>
+        <label>Baris <select name="per_page">@foreach ([10, 25, 50] as $size)<option value="{{ $size }}" @selected((int) request('per_page', 10) === $size)>{{ $size }}</option>@endforeach</select></label>
         <button class="admin-button" type="submit">Terapkan</button><a class="admin-button" href="{{ route('admin.content.index', 'social-links') }}">Reset</a>
     </form>
     <div class="admin-table-wrap"><table class="admin-table admin-social-table"><thead><tr><th>Aksi</th><th>Urutan</th><th>Platform</th><th>URL / Tautan Resmi</th><th>Status</th></tr></thead><tbody>
@@ -44,6 +45,7 @@
             <tr><td><div class="admin-actions"><a href="{{ route('admin.content.edit', ['resource' => 'social-links', 'id' => $record->id]) }}" aria-label="Ubah {{ $record->platform }}"><span class="material-symbols-rounded" aria-hidden="true">edit</span></a><button type="button" data-status-url="{{ url('/api/v1/admin/social-links/'.$record->id.'/status') }}" data-next-status="{{ $record->status === 'published' ? 'unpublished' : 'published' }}" aria-label="Ubah status"><span class="material-symbols-rounded" aria-hidden="true">{{ $record->status === 'published' ? 'visibility_off' : 'visibility' }}</span></button><button type="button" class="is-danger" data-delete-url="{{ url('/api/v1/admin/social-links/'.$record->id) }}" aria-label="Hapus {{ $record->platform }}"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button></div></td><td><span class="admin-order-pill">#{{ $record->display_order }}</span></td><td><strong>{{ $record->platform }}</strong></td><td><a class="admin-social-url" href="{{ $record->url }}" target="_blank" rel="noopener noreferrer">{{ $record->url }} <span class="material-symbols-rounded" aria-hidden="true">open_in_new</span></a></td><td><span class="admin-status admin-status--{{ $record->status }}">{{ ucfirst($record->status) }}</span></td></tr>
         @empty<tr><td colspan="5" class="admin-empty">Belum ada tautan sosial untuk ditampilkan.</td></tr>@endforelse
     </tbody></table></div>
-    <div class="admin-social-pagination">{{ $records->links() }}</div>
+    @include('admin.partials.pagination', ['paginator' => $records, 'label' => 'tautan sosial'])
 </section>
 @endsection
+        

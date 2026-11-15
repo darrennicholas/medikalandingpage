@@ -41,6 +41,7 @@
         <form class="admin-brand-manager__filters" method="GET" action="{{ route('admin.content.index', 'mission-items') }}">
             <label for="mission-status-filter">Status<select id="mission-status-filter" name="status"><option value="">Semua Status</option>@foreach (['published' => 'Published', 'draft' => 'Draft', 'unpublished' => 'Unpublished'] as $value => $label)<option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>@endforeach</select></label>
             <label class="admin-brand-manager__search" for="mission-search">Cari poin misi<span class="admin-brand-manager__search-control"><span class="material-symbols-rounded" aria-hidden="true">search</span><input id="mission-search" type="search" name="q" value="{{ request('q') }}" placeholder="Cari isi poin misi..."></span></label>
+            <label>Baris <select name="per_page">@foreach ([10, 25, 50] as $size)<option value="{{ $size }}" @selected((int) request('per_page', 10) === $size)>{{ $size }}</option>@endforeach</select></label>
             <button class="admin-button" type="submit"><span class="material-symbols-rounded" aria-hidden="true">filter_alt</span>Terapkan</button>
         </form>
         <div class="admin-table-wrap" data-reorder-list="{{ implode(',', $missionIds) }}" data-reorder-resource="mission-items"><table class="admin-table admin-mission-table"><thead><tr><th>Aksi</th><th>Urutan</th><th>Isi Butir Misi (ID)</th><th>Mission Item (EN)</th><th>Status</th><th>Terakhir Diperbarui</th></tr></thead><tbody>
@@ -52,6 +53,6 @@
                 <tr><td class="admin-empty" colspan="6">Belum ada poin misi yang sesuai dengan filter.</td></tr>
             @endforelse
         </tbody></table></div>
-        <div class="admin-brand-manager__footer"><p>Menampilkan {{ $records->firstItem() ?? 0 }}–{{ $records->lastItem() ?? 0 }} dari {{ $records->total() }} butir misi</p>{{ $records->onEachSide(1)->links() }}</div>
+        @include('admin.partials.pagination', ['paginator' => $records, 'label' => 'butir misi'])
     </section>
 @endsection

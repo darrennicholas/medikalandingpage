@@ -41,7 +41,7 @@
                         <div class="container hero__content">
                             @if ($slide->public_title)<h1 id="hero-title">{{ $slide->public_title }}</h1>@endif
                             @if ($slide->public_subtitle)<p>{{ $slide->public_subtitle }}</p>@endif
-                            @if ($slide->public_cta_label && $slide->cta_url)<a class="contact-cta__button" href="{{ $slide->cta_url }}">{{ $slide->public_cta_label }}</a>@endif
+                            @if ($slide->public_cta_label && $slide->cta_url)<a class="contact-cta__button" href="{{ preg_replace('#^/(id|en)(?=/|$)#', '/'.app()->getLocale(), $slide->cta_url) }}">{{ $slide->public_cta_label }}</a>@endif
                         </div>
                     </div>
                 @endforeach
@@ -91,7 +91,7 @@
                         <div class="contact-cta__actions">
                             @foreach ($homeCta['buttons'] as $button)
                                 @if (filled($button['label'] ?? null) && filled($button['url'] ?? null))
-                                    @php($buttonUrl = $button['url'])
+                                    @php($buttonUrl = preg_replace('#^/(id|en)(?=/|$)#', '/'.app()->getLocale(), $button['url']))
                                     @php($isExternalButton = Illuminate\Support\Str::startsWith($buttonUrl, ['https://', 'http://']))
                                     <a class="contact-cta__button contact-cta__button--{{ $button['style'] ?? 'primary' }}" href="{{ $buttonUrl }}" @if ($isExternalButton) target="_blank" rel="noopener noreferrer" @endif>
                                         @if (filled($button['icon'] ?? null))<span class="material-symbols-rounded" aria-hidden="true">{{ $button['icon'] }}</span>@endif
@@ -100,7 +100,7 @@
                                 @endif
                             @endforeach
                         </div>
-                    @elseif ($homeCta['cta_label'] && $homeCta['cta_url'])<a class="contact-cta__button" href="{{ $homeCta['cta_url'] }}">{{ $homeCta['cta_label'] }}</a>@endif
+                    @elseif ($homeCta['cta_label'] && $homeCta['cta_url'])<a class="contact-cta__button" href="{{ preg_replace('#^/(id|en)(?=/|$)#', '/'.app()->getLocale(), $homeCta['cta_url']) }}">{{ $homeCta['cta_label'] }}</a>@endif
                 </div>
             </section>
         @endif

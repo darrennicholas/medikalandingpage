@@ -24,7 +24,7 @@
                     <p>{{ $careerIntro['body'] ?? ($language === 'en' ? 'Join our team and help support better healthcare in Indonesia.' : 'Bergabunglah bersama kami dan ikut menghadirkan layanan kesehatan yang lebih baik untuk Indonesia.') }}</p>
                     <a class="careers-hero__button" href="#lowongan">{{ $language === 'en' ? 'Explore opportunities' : 'Lihat lowongan' }}</a>
                 </div>
-                <div class="careers-hero__visual"><img src="{{ $careerIntro['image_url'] ?? asset('images/gambartentangmedika.jpeg') }}" alt="{{ $careerIntro['image_alt'] ?? ($language === 'en' ? 'IMI Medika team' : 'Tim IMI Medika') }}"></div>
+                <div class="careers-hero__visual"><img src="{{ $careerIntro['image_url'] ?? asset('images/gambartentangmedika.jpeg') }}" alt="{{ ($careerIntro['image_alt'] ?? null) ?: ($language === 'en' ? 'IMI Medika team' : 'Tim IMI Medika') }}"></div>
             </div>
         </section>
         <section class="careers-openings" id="lowongan" aria-labelledby="careers-openings-title">

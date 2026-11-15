@@ -12,6 +12,7 @@ use App\Models\Documentation;
 use App\Models\HeroSlide;
 use App\Models\HeroSlideTranslation;
 use App\Models\JobOpening;
+use App\Models\Media;
 use App\Models\MissionItem;
 use App\Models\Product;
 use App\Models\ProductCategory;
@@ -325,6 +326,14 @@ class PublicPageController extends Controller
             ->with('translations')->orderByDesc('posted_at')->paginate(9)->withQueryString();
         $jobs->getCollection()->each(fn (JobOpening $job) => $job->setAttribute('public_translation', $this->translation($job->translations, $language)));
         $careerIntro = $this->publishedBlocks($language)->get('career_intro');
+        if (empty($careerIntro['image_url'])) {
+            $defaultImage = Media::query()->where('path', 'images/gambartentangmedika.jpeg')->first();
+            if ($defaultImage) {
+                $careerIntro ??= [];
+                $careerIntro['image_url'] = $this->mediaUrl($defaultImage);
+                $careerIntro['image_alt'] = $language === 'en' ? ($defaultImage->alt_text_en ?: $defaultImage->alt_text_id) : $defaultImage->alt_text_id;
+            }
+        }
 
         return view('careers', [
             'jobs' => $jobs,
@@ -440,7 +449,7 @@ class PublicPageController extends Controller
         $selected = clone $selected;
         foreach ($fallback->getAttributes() as $field => $value) {
             if (! in_array($field, ['id', 'lang', 'created_at', 'updated_at'], true) && blank($selected->getAttribute($field))) {
-                $selected->setAttribute($field, $value);
+                $selected->setAttribute($field, $fallback->getAttribute($field));
             }
         }
 

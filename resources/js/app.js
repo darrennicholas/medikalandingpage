@@ -349,6 +349,13 @@ const showArticleAlert = ({ titleText, messageText, type = 'success', confirmTex
     confirmButton.focus();
 });
 
+window.showPublicError = (message) => showArticleAlert({
+    titleText: document.documentElement.lang === 'en' ? 'Failed' : 'Gagal',
+    messageText: message || (document.documentElement.lang === 'en' ? 'The request could not be completed. Please try again.' : 'Permintaan tidak dapat diproses. Silakan coba lagi.'),
+    type: 'error',
+    confirmText: document.documentElement.lang === 'en' ? 'OK' : 'Oke',
+});
+
 if (articleForm) {
     const formStatus = document.querySelector('#article-form-status');
 
@@ -420,10 +427,11 @@ if (articleForm) {
             };
 
             window.localStorage.setItem(articleStorageKey, JSON.stringify([newArticle, ...readSavedArticles()]));
-            await showArticleAlert({ titleText: 'Berhasil!', messageText: 'Artikel berhasil ditambahkan.' });
+            await showArticleAlert({ titleText: document.documentElement.lang === 'en' ? 'Success!' : 'Berhasil!', messageText: document.documentElement.lang === 'en' ? 'The article was added.' : 'Artikel berhasil ditambahkan.', confirmText: document.documentElement.lang === 'en' ? 'OK' : 'Oke' });
             window.location.assign(articleForm.dataset.listUrl);
         } catch {
-            formStatus.textContent = 'Draft tidak dapat disimpan di browser ini. Coba lagi.';
+            formStatus.textContent = document.documentElement.lang === 'en' ? 'The draft could not be saved in this browser. Please try again.' : 'Draft tidak dapat disimpan di browser ini. Coba lagi.';
+            window.showPublicError(formStatus.textContent);
             saveButton.disabled = false;
         }
     });
@@ -536,8 +544,8 @@ if (articleList) {
                 } catch {
                     articles.splice(articleIndex, 0, article);
                     await showArticleAlert({
-                        titleText: 'Gagal menghapus',
-                        messageText: 'Artikel tidak dapat dihapus dari penyimpanan browser.',
+                        titleText: document.documentElement.lang === 'en' ? 'Failed to delete' : 'Gagal menghapus',
+                        messageText: document.documentElement.lang === 'en' ? 'The article could not be removed from browser storage.' : 'Artikel tidak dapat dihapus dari penyimpanan browser.',
                         type: 'error',
                     });
                 }
@@ -586,4 +594,45 @@ if (articleDetail) {
     } else {
         missingMessage.hidden = false;
     }
+}
+
+const publicGalleryLinks = Array.from(document.querySelectorAll('[data-public-gallery]'));
+if (publicGalleryLinks.length) {
+    const dialog = document.createElement('dialog');
+    dialog.className = 'public-lightbox';
+    const english = document.documentElement.lang === 'en';
+    dialog.innerHTML = `<div class="public-lightbox__content"><button type="button" class="public-lightbox__close" aria-label="${english ? 'Close' : 'Tutup'}">×</button><button type="button" class="public-lightbox__previous" aria-label="${english ? 'Previous image' : 'Gambar sebelumnya'}">‹</button><figure><img alt=""><figcaption></figcaption></figure><button type="button" class="public-lightbox__next" aria-label="${english ? 'Next image' : 'Gambar berikutnya'}">›</button></div>`;
+    document.body.appendChild(dialog);
+    const image = dialog.querySelector('img');
+    image.addEventListener('error', () => { if (dialog.open) dialog.close(); window.showPublicError?.(document.documentElement.lang === 'en' ? 'The image could not be loaded.' : 'Gambar tidak dapat dimuat.'); });
+    const caption = dialog.querySelector('figcaption');
+    let items = [];
+    let index = 0;
+    let opener = null;
+    const display = () => {
+        const item = items[index];
+        image.src = item.href;
+        image.alt = item.querySelector('img')?.alt || '';
+        caption.textContent = item.dataset.galleryCaption || '';
+        dialog.querySelector('.public-lightbox__previous').hidden = items.length < 2;
+        dialog.querySelector('.public-lightbox__next').hidden = items.length < 2;
+    };
+    const move = (direction) => { index = (index + direction + items.length) % items.length; display(); };
+    publicGalleryLinks.forEach((link) => link.addEventListener('click', (event) => {
+        event.preventDefault();
+        opener = link;
+        items = publicGalleryLinks.filter((item) => item.dataset.publicGallery === link.dataset.publicGallery);
+        index = items.indexOf(link);
+        display();
+        dialog.showModal();
+    }));
+    dialog.querySelector('.public-lightbox__close').addEventListener('click', () => dialog.close());
+    dialog.querySelector('.public-lightbox__previous').addEventListener('click', () => move(-1));
+    dialog.querySelector('.public-lightbox__next').addEventListener('click', () => move(1));
+    dialog.addEventListener('close', () => opener?.focus());
+    dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+    dialog.addEventListener('keydown', (event) => { if (event.key === 'ArrowLeft') move(-1); if (event.key === 'ArrowRight') move(1); });
+    let touchStart = 0;
+    dialog.addEventListener('touchstart', (event) => { touchStart = event.changedTouches[0].clientX; }, { passive: true });
+    dialog.addEventListener('touchend', (event) => { const distance = event.changedTouches[0].clientX - touchStart; if (Math.abs(distance) > 50) move(distance < 0 ? 1 : -1); }, { passive: true });
 }

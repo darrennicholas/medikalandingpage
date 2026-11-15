@@ -12,11 +12,11 @@
         <section class="admin-panel admin-profile-card">
             <div class="admin-profile-identity">
                 <span class="admin-profile-avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr($user->name, 0, 1)) }}</span>
-                <div><h2>{{ $user->name }}</h2><span class="admin-profile-role">{{ $user->role?->description ?? ucfirst($user->role?->name ?? 'Pengguna CMS') }}</span><span class="admin-profile-email"><span class="material-symbols-rounded" aria-hidden="true">mail</span>{{ $user->email }}</span></div>
+                <div><h2>{{ $user->name }}</h2><span class="admin-profile-role">{{ $user->role?->description ?? ucfirst($user->role?->name ?? 'Pengguna CMS') }}</span></div>
             </div>
             <h3>Ringkasan Informasi Akun</h3>
             <dl class="admin-profile-details">
-                <div><dt><span class="material-symbols-rounded" aria-hidden="true">alternate_email</span>Email Akun</dt><dd>{{ $user->email }}<span class="admin-status admin-status--{{ $user->email_verified_at ? 'active' : 'draft' }}">{{ $user->email_verified_at ? 'Terverifikasi' : 'Belum diverifikasi' }}</span></dd></div>
+                <div><dt><span class="material-symbols-rounded" aria-hidden="true">alternate_email</span>Email Akun</dt><dd class="admin-profile-details__email"><span>{{ $user->email }}</span><span class="admin-status admin-status--{{ $user->email_verified_at ? 'active' : 'draft' }}">{{ $user->email_verified_at ? 'Terverifikasi' : 'Belum diverifikasi' }}</span></dd></div>
                 <div><dt><span class="material-symbols-rounded" aria-hidden="true">admin_panel_settings</span>Hak Akses</dt><dd>{{ $user->role?->description ?? ucfirst($user->role?->name ?? '—') }}</dd></div>
                 <div><dt><span class="material-symbols-rounded" aria-hidden="true">toggle_on</span>Status Akun</dt><dd><span class="admin-status admin-status--{{ $user->status === 'active' ? 'active' : 'inactive' }}">{{ ucfirst($user->status) }}</span></dd></div>
                 <div><dt><span class="material-symbols-rounded" aria-hidden="true">calendar_month</span>Terdaftar</dt><dd>{{ $user->created_at?->translatedFormat('d F Y') ?? '—' }}</dd></div>
@@ -24,10 +24,6 @@
             </dl>
         </section>
 
-        <section class="admin-panel admin-profile-session">
-            <div class="admin-panel__header"><div><h2>Sesi Saat Ini</h2><p>Perangkat dan jaringan yang sedang digunakan</p></div><span class="admin-status admin-status--active">Aktif</span></div>
-            <div class="admin-profile-device"><span class="material-symbols-rounded" aria-hidden="true">devices</span><span><strong>{{ $currentBrowser }}</strong><small>{{ $currentIp ?: 'Alamat IP tidak tersedia' }}</small></span><span class="admin-profile-device__badge">Sesi ini</span></div>
-        </section>
     </div>
 
     <section class="admin-panel admin-password-panel">
@@ -46,7 +42,6 @@
             <label class="admin-field">Konfirmasi Password Baru<div class="admin-password-field"><span class="material-symbols-rounded admin-password-field__icon" aria-hidden="true">verified_user</span><input type="password" name="password_confirmation" required autocomplete="new-password" placeholder="Ketik ulang password baru" data-password-confirmation><button type="button" data-password-toggle aria-label="Tampilkan password"><span class="material-symbols-rounded" aria-hidden="true">visibility</span></button></div><small data-password-match>Masukkan kembali password baru untuk konfirmasi.</small></label>
             <div class="admin-form__actions admin-password-actions"><button class="admin-button admin-button--primary" type="submit"><span class="material-symbols-rounded" aria-hidden="true">save</span>Simpan Password</button></div>
         </form>
-        <div class="admin-password-help"><span class="material-symbols-rounded" aria-hidden="true">verified_user</span><span><strong>Keamanan ONEIS CMS</strong><small>Jangan bagikan password Anda dan segera perbarui jika akun digunakan di perangkat bersama.</small></span></div>
     </section>
 </div>
 @endsection

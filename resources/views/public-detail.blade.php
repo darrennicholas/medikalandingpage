@@ -36,7 +36,7 @@
                     <div class="public-detail__gallery" aria-label="{{ $language === 'en' ? 'Photo gallery' : 'Galeri foto' }}">
                         @foreach ($item->public_gallery as $image)
                             <figure>
-                                <img src="{{ $image['url'] }}" alt="{{ $image['alt'] ?: $image['caption'] ?: $item->public_title }}" loading="lazy">
+                                <a href="{{ $image['url'] }}" data-public-gallery="documentation" data-gallery-caption="{{ $image['caption'] }}" aria-label="{{ $language === 'en' ? 'Enlarge image' : 'Perbesar gambar' }}"><img src="{{ $image['url'] }}" alt="{{ $image['alt'] ?: $image['caption'] ?: $item->public_title }}" loading="lazy"></a>
                                 @if ($image['caption'])<figcaption>{{ $image['caption'] }}</figcaption>@endif
                             </figure>
                         @endforeach
@@ -47,16 +47,16 @@
             <article>
                 <h1>{{ $translation?->title }}</h1>
                 <p>{{ $job->location }} · {{ $job->employment_type }}</p>
-                <div>{!! nl2br(e($translation?->description)) !!}</div>
+                <div>{!! \App\Services\PublicRichText::render($translation?->description) !!}</div>
                 <h2>{{ $language === 'en' ? 'Requirements' : 'Persyaratan' }}</h2>
-                <div>{!! nl2br(e($translation?->requirements)) !!}</div>
+                <div>{!! \App\Services\PublicRichText::render($translation?->requirements) !!}</div>
                 <a class="contact-cta__button" href="{{ $job->apply_url }}" target="_blank" rel="noopener noreferrer">{{ $language === 'en' ? 'Apply' : 'Lamar' }}</a>
             </article>
         @elseif ($kind === 'product')
             <article>
                 @if ($product->public_image_url)<img src="{{ $product->public_image_url }}" alt="{{ $product->public_image_alt }}" style="max-width:100%;height:auto">@endif
                 <h1>{{ $translation?->name }}</h1>
-                <div>{!! nl2br(e($translation?->description)) !!}</div>
+                <div>{!! \App\Services\PublicRichText::render($translation?->description) !!}</div>
                 @if ($product->public_brochure_url)<a href="{{ $product->public_brochure_url }}" target="_blank" rel="noopener">{{ $language === 'en' ? 'View brochure PDF' : 'Lihat brosur PDF' }}</a>@endif
             </article>
         @endif

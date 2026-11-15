@@ -38,7 +38,7 @@
             <div class="container about-hero__content">
                 <h1 id="about-hero-title">PT Interskala Medika Indonesia</h1>
                 <span class="about-hero__rule" aria-hidden="true"></span>
-                <p data-i18n="aboutTagline">IMPORTIR | DISTRIBUTOR | MANUFAKTUR ALAT KESEHATAN</p>
+                <p data-i18n="aboutTagline">{{ app()->getLocale() === 'en' ? 'IMPORTER | DISTRIBUTOR | MEDICAL DEVICE MANUFACTURER' : 'IMPORTIR | DISTRIBUTOR | MANUFAKTUR ALAT KESEHATAN' }}</p>
             </div>
         </section>
 
@@ -127,7 +127,7 @@
                                         <article class="certificate-card">
                                             <h3>{{ $certificateTranslation?->title }}</h3>
                                             @if ($certificate->issued_year)<span>{{ $certificate->issued_year }}</span>@endif
-                                            <img src="{{ $certificate->public_image_url }}" alt="{{ $certificate->public_image_alt ?: $certificateTranslation?->title }}" loading="lazy">
+                                            <a href="{{ $certificate->public_image_url }}" data-public-gallery="certificates" data-gallery-caption="{{ $certificateTranslation?->title }}" aria-label="{{ $language === 'en' ? 'Enlarge certificate' : 'Perbesar sertifikat' }}"><img src="{{ $certificate->public_image_url }}" alt="{{ $certificate->public_image_alt ?: $certificateTranslation?->title }}" loading="lazy"></a>
                                             @if ($certificateTranslation?->description)<p>{{ $certificateTranslation->description }}</p>@endif
                                         </article>
                                     @endif

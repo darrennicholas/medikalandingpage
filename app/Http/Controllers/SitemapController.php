@@ -6,6 +6,7 @@ use App\Models\Documentation;
 use App\Models\JobOpening;
 use App\Models\Product;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 
 class SitemapController extends Controller
 {
@@ -19,9 +20,9 @@ class SitemapController extends Controller
         }
 
         $products = Product::query()->where('status', 'published')->whereHas('category', fn ($query) => $query->where('status', 'published'))
-            ->with('translations')->get()->flatMap(fn (Product $product): array => $product->translations->map(fn ($translation): string => url('/'.$translation->lang.'/produk/'.$translation->slug))->all());
+            ->with('translations')->get()->flatMap(fn (Product $product): array => $this->localizedDetailUrls($product->translations, 'produk'));
         $articles = Documentation::query()->where('status', 'published')->where('type', 'article')->with('translations')->get()
-            ->flatMap(fn (Documentation $item): array => $item->translations->map(fn ($translation): string => url('/'.$translation->lang.'/dokumentasi/'.$translation->slug))->all());
+            ->flatMap(fn (Documentation $item): array => $this->localizedDetailUrls($item->translations, 'dokumentasi'));
         $activities = Documentation::query()->where('status', 'published')->where('type', 'activity')->get()
             ->flatMap(fn (Documentation $item): array => ['id' => url('/id/dokumentasi/kegiatan/'.$item->id), 'en' => url('/en/dokumentasi/kegiatan/'.$item->id)]);
         $careers = JobOpening::query()->where('status', 'open')->where(fn ($query) => $query->whereNull('closing_date')->orWhereDate('closing_date', '>=', today()))->get()
@@ -30,6 +31,21 @@ class SitemapController extends Controller
         return response()->view('sitemap', [
             'urls' => collect($staticPages)->merge($products)->merge($articles)->merge($activities)->merge($careers)->unique()->values(),
         ])->header('Content-Type', 'application/xml; charset=UTF-8');
+    }
+
+    /** @return list<string> */
+    private function localizedDetailUrls(Collection $translations, string $path): array
+    {
+        $fallback = $translations->firstWhere('lang', 'id')?->slug;
+        $urls = [];
+        foreach (['id', 'en'] as $language) {
+            $slug = $translations->firstWhere('lang', $language)?->slug ?: $fallback;
+            if (filled($slug)) {
+                $urls[] = url('/'.$language.'/'.$path.'/'.$slug);
+            }
+        }
+
+        return $urls;
     }
 
     public function robots(): Response

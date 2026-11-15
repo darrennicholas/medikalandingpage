@@ -10,6 +10,7 @@
             @php
                 $fieldName = $field['name'];
                 $fieldValue = data_get($record, $fieldName);
+                if (! $record->exists && in_array($fieldName, ['event_date', 'posted_at'], true)) { $fieldValue = now()->toDateString(); }
                 if ($fieldName === 'parameters' && is_array($fieldValue)) { $fieldValue = implode(', ', $fieldValue); }
                 if (preg_match('/^translations\[([^\]]+)\]\[([^\]]+)\]$/', $fieldName, $matches)) { $fieldValue = $translations->get($matches[1])?->{$matches[2]}; }
             @endphp
@@ -64,7 +65,7 @@
                             $fieldValue = isset($matches[2]) ? $translations->get($matches[1])?->{$matches[2]} : null;
                         @endphp
                         <label class="admin-field"><span>{{ $field['label'] }} @if ($field['required'])<b>*</b>@endif</span>
-                            @if ($field['type'] === 'textarea')<textarea name="{{ $fieldName }}" maxlength="{{ $field['maxlength'] ?? 3000 }}" @required($field['required'] && $language === 'id')>{{ old($fieldName, $fieldValue) }}</textarea>
+                            @if ($field['type'] === 'textarea')@if (in_array($resource, ['products', 'documentations', 'job-openings']) && (str_contains($fieldName, '[description]') || str_contains($fieldName, '[body]') || str_contains($fieldName, '[requirements]')))<span class="admin-rich-toolbar" data-rich-toolbar><button type="button" data-rich-tag="strong">Tebal</button><button type="button" data-rich-tag="em">Miring</button><button type="button" data-rich-tag="ul">Daftar</button><button type="button" data-rich-tag="a">Tautan</button></span>@endif<textarea name="{{ $fieldName }}" maxlength="{{ $field['maxlength'] ?? 3000 }}" @required($field['required'] && $language === 'id')>{{ old($fieldName, $fieldValue) }}</textarea>
                             @else<input type="text" name="{{ $fieldName }}" value="{{ old($fieldName, $fieldValue) }}" maxlength="{{ $field['maxlength'] ?? 500 }}" @required($field['required'] && $language === 'id')>@endif
                         </label>
                     @endforeach
@@ -75,7 +76,7 @@
         <div class="admin-form__actions">
             <a class="admin-button" href="{{ route('admin.content.index', $resource) }}">Batal</a>
             @if (in_array('status', $record->getFillable(), true))
-                <button class="admin-button" type="submit" data-save-status="draft">Simpan Draft</button>
+                <button class="admin-button" type="submit" data-save-status="draft" formnovalidate>Simpan Draft</button>
                 <button class="admin-button admin-button--primary" type="submit" data-save-status="{{ $resource === 'job-openings' ? 'open' : 'published' }}">{{ $resource === 'job-openings' ? 'Simpan & Buka' : 'Simpan & Publish' }}</button>
             @else
                 <button class="admin-button admin-button--primary" type="submit" data-save-status="">Simpan</button>

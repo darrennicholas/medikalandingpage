@@ -1,7 +1,7 @@
 @extends('admin.layout')
 @section('title', 'Dashboard')
 @section('page-heading', 'Dashboard')
-@section('breadcrumb', 'ONEIS CMS  /  Dashboard')
+@section('breadcrumb', 'CMS  /  Dashboard')
 @section('page-actions')
     <form class="admin-dashboard-range" method="GET" action="{{ route('admin.dashboard') }}">
         <span class="material-symbols-rounded" aria-hidden="true">calendar_today</span>

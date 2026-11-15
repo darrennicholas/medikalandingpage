@@ -48,9 +48,9 @@
     <main class="contact-main">
         <div class="container">
             <div class="contact-heading">
-                <h1 data-i18n="contactPageTitle">Hubungi Kami</h1>
+                <h1 data-i18n="contactPageTitle">{{ app()->getLocale() === 'en' ? 'Contact Us' : 'Hubungi Kami' }}</h1>
                 <span class="contact-heading__rule" aria-hidden="true"></span>
-                <p data-i18n="contactPageIntro">Kami siap membantu Anda dengan segala pertanyaan dan kebutuhan mengenai produk dan layanan IMI Medika. Tim kami yang profesional siap memberikan solusi terbaik untuk Anda.</p>
+                <p data-i18n="contactPageIntro">{{ app()->getLocale() === 'en' ? 'Our team is ready to help with questions about IMI Medika products and services.' : 'Kami siap membantu Anda dengan segala pertanyaan dan kebutuhan mengenai produk dan layanan IMI Medika. Tim kami yang profesional siap memberikan solusi terbaik untuk Anda.' }}</p>
             </div>
 
             @php

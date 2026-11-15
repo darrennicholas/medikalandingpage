@@ -142,7 +142,7 @@ class ContentManagementController extends Controller
             }
 
             $perPage = (int) $request->query('per_page', 10);
-            if (! in_array($perPage, [5, 10, 25], true)) {
+            if (! in_array($perPage, [10, 25, 50], true)) {
                 $perPage = 10;
             }
 
@@ -296,7 +296,7 @@ class ContentManagementController extends Controller
             $footerBlock->loadMissing('translations');
 
             return view('admin.content.social-footer-index', [
-                'records' => $socialQuery->orderBy('display_order')->paginate(10)->withQueryString(),
+                'records' => $socialQuery->orderBy('display_order')->paginate(in_array($request->integer('per_page'), [10, 25, 50], true) ? $request->integer('per_page') : 10)->withQueryString(),
                 'socialTotal' => SocialLink::query()->count(),
                 'socialActive' => SocialLink::query()->where('status', 'published')->count(),
                 'footerBlock' => $footerBlock,
@@ -357,7 +357,7 @@ class ContentManagementController extends Controller
             }
             $perPage = (int) $request->query('per_page', 10);
             $perPage = in_array($perPage, [10, 25, 50], true) ? $perPage : 10;
-            $records = $query->latest('id')->paginate($perPage)->withQueryString();
+            $records = ($isDocumentation ? $query->orderByDesc('event_date')->orderByDesc('id') : $query->latest('id'))->paginate($perPage)->withQueryString();
             if ($isDocumentation) {
                 $records->getCollection()->each(function (Documentation $item): void {
                     if ($item->cover) {
@@ -504,6 +504,23 @@ class ContentManagementController extends Controller
             ]);
         }
 
+        if ($resource === 'products' && ! $record->exists) {
+            $defaultLogos = Product::query()
+                ->whereHas('topLogo')->whereHas('bottomLogo')
+                ->select('logo_top_media_id', 'logo_bottom_media_id')
+                ->selectRaw('COUNT(*) as usage_count')
+                ->groupBy('logo_top_media_id', 'logo_bottom_media_id')
+                ->orderByDesc('usage_count')->orderBy('logo_top_media_id')->orderBy('logo_bottom_media_id')
+                ->first();
+
+            if ($defaultLogos) {
+                $record->forceFill([
+                    'logo_top_media_id' => $defaultLogos->logo_top_media_id,
+                    'logo_bottom_media_id' => $defaultLogos->logo_bottom_media_id,
+                ]);
+            }
+        }
+
         $definitions = $this->definitions($resource);
         if ($resource === 'content-blocks' && $record->getAttribute('block_key') === 'footer_about') {
             $definitions = [
@@ -525,10 +542,15 @@ class ContentManagementController extends Controller
         }
         $translations = method_exists($record, 'translations') ? $record->translations : collect();
         $mediaOptions = $this->mediaOptions();
-        $categoryOptions = ProductCategory::query()->whereNull('deleted_at')->with('translations')->orderBy('display_order')->get();
+        $categoryOptions = ProductCategory::query()->where(function ($query) use ($record, $resource): void {
+            $query->where('status', 'published');
+            if ($resource === 'products' && $record->getAttribute('category_id')) {
+                $query->orWhere('id', $record->getAttribute('category_id'));
+            }
+        })->with('translations')->orderBy('display_order')->get();
         foreach ($definitions['common'] as &$field) {
             if ($resource === 'products' && $field['name'] === 'category_id') {
-                $field['options'] = $categoryOptions->mapWithKeys(fn (ProductCategory $category): array => [$category->id => $category->translations->firstWhere('lang', 'id')?->name ?? 'Kategori '.$category->id])->all();
+                $field['options'] = $categoryOptions->mapWithKeys(fn (ProductCategory $category): array => [$category->id => ($category->translations->firstWhere('lang', 'id')?->name ?? 'Kategori '.$category->id).($category->status !== 'published' ? ' (tidak aktif)' : '')])->all();
             }
             if ($resource === 'content-blocks' && $record->getAttribute('block_key') === 'footer_about' && $field['name'] === 'block_key') {
                 $field['options'] = ['footer_about' => 'Tentang Footer'];
@@ -575,15 +597,29 @@ class ContentManagementController extends Controller
 
     private function aboutCompanyFormView(ContentBlock $record): View
     {
+        $translationId = $record->translations->firstWhere('lang', 'id');
+        $translationEn = $record->translations->firstWhere('lang', 'en');
+
         return view('admin.content.about-company-form', [
             'record' => $record,
-            'translationId' => $record->translations->firstWhere('lang', 'id'),
-            'translationEn' => $record->translations->firstWhere('lang', 'en'),
+            'translationId' => $translationId,
+            'translationEn' => $translationEn,
+            'translationBodyId' => $this->plainTextForAdmin($translationId?->body),
+            'translationBodyEn' => $this->plainTextForAdmin($translationEn?->body),
             'mediaOptions' => $this->mediaOptions(),
             'apiUrl' => '/api/v1/admin/content-blocks/about_company',
             'redirectUrl' => route('admin.content.index', ['resource' => 'content-blocks', 'section' => 'about_company']),
             'mediaUrl' => $this->mediaUrl($record->media),
         ]);
+    }
+
+    private function plainTextForAdmin(?string $content): string
+    {
+        $contentWithParagraphBreaks = preg_replace('/<\s*\/p\s*>\s*<\s*p(?:\s[^>]*)?>/iu', "\n\n", $content ?? '') ?? ($content ?? '');
+        $contentWithLineBreaks = preg_replace('/<\s*br\s*\/?\s*>/iu', "\n", $contentWithParagraphBreaks) ?? $contentWithParagraphBreaks;
+        $plainText = strip_tags($contentWithLineBreaks);
+
+        return trim(html_entity_decode($plainText, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
     }
 
     private function applyDraftPayload(Model $record, string $resource): void

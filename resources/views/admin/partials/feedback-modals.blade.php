@@ -14,6 +14,9 @@
         </span>
         <h2 id="admin-sweet-alert-title" data-sweet-alert-title>Berhasil</h2>
         <p id="admin-sweet-alert-message" data-sweet-alert-message></p>
-        <button class="admin-button admin-button--primary" type="button" data-sweet-alert-confirm>Oke</button>
+        <div class="admin-sweet-alert__actions">
+            <button class="admin-button" type="button" data-sweet-alert-cancel hidden>Batal</button>
+            <button class="admin-button admin-button--primary" type="button" data-sweet-alert-confirm>Oke</button>
+        </div>
     </section>
 </div>
