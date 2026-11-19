@@ -18,9 +18,6 @@
             </button>
         </div>
         <button class="admin-button admin-button--primary admin-dashboard-range__apply" type="submit">Terapkan Periode</button>
-        <button class="admin-button admin-button--primary admin-dashboard-range__export" type="submit" formaction="{{ route('admin.dashboard.export') }}" formmethod="GET">
-            <span class="material-symbols-rounded" aria-hidden="true">download</span> Export Ringkasan (.xls)
-        </button>
     </form>
 @endsection
 @section('content')

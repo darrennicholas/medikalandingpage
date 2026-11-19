@@ -10,7 +10,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
@@ -180,49 +179,5 @@ class DashboardController extends Controller
             'fromDate' => $fromDate,
             'toDate' => $toDate,
         ]);
-    }
-
-    public function export(): StreamedResponse
-    {
-        $contentTables = [
-            ['label' => 'Produk', 'table' => 'products'],
-            ['label' => 'Kategori', 'table' => 'product_categories'],
-            ['label' => 'Artikel', 'table' => 'documentations', 'type' => 'article'],
-            ['label' => 'Foto', 'table' => 'documentations', 'type' => 'activity'],
-            ['label' => 'Brand', 'table' => 'brands'],
-            ['label' => 'Sertifikat', 'table' => 'certificates'],
-        ];
-        $rows = [];
-
-        foreach ($contentTables as $definition) {
-            $query = DB::table($definition['table'])->whereNull('deleted_at');
-            if (isset($definition['type'])) {
-                $query->where('type', $definition['type']);
-            }
-            $statuses = $query
-                ->select('status', DB::raw('COUNT(*) as total'))
-                ->groupBy('status')
-                ->pluck('total', 'status');
-
-            $rows[] = [
-                $definition['label'],
-                $statuses->sum(),
-                $statuses->get('published', 0),
-                $statuses->get('draft', 0),
-            ];
-        }
-
-        return response()->streamDownload(static function () use ($rows): void {
-            $output = fopen('php://output', 'w');
-            fwrite($output, "\xEF\xBB\xBF<html><head><meta charset=\"UTF-8\"></head><body><table border=\"1\">");
-            fwrite($output, '<tr><th colspan="4">Ringkasan CMS</th></tr>');
-            fwrite($output, '<tr><td colspan="4">'.e(now()->format('d-m-Y H:i')).'</td></tr>');
-            fwrite($output, '<tr><th>Konten</th><th>Total</th><th>Published</th><th>Draft</th></tr>');
-            foreach ($rows as $row) {
-                fwrite($output, '<tr>'.implode('', array_map(static fn (string|int $cell): string => '<td>'.e((string) $cell).'</td>', $row)).'</tr>');
-            }
-            fwrite($output, '</table></body></html>');
-            fclose($output);
-        }, 'ringkasan-cms-'.now()->format('Ymd').'.xls', ['Content-Type' => 'application/vnd.ms-excel; charset=UTF-8']);
     }
 }

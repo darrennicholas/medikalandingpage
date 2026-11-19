@@ -24,7 +24,6 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::post('/logout', [AuthController::class, 'destroy'])->withoutMiddleware('cms.password')->name('logout');
         Route::get('/password', [AuthController::class, 'editPassword'])->name('password.edit');
         Route::put('/password', [AuthController::class, 'updatePassword'])->name('password.update');
-        Route::get('/dashboard/export', [DashboardController::class, 'export'])->name('dashboard.export');
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/featured-products', [FeaturedProductsController::class, 'index'])->name('featured.index');
         Route::post('/preview/{resource}', [PublicPageController::class, 'previewUnsaved'])->where('resource', 'products|documentations|job-openings|hero-slides|brands|mission-items|product-categories|certificates')->name('content.preview-unsaved');
