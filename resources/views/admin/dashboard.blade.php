@@ -4,14 +4,21 @@
 @section('breadcrumb', 'CMS  /  Dashboard')
 @section('page-actions')
     <form class="admin-dashboard-range" method="GET" action="{{ route('admin.dashboard') }}">
-        <span class="material-symbols-rounded" aria-hidden="true">calendar_today</span>
-        <select name="range" aria-label="Rentang aktivitas" onchange="this.form.submit()">
-            <option value="7" @selected($range === '7')>7 Hari Terakhir</option>
-            <option value="30" @selected($range === '30')>30 Hari Terakhir</option>
-            <option value="90" @selected($range === '90')>90 Hari Terakhir</option>
-            <option value="all" @selected($range === 'all')>Semua Waktu</option>
-        </select>
-        <button class="admin-button admin-button--primary" type="submit" formaction="{{ route('admin.dashboard.export', ['range' => $range]) }}" formmethod="GET">
+        <div class="admin-dashboard-date">
+            <input id="dashboard-from-date" type="date" name="from" value="{{ $fromDate }}" aria-label="Tanggal mulai">
+            <button type="button" data-date-picker-target="dashboard-from-date" aria-label="Pilih tanggal mulai">
+                <span class="material-symbols-rounded" aria-hidden="true">calendar_month</span>
+            </button>
+        </div>
+        <span class="admin-dashboard-range__separator" aria-hidden="true">–</span>
+        <div class="admin-dashboard-date">
+            <input id="dashboard-to-date" type="date" name="to" value="{{ $toDate }}" aria-label="Tanggal akhir">
+            <button type="button" data-date-picker-target="dashboard-to-date" aria-label="Pilih tanggal akhir">
+                <span class="material-symbols-rounded" aria-hidden="true">calendar_month</span>
+            </button>
+        </div>
+        <button class="admin-button admin-button--primary admin-dashboard-range__apply" type="submit">Terapkan Periode</button>
+        <button class="admin-button admin-button--primary admin-dashboard-range__export" type="submit" formaction="{{ route('admin.dashboard.export') }}" formmethod="GET">
             <span class="material-symbols-rounded" aria-hidden="true">download</span> Export Ringkasan (.xls)
         </button>
     </form>
@@ -19,11 +26,11 @@
 @section('content')
 <section class="admin-dashboard-stats" aria-label="Ringkasan konten">
     @foreach ($dashboardStats as $stat)
-        <a class="admin-dashboard-stat" href="{{ $stat['url'] }}">
+        <a class="admin-dashboard-stat admin-summary-card" href="{{ $stat['url'] }}">
             <div class="admin-dashboard-stat__top"><span>{{ $stat['label'] }}</span><span class="admin-dashboard-stat__icon material-symbols-rounded" aria-hidden="true">{{ $stat['icon'] }}</span></div>
             <strong>{{ number_format($stat['total']) }}</strong>
             <div class="admin-dashboard-stat__counts">
-                @foreach (['published' => 'Tayang', 'draft' => 'Draft', 'unpublished' => 'Unpublish'] as $status => $label)
+                @foreach (['published' => 'Tayang', 'draft' => 'Draft'] as $status => $label)
                     @if (($stat['statuses'][$status] ?? 0) > 0)
                         <span><b>{{ $stat['statuses'][$status] }}</b> {{ $label }}</span>
                     @endif
@@ -34,9 +41,9 @@
 </section>
 
 <section class="admin-dashboard-grid" aria-label="Ringkasan lowongan">
-    <article class="admin-stat-card"><span>Lowongan Open</span><strong>{{ $jobStats['open'] }}</strong></article>
-    <article class="admin-stat-card"><span>Lowongan Closed</span><strong>{{ $jobStats['closed'] }}</strong></article>
-    <article class="admin-stat-card"><span>Ditutup dalam 7 hari</span><strong>{{ $jobStats['closingSoon'] }}</strong></article>
+    <article class="admin-stat-card admin-summary-card admin-summary-card--success"><span>Lowongan Open</span><strong>{{ $jobStats['open'] }}</strong><span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">work_history</span></article>
+    <article class="admin-stat-card admin-summary-card admin-summary-card--warning"><span>Lowongan Closed</span><strong>{{ $jobStats['closed'] }}</strong><span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">work_off</span></article>
+    <article class="admin-stat-card admin-summary-card"><span>Ditutup dalam 7 hari</span><strong>{{ $jobStats['closingSoon'] }}</strong><span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">schedule</span></article>
 </section>
 
 <section class="admin-dashboard-overview">
@@ -59,7 +66,7 @@
     <aside class="admin-panel admin-dashboard-shortcuts">
         <div class="admin-panel__header"><div><h2>Pintasan</h2></div></div>
         <a href="{{ route('admin.content.create', 'products') }}"><span class="material-symbols-rounded" aria-hidden="true">inventory_2</span><span><strong>Tambah Produk</strong></span><span class="material-symbols-rounded" aria-hidden="true">arrow_forward</span></a>
-        <a href="{{ route('admin.content.create', 'documentations') }}"><span class="material-symbols-rounded" aria-hidden="true">article</span><span><strong>Tambah Artikel</strong></span><span class="material-symbols-rounded" aria-hidden="true">arrow_forward</span></a>
+        <a href="{{ route('admin.content.create', ['resource' => 'documentations', 'type' => 'article']) }}"><span class="material-symbols-rounded" aria-hidden="true">article</span><span><strong>Tambah Artikel</strong></span><span class="material-symbols-rounded" aria-hidden="true">arrow_forward</span></a>
         <a href="{{ route('admin.content.create', 'job-openings') }}"><span class="material-symbols-rounded" aria-hidden="true">work</span><span><strong>Tambah Lowongan</strong></span><span class="material-symbols-rounded" aria-hidden="true">arrow_forward</span></a>
         <a href="{{ route('admin.media.index') }}"><span class="material-symbols-rounded" aria-hidden="true">photo_library</span><span><strong>Media Library</strong></span><span class="material-symbols-rounded" aria-hidden="true">arrow_forward</span></a>
     </aside>

@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\ActivityLog;
 use App\Models\Brand;
+use App\Models\Certificate;
+use App\Models\ContactInfo;
 use App\Models\ContentBlock;
 use App\Models\Documentation;
 use App\Models\HeroSlide;
@@ -13,18 +15,149 @@ use App\Models\MissionItem;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Role;
+use App\Models\SeoMeta;
 use App\Models\SocialLink;
 use App\Models\User;
+use App\Services\ContentVersion;
 use App\Services\PublicRichText;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class CmsFsdComplianceTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_same_second_concurrent_edits_are_rejected_without_overwriting_first_save(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $brand = Brand::factory()->create(['name' => 'Nama awal', 'status' => 'draft']);
+        $version = app(ContentVersion::class)->token($brand);
+        $url = '/api/v1/admin/brands/'.$brand->id;
+        $this->actingAs($admin)->putJson($url, ['status' => 'draft', 'name' => 'Perubahan pertama', 'expected_version' => $version])->assertOk();
+        $this->putJson($url, ['status' => 'draft', 'name' => 'Perubahan kedua', 'expected_version' => $version])->assertStatus(409)->assertJsonPath('message', 'Data telah diubah pengguna lain. Muat ulang halaman lalu terapkan perubahan kembali.');
+        $this->assertSame('Perubahan pertama', $brand->fresh()->name);
+    }
+
+    public function test_concurrent_translation_edits_are_rejected_even_with_same_timestamp(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $block = ContentBlock::factory()->create(['block_key' => 'about_company', 'status' => 'draft']);
+        $block->translations()->create(['lang' => 'id', 'title' => 'Judul awal', 'body' => 'Isi awal']);
+        $version = app(ContentVersion::class)->token($block);
+        $url = '/api/v1/admin/content-blocks/about_company';
+        $this->actingAs($admin)->putJson($url, ['block_key' => 'about_company', 'status' => 'draft', 'translations' => ['id' => ['title' => 'Judul pertama']], 'expected_version' => $version])->assertOk();
+        $this->putJson($url, ['block_key' => 'about_company', 'status' => 'draft', 'translations' => ['id' => ['title' => 'Judul kedua']], 'expected_version' => $version])->assertStatus(409);
+        $this->assertSame('Judul pertama', $block->translations()->where('lang', 'id')->value('title'));
+    }
+
+    public function test_cms_exports_are_limited_to_superadmin_and_honor_filters(): void
+    {
+        $superadmin = $this->cmsUser('superadmin');
+        $admin = $this->cmsUser('admin', ['users' => ['view'], 'activity_logs' => ['view']]);
+        $admin->update(['name' => 'Ekspor Terpilih']);
+        $response = $this->actingAs($superadmin)->get('/admin/users/export?q=Ekspor%20Terpilih')->assertOk()->assertDownload();
+        $this->assertStringContainsString('Ekspor Terpilih', $response->streamedContent());
+        $this->assertStringNotContainsString($superadmin->email, $response->streamedContent());
+        $this->get('/admin/activity-logs/export')->assertOk()->assertDownload();
+        $this->actingAs($admin)->get('/admin/users/export')->assertForbidden();
+        $this->get('/admin/activity-logs/export')->assertForbidden();
+    }
+
+    public function test_hero_and_content_block_forms_expose_unpublished(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $this->actingAs($admin)->get('/admin/content/hero-slides/create')->assertOk()->assertSee('data-set-status="unpublished"', false);
+        foreach (['home_coverage', 'home_cta', 'about_company', 'career_intro'] as $section) {
+            $this->get('/admin/content/content-blocks?section='.$section)->assertOk()->assertSee('data-set-status="unpublished"', false);
+        }
+        $this->get('/admin/content/mission-items')->assertOk()->assertSee('data-set-status="unpublished"', false);
+        $this->get('/admin/content/social-links')->assertOk()->assertSee('value="unpublished"', false);
+    }
+
+    public function test_unpublishing_hero_and_coverage_removes_them_from_public_home(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $image = $this->media('publish-status.png');
+        $hero = HeroSlide::factory()->create(['status' => 'published', 'media_id' => $image->id]);
+        $hero->translations()->create(['lang' => 'id', 'title' => 'Banner status unik']);
+        $coverage = ContentBlock::factory()->create(['block_key' => 'home_coverage', 'status' => 'published', 'media_id' => $image->id]);
+        $coverage->translations()->create(['lang' => 'id', 'title' => 'Jangkauan status unik']);
+        $this->get('/id')->assertOk()->assertSee('Banner status unik')->assertSee('Jangkauan status unik');
+        $this->actingAs($admin)->putJson('/api/v1/admin/hero-slides/'.$hero->id, ['status' => 'unpublished', 'expected_version' => app(ContentVersion::class)->token($hero)])->assertOk();
+        $this->putJson('/api/v1/admin/content-blocks/home_coverage', ['block_key' => 'home_coverage', 'status' => 'unpublished', 'expected_version' => app(ContentVersion::class)->token($coverage)])->assertOk();
+        $this->get('/id')->assertOk()->assertDontSee('Banner status unik')->assertDontSee('Jangkauan status unik');
+    }
+
+    public function test_admin_api_has_a_separate_general_rate_limit(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $this->actingAs($admin);
+        for ($request = 0; $request < 120; $request++) {
+            $this->putJson('/api/v1/admin/me/password', [])->assertUnprocessable();
+        }
+        $this->putJson('/api/v1/admin/me/password', [])->assertTooManyRequests()->assertJsonPath('message', 'Terlalu banyak permintaan. Silakan coba lagi nanti.');
+    }
+
+    public function test_published_certificate_rejects_clearing_required_values_but_draft_allows_them(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $image = $this->media('certificate-required.png');
+        $certificate = Certificate::factory()->create(['status' => 'published', 'media_id' => $image->id]);
+        $certificate->translations()->create(['lang' => 'id', 'title' => 'Judul sertifikat']);
+        $url = '/api/v1/admin/certificates/'.$certificate->id;
+
+        $this->actingAs($admin)->putJson($url, ['status' => 'published', 'translations' => ['id' => ['title' => null]]])->assertUnprocessable()->assertJsonValidationErrors('translations.id.title');
+        $this->putJson($url, ['status' => 'published', 'media_id' => null])->assertUnprocessable()->assertJsonValidationErrors('media_id');
+        $this->assertSame('Judul sertifikat', $certificate->fresh()->translations->firstWhere('lang', 'id')->title);
+        $this->assertSame($image->id, $certificate->fresh()->media_id);
+        $this->putJson($url, ['status' => 'published', 'issued_year' => 2024])->assertOk();
+        $this->putJson($url, ['status' => 'draft', 'media_id' => null, 'translations' => ['id' => ['title' => null]]])->assertOk();
+    }
+
+    public function test_inactive_accounts_remain_inactive_and_login_failures_are_generic(): void
+    {
+        $this->withoutMiddleware(ThrottleRequests::class);
+        $inactive = $this->cmsUser('admin');
+        $inactive->update(['status' => 'inactive']);
+        $url = '/api/v1/admin/auth/login';
+        foreach (range(1, 6) as $attempt) {
+            $this->postJson($url, ['email' => $inactive->email, 'password' => 'wrong'])->assertUnprocessable()->assertJsonPath('message', 'Email atau password salah.');
+        }
+        $this->travel(16)->minutes();
+        $this->postJson($url, ['email' => $inactive->email, 'password' => 'password'])->assertUnprocessable()->assertJsonPath('message', 'Email atau password salah.');
+        $this->assertSame('inactive', $inactive->fresh()->status);
+        $this->postJson('/admin/login', ['email' => $inactive->email, 'password' => 'password'])->assertUnprocessable()->assertJsonPath('message', 'Email atau password salah.');
+        $this->postJson($url, ['email' => 'unknown@example.test', 'password' => 'wrong'])->assertUnprocessable()->assertJsonPath('message', 'Email atau password salah.');
+
+        $active = $this->cmsUser('admin');
+        foreach (range(1, 5) as $attempt) {
+            $this->postJson($url, ['email' => $active->email, 'password' => 'wrong'])->assertUnprocessable()->assertJsonPath('message', 'Email atau password salah.');
+        }
+        $this->assertSame('locked', $active->fresh()->status);
+        $this->postJson($url, ['email' => $active->email, 'password' => 'password'])->assertUnprocessable()->assertJsonPath('message', 'Email atau password salah.');
+        $this->travel(16)->minutes();
+        $this->postJson($url, ['email' => $active->email, 'password' => 'password'])->assertOk();
+        $this->assertSame('active', $active->fresh()->status);
+    }
+
+    public function test_language_links_use_localized_pages_instead_of_custom_canonical_urls(): void
+    {
+        SeoMeta::query()->create(['page_key' => 'about', 'lang' => 'id', 'canonical_url' => 'https://example.com/canonical-id', 'robots_index' => true]);
+        SeoMeta::query()->create(['page_key' => 'about', 'lang' => 'en', 'canonical_url' => 'https://example.com/canonical-en', 'robots_index' => true]);
+        $this->get('/id/tentang')->assertOk()->assertSee('<link rel="canonical" href="https://example.com/canonical-id">', false)->assertSee('hreflang="en" href="'.url('/en/tentang').'"', false);
+        $this->get('/en/tentang')->assertOk()->assertSee('hreflang="id" href="'.url('/id/tentang').'"', false);
+
+        $category = ProductCategory::factory()->create(['status' => 'published']);
+        $product = Product::factory()->create(['category_id' => $category->id, 'status' => 'published']);
+        $product->translations()->create(['lang' => 'id', 'name' => 'Produk', 'slug' => 'produk-id']);
+        $product->translations()->create(['lang' => 'en', 'name' => 'Product', 'slug' => 'product-en']);
+        $this->get('/id/produk/produk-id')->assertOk()->assertSee('hreflang="en" href="'.url('/en/produk/product-en').'"', false);
+        $this->get('/en/produk/product-en')->assertOk()->assertSee('hreflang="id" href="'.url('/id/produk/produk-id').'"', false);
+    }
 
     public function test_public_categories_hide_empty_and_sitemap_uses_fallback_slugs(): void
     {
@@ -98,6 +231,79 @@ class CmsFsdComplianceTest extends TestCase
         $this->actingAs($admin)->putJson($url, ['product_ids' => $products->take(6)->modelKeys()])->assertOk();
         $this->putJson($url, ['product_ids' => $products->modelKeys()])->assertUnprocessable();
         $this->assertCount(6, $category->fresh()->featuredProducts);
+    }
+
+    public function test_featured_product_is_removed_when_saved_as_draft_or_moved_to_another_category(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $image = $this->media('featured-sync.png');
+        $oldCategory = ProductCategory::factory()->create(['status' => 'published']);
+        $oldCategory->translations()->create(['lang' => 'id', 'name' => 'Kategori awal', 'slug' => 'kategori-awal']);
+        $newCategory = ProductCategory::factory()->create(['status' => 'published']);
+        $newCategory->translations()->create(['lang' => 'id', 'name' => 'Kategori baru', 'slug' => 'kategori-baru']);
+        $product = Product::factory()->create(['status' => 'published', 'category_id' => $oldCategory->id, 'media_id' => $image->id]);
+        $product->translations()->create(['lang' => 'id', 'name' => 'Produk pilihan', 'slug' => 'produk-pilihan', 'description' => 'Deskripsi']);
+        $oldCategory->featuredProducts()->attach($product->id, ['display_order' => 1]);
+        $url = '/api/v1/admin/products/'.$product->id;
+
+        $this->actingAs($admin)->putJson($url, ['status' => 'draft'])->assertOk();
+        $this->assertDatabaseMissing('category_featured_products', ['category_id' => $oldCategory->id, 'product_id' => $product->id]);
+        $this->patchJson($url.'/status', ['status' => 'published'])->assertOk();
+        $this->assertDatabaseMissing('category_featured_products', ['category_id' => $oldCategory->id, 'product_id' => $product->id]);
+        $oldCategory->featuredProducts()->attach($product->id, ['display_order' => 1]);
+        $this->putJson($url, ['status' => 'published', 'category_id' => $newCategory->id])->assertOk();
+        $this->assertDatabaseMissing('category_featured_products', ['category_id' => $oldCategory->id, 'product_id' => $product->id]);
+        $this->assertSame($newCategory->id, $product->fresh()->category_id);
+        $this->get('/id/produk')->assertOk()->assertSee('Produk pilihan')->assertSee('Kategori baru');
+        $other = Product::factory()->create(['status' => 'published', 'category_id' => $oldCategory->id, 'media_id' => $image->id]);
+        $other->translations()->create(['lang' => 'id', 'name' => 'Produk kategori awal', 'slug' => 'produk-kategori-awal']);
+        $oldCategory->featuredProducts()->attach($product->id, ['display_order' => 1]);
+        $this->get('/id/produk')->assertOk()->assertViewHas('categories', function (array $categories) use ($oldCategory): bool {
+            $old = collect($categories)->firstWhere('id', (string) $oldCategory->id);
+
+            return collect($old['products'])->pluck('name')->all() === ['Produk kategori awal'];
+        });
+    }
+
+    public function test_media_usage_lists_hero_seo_and_draft_content(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $image = $this->media('usage-check.png');
+        HeroSlide::factory()->create(['media_id' => $image->id, 'status' => 'draft']);
+        SeoMeta::query()->create(['page_key' => 'about', 'lang' => 'id', 'og_media_id' => $image->id, 'robots_index' => true]);
+        $this->actingAs($admin)->get('/admin/media?q=usage-check')->assertOk()->assertSee('Hero / Banner (Draft)')->assertSee('SEO Open Graph: Tentang (ID)');
+        $this->get('/admin/media?section=home')->assertOk()->assertSee('usage-check.png');
+        $this->get('/admin/media?section=about')->assertOk()->assertSee('usage-check.png');
+        $this->deleteJson('/api/v1/admin/media/'.$image->id)->assertUnprocessable();
+
+        $draftImage = $this->media('pending-draft.png');
+        HeroSlide::factory()->create(['status' => 'published', 'draft_payload' => ['attributes' => ['media_id' => $draftImage->id]]]);
+        $this->get('/admin/media?q=pending-draft')->assertOk()->assertSee('Hero / Banner (Draft perubahan)');
+        $this->deleteJson('/api/v1/admin/media/'.$draftImage->id)->assertUnprocessable()->assertJsonPath('data.usages.0', 'Draft perubahan Hero');
+    }
+
+    public function test_reorder_logs_include_before_and_after_for_content_and_featured_products(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $first = Brand::factory()->create(['display_order' => 1]);
+        $second = Brand::factory()->create(['display_order' => 2]);
+        $this->actingAs($admin)->putJson('/api/v1/admin/brands/reorder', ['ids' => [$second->id, $first->id]])->assertOk();
+        $log = ActivityLog::query()->where('action', 'reorder')->where('entity_type', Brand::class)->latest('id')->firstOrFail();
+        $this->assertSame([$first->id, $second->id], $log->old_values['ids']);
+        $this->assertSame([$second->id, $first->id], $log->new_values['ids']);
+
+        $category = ProductCategory::factory()->create(['status' => 'published']);
+        $products = Product::factory()->count(2)->create(['category_id' => $category->id, 'status' => 'published']);
+        $category->featuredProducts()->attach($products[0]->id, ['display_order' => 1]);
+        $this->putJson('/api/v1/admin/product-categories/'.$category->id.'/featured', ['product_ids' => [$products[1]->id]])->assertOk();
+        $log = ActivityLog::query()->where('action', 'reorder')->where('entity_type', ProductCategory::class)->latest('id')->firstOrFail();
+        $this->assertSame([$products[0]->id], $log->old_values['featured_product_ids']);
+        $this->assertSame([$products[1]->id], $log->new_values['featured_product_ids']);
+        $this->putJson('/api/v1/admin/product-categories/'.$category->id.'/featured', ['product_ids' => [$products[0]->id, $products[1]->id]])->assertOk();
+        $this->putJson('/api/v1/admin/product-categories/'.$category->id.'/featured', ['product_ids' => [$products[1]->id, $products[0]->id]])->assertOk();
+        $log = ActivityLog::query()->where('action', 'reorder')->where('entity_type', ProductCategory::class)->latest('id')->firstOrFail();
+        $this->assertSame([$products[0]->id, $products[1]->id], $log->old_values['featured_product_ids']);
+        $this->assertSame([$products[1]->id, $products[0]->id], $log->new_values['featured_product_ids']);
     }
 
     public function test_media_rejects_invalid_or_oversized_upload_and_prevents_deleting_used_image(): void
@@ -257,7 +463,7 @@ class CmsFsdComplianceTest extends TestCase
         $this->actingAs($superadmin)->putJson('/api/v1/admin/media/'.$media->id, [
             'alt_text_id' => 'Foto tim perusahaan', 'alt_text_en' => 'Company team photo',
         ])->assertOk();
-        $this->get('/id')->assertOk()->assertDontSee('class="hero__image"', false);
+        $this->get('/id')->assertOk()->assertSee('class="hero__image"', false)->assertSee('alt="Foto tim perusahaan"', false);
         $this->get('/id/tentang')->assertOk()->assertSee('alt="Foto tim perusahaan"', false);
         $this->get('/id/karir')->assertOk()->assertSee('alt="Foto tim perusahaan"', false);
         $this->get('/en/karir')->assertOk()->assertSee('alt="Company team photo"', false);
@@ -357,5 +563,199 @@ class CmsFsdComplianceTest extends TestCase
             $this->get($url.'?year=2024')->assertOk()->assertSee(ucfirst($type).' 2024')->assertDontSee(ucfirst($type).' 2025');
             $this->get($url.'?sort=oldest')->assertOk()->assertSeeInOrder([ucfirst($type).' 2024', ucfirst($type).' 2025']);
         }
+    }
+
+    public function test_published_cms_article_appears_in_article_listing_with_shared_card(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $cover = $this->media('article-cover.png');
+
+        $this->actingAs($admin)->postJson('/api/v1/admin/documentations', [
+            'type' => 'article', 'status' => 'published', 'cover_media_id' => $cover->id,
+            'event_date' => '2026-11-16',
+            'translations' => ['id' => ['title' => 'Artikel dari CMS', 'slug' => 'artikel-dari-cms', 'excerpt' => 'Ringkasan artikel', 'body' => '<p>Isi artikel</p>']],
+        ])->assertSuccessful();
+
+        $this->get('/id/artikel')->assertOk()->assertSeeInOrder(['Artikel dari CMS', 'Ringkasan artikel', '16 Nov 2026', 'Baca Selengkapnya'])->assertSee('/id/dokumentasi/artikel-dari-cms')->assertDontSee($admin->name);
+        $this->get('/id/berita')->assertDontSee('Artikel dari CMS');
+        $this->get('/id/dokumentasi/artikel-dari-cms')->assertOk()->assertSee('Isi artikel');
+    }
+
+    public function test_documentation_has_separate_article_and_news_creation_forms(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $cover = $this->media('news-cover.png');
+        $this->actingAs($admin)->get('/admin/content/documentations')->assertOk()->assertSee('Tambah Artikel')->assertSee('Tambah Berita / Foto Kegiatan');
+        $this->get('/admin/content/documentations/create?type=article')->assertOk()->assertSee('Tambah Artikel')->assertSee('name="type" value="article"', false)->assertSee('Isi Artikel');
+        $this->get('/admin/content/documentations/create?type=activity')->assertOk()->assertSee('Tambah Berita / Foto Kegiatan')->assertSee('name="type" value="activity"', false)->assertSee('Isi Berita');
+        $this->postJson('/api/v1/admin/documentations', [
+            'type' => 'activity', 'status' => 'published', 'cover_media_id' => $cover->id,
+            'event_date' => '2026-11-16', 'gallery_present' => true, 'gallery' => [['media_id' => $cover->id]],
+            'translations' => ['id' => ['title' => 'Berita dari CMS', 'slug' => 'berita-dari-cms']],
+        ])->assertSuccessful();
+        $this->get('/id/berita')->assertOk()->assertSee('Berita dari CMS');
+        $this->get('/id/artikel')->assertDontSee('Berita dari CMS');
+    }
+
+    public function test_footer_settings_preserve_status_and_require_publish_permission_for_changes(): void
+    {
+        $admin = $this->cmsUser('admin', ['footer' => ['view', 'update']]);
+        $footer = ContentBlock::factory()->create(['block_key' => 'footer_about', 'status' => 'published']);
+
+        $this->actingAs($admin)->get('/admin/content/social-links')->assertOk()->assertSee('value="unpublished"', false)->assertSee('© '.now()->year.' PT Interskala Medika Indonesia | Member of Interskala Group');
+        $this->putJson('/api/v1/admin/content-blocks/footer_about', ['block_key' => 'footer_about', 'status' => 'published', 'translations' => ['id' => ['body' => 'Ringkasan baru', 'copyright_text' => 'Hak cipta baru']]])->assertOk();
+        $this->assertSame('published', $footer->fresh()->status);
+        $this->get('/admin/content/social-links')->assertSee('value="Hak cipta baru"', false);
+        $this->get('/id')->assertSee('Hak cipta baru');
+        $this->putJson('/api/v1/admin/content-blocks/footer_about', ['block_key' => 'footer_about', 'status' => 'unpublished'])->assertForbidden();
+    }
+
+    public function test_hero_footer_and_log_show_cms_data(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        foreach (['one', 'two'] as $index => $name) {
+            $image = $this->media($name.'.png');
+            $slide = HeroSlide::factory()->create(['media_id' => $image->id, 'status' => 'published', 'display_order' => $index + 1]);
+            $slide->translations()->create(['lang' => 'id', 'title' => 'Slide '.$name]);
+        }
+        ContactInfo::factory()->create(['phone' => '+62 123456', 'email' => 'office@example.com']);
+        SocialLink::query()->create(['platform' => 'Instagram', 'url' => 'https://example.com/instagram', 'status' => 'published']);
+        ActivityLog::query()->create(['user_id' => $admin->id, 'action' => 'update', 'entity_type' => 'Product', 'entity_id' => 1, 'old_values' => ['status' => 'draft'], 'new_values' => ['status' => 'published'], 'ip_address' => '192.0.2.12', 'created_at' => now()]);
+        $this->get('/id')->assertOk()->assertSee('one.png')->assertSee('two.png')->assertSee('data-hero-next', false)->assertSee('office@example.com')->assertSee('Instagram');
+        $this->actingAs($admin)->get('/admin/activity-logs')->assertOk()->assertSeeInOrder(['Product #1', 'status', '192.0.2.12']);
+    }
+
+    public function test_footer_contact_visibility_is_configurable_without_changing_contact_page(): void
+    {
+        $admin = $this->cmsUser('admin', ['footer' => ['view', 'update']]);
+        $footer = ContentBlock::factory()->create(['block_key' => 'footer_about', 'status' => 'published']);
+        ContactInfo::factory()->create(['phone' => '+62 123456', 'email' => 'office@example.com']);
+        $this->actingAs($admin)->get('/admin/content/social-links')->assertOk()->assertSee('name="footer_show_phone"', false)->assertSee('name="footer_show_email"', false);
+        $this->putJson('/api/v1/admin/content-blocks/footer_about', ['block_key' => 'footer_about', 'status' => 'published', 'footer_show_phone' => false, 'footer_show_email' => true])->assertOk();
+        $this->assertFalse($footer->fresh()->footer_show_phone);
+        foreach (['/id', '/en', '/id/produk', '/id/kontak'] as $url) {
+            $html = $this->get($url)->assertOk()->getContent();
+            $footerHtml = explode('<footer', $html, 2)[1];
+            $this->assertStringNotContainsString('+62 123456', $footerHtml);
+            $this->assertStringContainsString('office@example.com', $footerHtml);
+        }
+        $this->get('/id/kontak')->assertSee('+62 123456');
+        $this->putJson('/api/v1/admin/content-blocks/footer_about', ['block_key' => 'footer_about', 'status' => 'published', 'footer_show_phone' => true, 'footer_show_email' => false])->assertOk();
+        $html = $this->get('/id')->assertOk()->getContent();
+        $footerHtml = explode('<footer', $html, 2)[1];
+        $this->assertStringContainsString('+62 123456', $footerHtml);
+        $this->assertStringNotContainsString('office@example.com', $footerHtml);
+    }
+
+    public function test_contact_map_uses_coordinates_and_falls_back_to_existing_location_url(): void
+    {
+        $contact = ContactInfo::factory()->create(['phone' => '+62 123456', 'email' => 'map@example.com', 'maps_url' => 'https://www.google.com/maps?q=company', 'latitude' => null, 'longitude' => null]);
+        $this->get('/id/kontak')->assertOk()->assertSee('<iframe', false)->assertDontSee('data-contact-map', false);
+        $contact->update(['latitude' => -6.15, 'longitude' => 106.72]);
+        $this->get('/id/kontak')->assertOk()->assertSee('data-contact-map', false)->assertSee('data-latitude="-6.15', false)->assertSee('data-longitude="106.72', false)->assertSee('Buka petunjuk arah');
+        $this->get('/en/kontak')->assertOk()->assertSee('Open directions')->assertSee('data-contact-map', false);
+    }
+
+    public function test_hero_status_publication_requires_cta_url(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $slide = HeroSlide::factory()->create(['status' => 'draft', 'media_id' => $this->media('hero-cta.png')->id]);
+        $slide->translations()->create(['lang' => 'id', 'title' => 'Banner', 'cta_label' => 'Selengkapnya']);
+        $this->actingAs($admin)->patchJson('/api/v1/admin/hero-slides/'.$slide->id.'/status', ['status' => 'published'])->assertUnprocessable();
+        $this->assertSame('draft', $slide->fresh()->status);
+    }
+
+    public function test_published_activity_can_remove_all_gallery_images(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $cover = $this->media('activity.png');
+        $item = Documentation::factory()->create(['type' => 'activity', 'status' => 'published', 'cover_media_id' => $cover->id, 'event_date' => today()]);
+        $item->translations()->create(['lang' => 'id', 'title' => 'Berita', 'slug' => 'berita']);
+        $item->gallery()->attach($cover->id, ['display_order' => 1]);
+        $this->actingAs($admin)->putJson('/api/v1/admin/documentations/'.$item->id, ['type' => 'activity', 'status' => 'published', 'event_date' => today()->toDateString(), 'gallery_present' => true, 'gallery' => []])->assertOk();
+        $this->assertCount(0, $item->fresh()->gallery);
+        $this->actingAs($admin)->get('/admin/content/documentations/'.$item->id.'/edit')->assertSee('value="'.today()->toDateString().'"', false);
+        $this->patchJson('/api/v1/admin/documentations/'.$item->id.'/status', ['status' => 'unpublished'])->assertOk();
+        $this->patchJson('/api/v1/admin/documentations/'.$item->id.'/status', ['status' => 'published'])->assertOk();
+        $this->get('/id/berita')->assertSee('Berita');
+    }
+
+    public function test_unsaved_content_preview_does_not_create_records(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $this->actingAs($admin)->get('/admin/content/products/create')->assertDontSee('data-preview-unsaved', false);
+        $this->post('/admin/preview/hero-slides', ['translations' => ['id' => ['title' => 'Banner preview']]])->assertOk()->assertSee('Banner preview')->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+        $this->post('/admin/preview/products', ['translations' => ['id' => ['name' => 'Produk preview']]])->assertOk()->assertSee('Produk preview')->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+        $this->post('/admin/preview/documentations', ['type' => 'article', 'translations' => ['id' => ['title' => 'Artikel preview', 'body' => '<script>alert(1)</script><p>Aman</p>']]])->assertOk()->assertSee('Artikel preview')->assertDontSee('<script>alert(1)</script>', false);
+        $this->post('/admin/preview/job-openings', ['translations' => ['id' => ['title' => 'Karir preview']]])->assertOk()->assertSee('Karir preview');
+        $this->assertSame(0, Product::query()->count());
+        $this->assertSame(0, Documentation::query()->count());
+        $this->assertSame(0, JobOpening::query()->count());
+        auth()->logout();
+        $this->post('/admin/preview/products', [])->assertRedirect('/admin/login');
+    }
+
+    public function test_unsaved_document_preview_uses_english_and_gallery_captions(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $photo = $this->media('preview-gallery.png');
+        $this->actingAs($admin)->post('/admin/preview/documentations', [
+            'type' => 'article', 'preview_lang' => 'en', 'gallery_media_ids' => [$photo->id],
+            'gallery_captions' => [$photo->id => ['id' => 'Keterangan Indonesia', 'en' => 'English caption']],
+            'translations' => ['id' => ['title' => 'Judul Indonesia', 'body' => 'Isi Indonesia'], 'en' => ['title' => 'English title']],
+        ])->assertOk()->assertSee('English title')->assertSee('Isi Indonesia')->assertSee('English caption')->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+        $this->assertSame(0, Documentation::query()->count());
+    }
+
+    public function test_unsaved_category_brand_and_mission_previews_do_not_save_content(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $logo = $this->media('brand-preview.png');
+        $this->actingAs($admin)->post('/admin/preview/product-categories', ['translations' => ['id' => ['name' => 'Kategori preview']]])->assertOk()->assertSee('Kategori preview');
+        $this->post('/admin/preview/brands', ['name' => 'Brand preview', 'logo_media_id' => $logo->id])->assertOk()->assertSee('brand-preview.png');
+        $this->post('/admin/preview/mission-items', ['translations' => ['id' => ['text' => 'Misi preview']]])->assertOk()->assertSee('Misi preview');
+        $this->assertSame(0, ProductCategory::query()->count());
+        $this->assertSame(0, Brand::query()->count());
+        $this->assertSame(0, MissionItem::query()->count());
+    }
+
+    public function test_public_product_and_news_links_follow_updated_slugs(): void
+    {
+        $category = ProductCategory::factory()->create(['status' => 'published']);
+        $category->translations()->create(['lang' => 'id', 'name' => 'Kategori', 'slug' => 'kategori']);
+        $product = Product::factory()->create(['category_id' => $category->id, 'status' => 'published']);
+        $product->translations()->create(['lang' => 'id', 'name' => 'Produk baru', 'slug' => 'produk-baru']);
+        $news = Documentation::factory()->create(['type' => 'activity', 'status' => 'published', 'event_date' => today()]);
+        $news->translations()->create(['lang' => 'id', 'title' => 'Berita baru', 'slug' => 'berita-baru']);
+        $this->get('/id/produk')->assertOk()->assertSee('/id/produk/produk-baru');
+        $this->get('/id/berita')->assertOk()->assertSee('/id/berita/berita-baru');
+        $this->get('/id/berita/berita-baru')->assertOk()->assertSee('Berita baru');
+        $this->get('/id/dokumentasi/kegiatan/'.$news->id)->assertOk();
+    }
+
+    public function test_hero_english_cta_requires_link_when_saving_or_publishing(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $image = $this->media('english-hero.png');
+        $draft = HeroSlide::factory()->create(['status' => 'draft', 'media_id' => $image->id]);
+        $draft->translations()->create(['lang' => 'id', 'title' => 'Judul']);
+        $draft->translations()->create(['lang' => 'en', 'title' => 'Title', 'cta_label' => 'Read more']);
+        $this->actingAs($admin)->patchJson('/api/v1/admin/hero-slides/'.$draft->id.'/status', ['status' => 'published'])->assertUnprocessable();
+        $this->putJson('/api/v1/admin/hero-slides/'.$draft->id, ['status' => 'published', 'translations' => ['id' => ['title' => 'Judul']]])->assertUnprocessable()->assertJsonValidationErrors('cta_url');
+        $this->putJson('/api/v1/admin/hero-slides/'.$draft->id, ['status' => 'published', 'cta_url' => '/id/kontak', 'translations' => ['id' => ['title' => 'Judul']]])->assertOk();
+        $this->putJson('/api/v1/admin/hero-slides/'.$draft->id, ['status' => 'published', 'cta_url' => null, 'translations' => ['id' => ['title' => 'Judul']]])->assertUnprocessable()->assertJsonValidationErrors('cta_url');
+    }
+
+    public function test_certificate_can_be_previewed_in_both_languages_without_saving(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $image = $this->media('certificate-preview.png');
+        $payload = ['media_id' => $image->id, 'issued_year' => '2025', 'translations' => ['id' => ['title' => 'Sertifikat contoh', 'description' => 'Keterangan'], 'en' => ['title' => 'Example certificate', 'description' => 'Description']]];
+        $this->actingAs($admin)->get('/admin/content/certificates/create')->assertOk()->assertDontSee('Pratinjau ID')->assertDontSee('Pratinjau EN');
+        $this->post('/admin/preview/certificates', $payload + ['preview_lang' => 'id'])->assertOk()->assertSee('Sertifikat contoh')->assertSee('certificate-preview.png')->assertHeader('X-Robots-Tag', 'noindex, nofollow')->assertHeader('Cache-Control', 'no-store, private');
+        $this->post('/admin/preview/certificates', $payload + ['preview_lang' => 'en'])->assertOk()->assertSee('Example certificate')->assertSee('Description');
+        $this->assertDatabaseCount('certificates', 0);
+        auth()->logout();
+        $this->post('/admin/preview/certificates', $payload)->assertRedirect('/admin/login');
     }
 }

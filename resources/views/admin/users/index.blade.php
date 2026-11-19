@@ -4,13 +4,13 @@
 @section('content')
 <section class="admin-dashboard-intro">
     <div><p class="admin-eyebrow">Pengaturan Sistem</p><h2>Manajemen User</h2><p>Kelola akun pengguna CMS, role, status, dan kredensial dengan aman.</p></div>
-    @if (auth()->user()->hasRole('superadmin'))<a class="admin-button admin-button--primary" href="{{ route('admin.users.create') }}"><span class="material-symbols-rounded" aria-hidden="true">person_add</span> Tambah User</a>@endif
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">@if (auth()->user()->hasRole('superadmin'))<a class="admin-button" href="{{ route('admin.users.export', request()->query()) }}"><span class="material-symbols-rounded" aria-hidden="true">download</span>Export CSV</a><a class="admin-button admin-button--primary" href="{{ route('admin.users.create') }}"><span class="material-symbols-rounded" aria-hidden="true">person_add</span> Tambah User</a>@endif</div>
 </section>
 @if (session('temporary_password'))<div class="admin-alert admin-alert--success">Password sementara (ditampilkan sekali): <strong>{{ session('temporary_password') }}</strong></div>@endif
 <section class="admin-stats-grid admin-stats-grid--three">
-    <article class="admin-stat-card"><span>Total User Terdaftar</span><strong>{{ $userStats['total'] }} Akun</strong><small>Akun CMS di database</small></article>
-    <article class="admin-stat-card"><span>User Status Aktif</span><strong class="admin-stat-card__success">{{ $userStats['active'] }} Akun</strong><small>Memiliki akses login aktif</small></article>
-    <article class="admin-stat-card"><span>Nonaktif / Terkunci</span><strong class="admin-stat-card__danger">{{ $userStats['restricted'] }} Akun</strong><small>Akun dibatasi atau dikunci</small></article>
+    <article class="admin-stat-card admin-summary-card"><span>Total User Terdaftar</span><strong>{{ $userStats['total'] }} Akun</strong><small>Akun CMS di database</small><span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">group</span></article>
+    <article class="admin-stat-card admin-summary-card admin-summary-card--success"><span>User Status Aktif</span><strong class="admin-stat-card__success">{{ $userStats['active'] }} Akun</strong><small>Memiliki akses login aktif</small><span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">person_check</span></article>
+    <article class="admin-stat-card admin-summary-card admin-summary-card--danger"><span>Nonaktif / Terkunci</span><strong class="admin-stat-card__danger">{{ $userStats['restricted'] }} Akun</strong><small>Akun dibatasi atau dikunci</small><span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">lock</span></article>
 </section>
 <section class="admin-panel">
     <form class="admin-filter admin-user-filter" method="GET">
@@ -19,8 +19,7 @@
         <select name="status"><option value="">Semua Status</option>@foreach (['active' => 'Active', 'inactive' => 'Inactive', 'locked' => 'Locked'] as $key => $label)<option value="{{ $key }}" @selected(request('status') === $key)>{{ $label }}</option>@endforeach</select>
         <input type="search" name="q" value="{{ request('q') }}" placeholder="Cari nama atau email...">
         <label>Baris <select name="per_page">@foreach ([10, 25, 50] as $size)<option value="{{ $size }}" @selected((int) request('per_page', 10) === $size)>{{ $size }}</option>@endforeach</select></label>
-        <button class="admin-button" type="submit">Terapkan</button>
-        @if (request()->query())<a class="admin-button" href="{{ route('admin.users.index') }}">Reset Filter</a>@endif
+        <div class="admin-filter-actions"><button class="admin-button admin-button--primary" type="submit">Cari</button><a class="admin-button" href="{{ route('admin.users.index') }}">Reset</a></div>
     </form>
     <div class="admin-table-wrap"><table class="admin-table"><thead><tr>@if (auth()->user()->hasRole('superadmin'))<th>Aksi</th>@endif<th>Nama Pengguna</th><th>Email</th><th>Peran (Role)</th><th>Status</th><th>Login Terakhir</th></tr></thead><tbody>
         @forelse ($users as $user)

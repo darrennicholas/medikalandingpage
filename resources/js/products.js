@@ -7,9 +7,34 @@ const productActiveHeading = document.querySelector('#product-active-heading');
 const productNoMatches = document.querySelector('#product-no-matches');
 const productResultsArea = document.querySelector('.product-results-area');
 const productSections = Array.from(document.querySelectorAll('.product-category-section'));
-const categoryFilterButtons = Array.from(document.querySelectorAll('[data-category-filter]'));
+const categoryFilterButtons = Array.from(document.querySelectorAll('button[data-category-filter]'));
 const categoryToggleButtons = Array.from(document.querySelectorAll('[data-category-toggle]'));
 const brochureModal = document.querySelector('#product-modal');
+
+const expandCategoryChildren = (parentButton) => {
+    const toggleButton = parentButton.closest('.product-sidebar__category-row')?.querySelector('[data-category-toggle]');
+    const childCategories = toggleButton ? document.getElementById(toggleButton.getAttribute('aria-controls')) : null;
+    if (!toggleButton || !childCategories || childCategories.childElementCount === 0) return;
+
+    categoryToggleButtons.forEach((otherButton) => {
+        const otherChildren = document.getElementById(otherButton.getAttribute('aria-controls'));
+        const shouldExpand = otherButton === toggleButton;
+        otherButton.setAttribute('aria-expanded', String(shouldExpand));
+        if (otherChildren) otherChildren.hidden = !shouldExpand;
+    });
+};
+
+document.querySelectorAll('.product-sidebar__category--parent').forEach((parentButton) => {
+    parentButton.addEventListener('click', () => expandCategoryChildren(parentButton));
+});
+
+const selectedCategoryIdsFromUrl = new URLSearchParams(window.location.search).get('category')?.split(',').filter(Boolean) || [];
+if (selectedCategoryIdsFromUrl.length > 0) {
+    const selectedParent = Array.from(document.querySelectorAll('.product-sidebar__category--parent')).find((parentButton) =>
+        (parentButton.dataset.categoryIds || '').split(',').some((categoryId) => selectedCategoryIdsFromUrl.includes(categoryId)),
+    );
+    if (selectedParent) expandCategoryChildren(selectedParent);
+}
 
 if (categorySelect && subcategorySelect && resetFilters && productResults && productPagination && document.querySelector('.product-catalog__layout')?.dataset.catalogMode !== 'all') {
     const pageSize = 12;
@@ -21,6 +46,7 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
     let selectedProductFilter = '';
 
     const isEnglish = () => document.documentElement.lang === 'en';
+    const isChinese = () => document.documentElement.lang === 'zh-CN' || document.documentElement.lang === 'zh';
 
     const getActiveFilterButton = () => categoryFilterButtons.find((button) =>
         button.dataset.categoryFilter === categorySelect.value
@@ -74,7 +100,7 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
         subcategorySelect.replaceChildren();
         const allOption = document.createElement('option');
         allOption.value = 'all';
-        allOption.textContent = isEnglish() ? '-- All Subcategories --' : '-- Semua Subkategori --';
+        allOption.textContent = isChinese() ? '-- 所有子类别 --' : (isEnglish() ? '-- All Subcategories --' : '-- Semua Subkategori --');
         subcategorySelect.appendChild(allOption);
 
         subcategories.forEach((subcategory) => {
@@ -180,9 +206,9 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
         const count = document.createElement('strong');
         count.textContent = String(matchingEntries.length);
         productResults.append(
-            document.createTextNode(isEnglish() ? 'Showing ' : 'Menampilkan '),
+            document.createTextNode(isChinese() ? '显示 ' : (isEnglish() ? 'Showing ' : 'Menampilkan ')),
             count,
-            document.createTextNode(isEnglish() ? ' products' : ' produk'),
+            document.createTextNode(isChinese() ? ' 件产品' : (isEnglish() ? ' products' : ' produk')),
         );
 
         if (selectedCategory !== 'all') {
@@ -190,14 +216,14 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
             const highlight = document.createElement('span');
             highlight.className = 'product-results__highlight';
             highlight.textContent = categoryName;
-            productResults.append(document.createTextNode(isEnglish() ? ' in ' : ' di kategori '), highlight);
+            productResults.append(document.createTextNode(isChinese() ? '，类别：' : (isEnglish() ? ' in ' : ' di kategori ')), highlight);
         }
 
         if (selectedSubcategory !== 'all') {
             const highlight = document.createElement('span');
             highlight.className = 'product-results__highlight';
             highlight.textContent = selectedSubcategory;
-            productResults.append(document.createTextNode(isEnglish() ? ' subcategory ' : ' subkategori '), highlight);
+            productResults.append(document.createTextNode(isChinese() ? '，子类别：' : (isEnglish() ? ' subcategory ' : ' subkategori ')), highlight);
         }
 
         productPagination.replaceChildren();
@@ -211,10 +237,12 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
             const lastVisible = Math.min(firstIndex + pageSize, matchingEntries.length);
             pageInfo.textContent = isEnglish()
                 ? `Showing ${firstVisible}–${lastVisible} of ${matchingEntries.length} products`
-                : `Menampilkan ${firstVisible}–${lastVisible} dari ${matchingEntries.length} produk`;
+                : (isChinese()
+                    ? `显示第 ${firstVisible}–${lastVisible} 件，共 ${matchingEntries.length} 件产品`
+                    : `Menampilkan ${firstVisible}–${lastVisible} dari ${matchingEntries.length} produk`);
             productPagination.appendChild(pageInfo);
 
-            addPageButton(isEnglish() ? '‹ Previous' : '‹ Prev', currentPage - 1, currentPage === 1);
+            addPageButton(isChinese() ? '‹ 上一页' : (isEnglish() ? '‹ Previous' : '‹ Prev'), currentPage - 1, currentPage === 1);
             pageNumbers(totalPages).forEach((page) => {
                 if (page === '…') {
                     const dots = document.createElement('span');
@@ -225,7 +253,7 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
                     addPageButton(String(page), page, false, page === currentPage);
                 }
             });
-            addPageButton(isEnglish() ? 'Next ›' : 'Next ›', currentPage + 1, currentPage === totalPages);
+            addPageButton(isChinese() ? '下一页 ›' : 'Next ›', currentPage + 1, currentPage === totalPages);
         }
     };
 
@@ -280,14 +308,6 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
             button.setAttribute('aria-expanded', String(!isExpanded));
             childCategories.hidden = isExpanded;
         });
-    });
-
-    document.querySelector('#language-picker')?.addEventListener('change', () => {
-        if (subcategorySelect.options.length > 0) {
-            subcategorySelect.options[0].textContent = isEnglish() ? '-- All Subcategories --' : '-- Semua Subkategori --';
-        }
-
-        renderProducts();
     });
 
     populateSubcategories();
@@ -347,7 +367,7 @@ if (brochureModal) {
                     if (!response.ok && response.status !== 405 && response.status !== 501) throw new Error('unavailable');
                 }
             } catch {
-                window.showPublicError?.(document.documentElement.lang === 'en' ? 'The brochure could not be loaded. Please try again.' : 'Brosur tidak dapat dimuat. Silakan coba lagi.');
+                window.showPublicError?.(document.documentElement.lang === 'zh-CN' ? '产品手册无法加载，请重试。' : (document.documentElement.lang === 'en' ? 'The brochure could not be loaded. Please try again.' : 'Brosur tidak dapat dimuat. Silakan coba lagi.'));
                 return;
             }
             previousFocus = button;
@@ -362,7 +382,7 @@ if (brochureModal) {
         });
     });
 
-    frame.addEventListener('error', () => window.showPublicError?.(document.documentElement.lang === 'en' ? 'The brochure could not be loaded.' : 'Brosur tidak dapat dimuat.'));
+    frame.addEventListener('error', () => window.showPublicError?.(document.documentElement.lang === 'zh-CN' ? '产品手册无法加载。' : (document.documentElement.lang === 'en' ? 'The brochure could not be loaded.' : 'Brosur tidak dapat dimuat.')));
 
     brochureModal.addEventListener('click', (event) => {
         if (event.target.closest('[data-close-modal]')) {

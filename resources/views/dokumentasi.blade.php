@@ -19,16 +19,7 @@
 
             <nav class="primary-navigation" id="primary-navigation" aria-label="Navigasi utama">
             @include('partials.public-navigation')
-            @include('partials.cms-login-link')
-                <div class="language-control">
-                    <span class="google-mark" aria-hidden="true">G</span>
-                    <label class="sr-only" for="language-picker">Pilih bahasa</label>
-                    <select id="language-picker" aria-label="Pilih bahasa">
-                        <option value="id" @selected(app()->getLocale() === 'id')>Bahasa Indonesia</option>
-                        <option value="en" @selected(app()->getLocale() === 'en')>English</option>
-                    </select>
-                    <span class="language-control__arrow" aria-hidden="true">▼</span>
-                </div>
+                @include('partials.language-switcher')
             </nav>
         </div>
     </header>
@@ -48,7 +39,7 @@
             <div class="container">
                 @if ($selectedType)
                     <div class="publication-listing__intro">
-                        <a class="publication-listing__back" href="{{ route('localized.documentation', ['locale' => $language]) }}">← {{ $language === 'en' ? 'Documentation' : 'Dokumentasi' }}</a>
+                        <a class="publication-listing__back public-back-button" href="{{ route('localized.documentation', ['locale' => $language]) }}">{{ $language === 'en' ? 'Back' : 'Kembali' }}</a>
                         <p class="publication-listing__eyebrow">IMI Medika Media</p>
                         <h1 id="media-heading">{{ $selectedType === 'article' ? ($language === 'en' ? 'Articles' : 'Daftar Artikel') : ($language === 'en' ? 'Latest News' : 'Berita Terkini') }}</h1>
                         <p>{{ $selectedType === 'article'
@@ -110,15 +101,9 @@
                         @endif
                         <div class="public-documentation__grid">
                             @foreach ($articles as $article)
-                                <a class="public-documentation__card" href="{{ route('localized.documentation.show', ['locale' => $language, 'slug' => $article->public_slug]) }}" target="_blank" rel="noopener noreferrer">
-                                    @if ($article->public_cover_url)<img class="public-documentation__cover" src="{{ $article->public_cover_url }}" alt="{{ $article->public_cover_alt ?: $article->public_title }}" loading="lazy">@else<div class="public-documentation__cover-placeholder" aria-hidden="true">{{ $language === 'en' ? 'Article' : 'Artikel' }}</div>@endif
-                                    <div class="public-documentation__body">
-                                        @if ($article->event_date)<time datetime="{{ $article->event_date->toDateString() }}">{{ $article->event_date->format('d M Y') }}</time>@endif
-                                        <h3>{{ $article->public_title }}</h3>
-                                        @if ($article->public_excerpt)<p>{{ $article->public_excerpt }}</p>@endif
-                                        <span>{{ $language === 'en' ? 'Read article' : 'Baca artikel' }} →</span>
-                                    </div>
-                                </a>
+                                <article class="public-documentation__card">
+                                    @include('partials.publication-card', ['item' => $article, 'itemUrl' => route('localized.documentation.show', ['locale' => $language, 'slug' => $article->public_slug]), 'kindLabel' => $language === 'en' ? 'Article' : 'Artikel'])
+                                </article>
                             @endforeach
                         </div>
                         @if ($articles->isNotEmpty())
@@ -137,19 +122,11 @@
                         <div class="public-documentation__grid">
                             @foreach ($activities as $activity)
                                 <article class="public-documentation__card">
-                                    <a href="{{ route('localized.documentation.activity', ['locale' => $language, 'id' => $activity->id]) }}" class="public-documentation__activity-link" target="_blank" rel="noopener noreferrer">
-                                        @if ($activity->public_cover_url)<img class="public-documentation__cover" src="{{ $activity->public_cover_url }}" alt="{{ $activity->public_cover_alt ?: $activity->public_title }}" loading="lazy">@else<div class="public-documentation__cover-placeholder" aria-hidden="true">{{ $language === 'en' ? 'News' : 'Berita' }}</div>@endif
-                                        <div class="public-documentation__body">
-                                            @if ($activity->event_date)<time datetime="{{ $activity->event_date->toDateString() }}">{{ $activity->event_date->format('d M Y') }}</time>@endif
-                                            <h3>{{ $activity->public_title }}</h3>
-                                            @if ($activity->public_excerpt)<p>{{ $activity->public_excerpt }}</p>@endif
-                                            <span>{{ $language === 'en' ? 'Read news' : 'Baca berita' }} →</span>
-                                        </div>
-                                    </a>
+                                    @include('partials.publication-card', ['item' => $activity, 'itemUrl' => ($activity->public_slug ? route('localized.news.show', ['locale' => $language, 'slug' => $activity->public_slug]) : route('localized.documentation.activity', ['locale' => $language, 'id' => $activity->id])), 'kindLabel' => $language === 'en' ? 'News' : 'Berita'])
                                     @if (!empty($activity->public_gallery))
                                         <div class="public-documentation__gallery" aria-label="{{ $language === 'en' ? 'Activity gallery' : 'Galeri kegiatan' }}">
                                             @foreach (array_slice($activity->public_gallery, 0, 4) as $image)
-                                                <a href="{{ route('localized.documentation.activity', ['locale' => $language, 'id' => $activity->id]) }}" target="_blank" rel="noopener noreferrer"><img src="{{ $image['url'] }}" alt="{{ $image['alt'] ?: $image['caption'] ?: $activity->public_title }}" loading="lazy"></a>
+                                                <a href="{{ ($activity->public_slug ? route('localized.news.show', ['locale' => $language, 'slug' => $activity->public_slug]) : route('localized.documentation.activity', ['locale' => $language, 'id' => $activity->id])) }}" target="_blank" rel="noopener noreferrer"><img src="{{ $image['url'] }}" alt="{{ $image['alt'] ?: $image['caption'] ?: $activity->public_title }}" loading="lazy"></a>
                                             @endforeach
                                         </div>
                                     @endif

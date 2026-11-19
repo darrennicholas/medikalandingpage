@@ -231,7 +231,7 @@ class PublicContentApiController extends Controller
         $translation = $this->localizedTranslation($item->translations, $lang);
         $gallery = $item->gallery->map(fn ($media): array => [
             'url' => $this->mediaUrl($media),
-            'caption' => $lang === 'en' ? ($media->pivot->caption_en ?: $media->pivot->caption_id) : $media->pivot->caption_id,
+            'caption' => $media->pivot->{'caption_'.$lang} ?: ($lang === 'zh' ? ($media->pivot->caption_en ?: $media->pivot->caption_id) : $media->pivot->caption_id),
             'display_order' => $media->pivot->display_order,
         ]);
 
@@ -248,7 +248,7 @@ class PublicContentApiController extends Controller
             return null;
         }
 
-        return $this->fileUrl($media->path);
+        return route('media.stream', ['media' => $media->id]);
     }
 
     private function localizedTranslation(Collection $translations, string $lang): ?object
@@ -280,7 +280,9 @@ class PublicContentApiController extends Controller
 
     private function language(Request $request): string
     {
-        return $request->query('lang') === 'en' ? 'en' : 'id';
+        $language = $request->query('lang');
+
+        return in_array($language, ['id', 'en', 'zh'], true) ? $language : 'id';
     }
 
     /** @param mixed $data @param array<string, int> $meta */

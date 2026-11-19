@@ -4,8 +4,9 @@
 @section('content')
 <div class="admin-contact-layout" data-contact-editor>
     <form class="admin-panel admin-form admin-cms-form admin-contact-form" data-admin-form data-resource="contact-info" data-api-url="{{ url('/api/v1/admin/contact-info') }}" data-is-editing="{{ $record->exists ? '1' : '0' }}" data-redirect-url="{{ route('admin.content.index', 'contact-info') }}">
+        @include('admin.partials.record-version', ['record' => $record])
         @csrf
-        <div class="admin-language-tabs" role="tablist"><button type="button" class="is-active" data-language-tab="id">Bahasa Indonesia</button><button type="button" data-language-tab="en">English</button></div>
+        <div class="admin-language-tabs" role="tablist"><button type="button" class="is-active" data-language-tab="id">Bahasa Indonesia</button><button type="button" data-language-tab="en">English</button><button type="button" data-language-tab="zh">中文</button></div>
         <section class="admin-contact-section">
         <h2>Saluran Komunikasi</h2>
         <div class="admin-contact-fields"><label class="admin-field"><span>Nomor Telepon <b>*</b></span><input name="phone" type="tel" maxlength="20" required value="{{ old('phone', $record->phone) }}" data-contact-preview="phone"></label>
@@ -13,8 +14,8 @@
         </section>
         <section class="admin-contact-section">
         <h2>Lokasi &amp; Jam Operasional</h2>
-        @foreach (['id' => 'Bahasa Indonesia', 'en' => 'English'] as $language => $label)
-            <div class="admin-language-panel {{ $language === 'en' ? 'is-hidden' : '' }}" data-language-panel="{{ $language }}">
+        @foreach (['id' => 'Bahasa Indonesia', 'en' => 'English', 'zh' => '中文'] as $language => $label)
+            <div class="admin-language-panel {{ $language !== 'id' ? 'is-hidden' : '' }}" data-language-panel="{{ $language }}">
                 <label class="admin-field"><span>Alamat {{ $label }} @if ($language === 'id')<b>*</b>@endif</span><textarea name="translations[{{ $language }}][address]" maxlength="300" @required($language === 'id') @if ($language === 'id') data-contact-preview="address" @endif>{{ old('translations.'.$language.'.address', $translations->get($language)?->address) }}</textarea></label>
                 <label class="admin-field"><span>Jam Operasional {{ $label }}</span><input name="translations[{{ $language }}][office_hours]" maxlength="150" value="{{ old('translations.'.$language.'.office_hours', $translations->get($language)?->office_hours) }}" @if ($language === 'id') data-contact-preview="hours" @endif></label>
             </div>

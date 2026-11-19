@@ -13,7 +13,7 @@ return [
     ],
 
     'content' => [
-        'supported_languages' => ['id', 'en'],
+        'supported_languages' => ['id', 'en', 'zh'],
         'default_language' => 'id',
         'scheduled_publication_enabled' => false,
         'soft_deletes' => true,

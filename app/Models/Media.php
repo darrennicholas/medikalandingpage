@@ -17,7 +17,7 @@ class Media extends Model
 
     protected $fillable = [
         'file_name', 'original_name', 'path', 'mime_type', 'size_bytes', 'width', 'height',
-        'alt_text_id', 'alt_text_en', 'uploaded_by',
+        'alt_text_id', 'alt_text_en', 'alt_text_zh', 'uploaded_by',
     ];
 
     protected function casts(): array

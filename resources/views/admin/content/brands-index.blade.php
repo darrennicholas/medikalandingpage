@@ -10,13 +10,13 @@
     @php
         $brandTotal = array_sum($brandStats);
         $brandPublished = $brandStats['published'] ?? 0;
-        $brandInactive = ($brandStats['draft'] ?? 0) + ($brandStats['unpublished'] ?? 0);
+        $brandInactive = $brandStats['draft'] ?? 0;
     @endphp
 
     <section class="admin-management-stats" aria-label="Ringkasan brand">
-        <article class="admin-management-stat"><span>Total Brand</span><strong>{{ $brandTotal }}</strong><a href="{{ route('admin.content.index', 'brands') }}">Semua Brand <span class="material-symbols-rounded" aria-hidden="true">arrow_forward</span></a></article>
-        <article class="admin-management-stat admin-management-stat--success"><span>Brand Published</span><strong>{{ $brandPublished }}</strong><span class="admin-management-stat__note">Tampil di beranda</span></article>
-        <article class="admin-management-stat admin-management-stat--muted"><span>Draft / Unpublished</span><strong>{{ $brandInactive }}</strong><span class="admin-management-stat__note">Belum tampil di beranda</span></article>
+        <article class="admin-management-stat admin-summary-card"><span>Total Brand</span><strong>{{ $brandTotal }}</strong><a href="{{ route('admin.content.index', 'brands') }}">Semua Brand <span class="material-symbols-rounded" aria-hidden="true">arrow_forward</span></a><span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">sell</span></article>
+        <article class="admin-management-stat admin-management-stat--success admin-summary-card admin-summary-card--success"><span>Published</span><strong>{{ $brandPublished }}</strong><span class="admin-management-stat__note">Tampil di beranda</span><span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">check_circle</span></article>
+        <article class="admin-management-stat admin-management-stat--muted admin-summary-card admin-summary-card--warning"><span>Draft</span><strong>{{ $brandInactive }}</strong><span class="admin-management-stat__note">Belum tampil di beranda</span><span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">pending</span></article>
     </section>
 
     <section class="admin-panel admin-brand-manager">
@@ -24,7 +24,7 @@
             <label for="brand-status-filter">Filter Status
                 <select id="brand-status-filter" name="status">
                     <option value="">Semua Status</option>
-                    @foreach (['published' => 'Published', 'draft' => 'Draft', 'unpublished' => 'Unpublished'] as $value => $label)
+                    @foreach (['published' => 'Published', 'draft' => 'Draft'] as $value => $label)
                         <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
@@ -33,7 +33,7 @@
                 <span class="admin-brand-manager__search-control"><span class="material-symbols-rounded" aria-hidden="true">search</span><input id="brand-search" type="search" name="q" value="{{ request('q') }}" placeholder="Cari nama brand..."></span>
             </label>
             <label>Baris <select name="per_page">@foreach ([10, 25, 50] as $size)<option value="{{ $size }}" @selected((int) request('per_page', 10) === $size)>{{ $size }}</option>@endforeach</select></label>
-            <button class="admin-button" type="submit"><span class="material-symbols-rounded" aria-hidden="true">filter_alt</span>Terapkan</button>
+            <div class="admin-filter-actions"><button class="admin-button admin-button--primary" type="submit">Cari</button><a class="admin-button" href="{{ route('admin.content.index', 'brands') }}">Reset</a></div>
         </form>
 
         <div class="admin-table-wrap" data-reorder-list="{{ implode(',', $brandIds) }}" data-reorder-resource="brands">
@@ -48,7 +48,7 @@
                         <tr data-reorder-id="{{ $record->id }}">
                             <td><div class="admin-brand-table__actions">
                                 <a class="admin-icon-button" href="{{ route('admin.content.edit', ['resource' => 'brands', 'id' => $record->id]) }}" aria-label="Edit {{ $record->name }}" title="Edit"><span class="material-symbols-rounded" aria-hidden="true">edit</span></a>
-                                <button class="admin-icon-button" type="button" aria-label="Ubah status {{ $record->name }}" title="Ubah status" data-status-url="{{ url('/api/v1/admin/brands/'.$record->id.'/status') }}" data-next-status="{{ $record->status === 'published' ? 'unpublished' : 'published' }}"><span class="material-symbols-rounded" aria-hidden="true">{{ $record->status === 'published' ? 'toggle_on' : 'toggle_off' }}</span></button>
+                                <button class="admin-icon-button" type="button" aria-label="Ubah status {{ $record->name }}" title="Ubah status" data-status-url="{{ url('/api/v1/admin/brands/'.$record->id.'/status') }}" data-next-status="{{ $record->status === 'published' ? 'draft' : 'published' }}"><span class="material-symbols-rounded" aria-hidden="true">{{ $record->status === 'published' ? 'visibility_off' : 'visibility' }}</span></button>
                                 <button class="admin-icon-button is-danger" type="button" aria-label="Hapus {{ $record->name }}" title="Hapus" data-delete-url="{{ url('/api/v1/admin/brands/'.$record->id) }}"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button>
                             </div></td>
                             <td>@include('admin.partials.order-controls', ['orderIds' => $brandIds])</td>

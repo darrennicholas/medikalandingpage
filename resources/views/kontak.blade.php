@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @include('partials.seo', ['seo' => $seo])
-    @vite(['resources/css/app.css', 'resources/css/contact.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/css/contact.css', 'resources/js/app.js', 'resources/js/contact-map.js'])
 </head>
 <body class="contact-page">
     <svg class="contact-icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -15,7 +15,7 @@
         <symbol id="icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="m4 7 8 6 8-6" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
         <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 6v6l4 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
         <symbol id="icon-instagram" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.8" r="1.1" fill="currentColor"/></symbol>
-        <symbol id="icon-linkedin" viewBox="0 0 24 24"><path d="M5 9v10M5 5v.2M10 19v-6.2c0-2.2 4-2.6 4 0V19m-4-9v9m4-5.5c0-2.1 4-2.6 4 0V19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="icon-linkedin" viewBox="0 0 24 24"><path fill="currentColor" d="M6.5 8.4H3.2V21h3.3V8.4ZM4.85 3a1.95 1.95 0 1 0 0 3.9 1.95 1.95 0 0 0 0-3.9ZM21 13.4c0-3.5-1.9-5.2-4.4-5.2-2 0-2.9 1.1-3.4 1.9V8.4H9.9V21h3.3v-6.2c0-1.6.3-3.2 2.4-3.2 2 0 2 1.9 2 3.3V21H21v-7.6Z"/></symbol>
         <symbol id="icon-tiktok" viewBox="0 0 24 24"><path d="M14 3v11.5a4.5 4.5 0 1 1-4.5-4.5m4.5-7c.6 3.5 2.4 5.3 6 5.6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     </svg>
 
@@ -31,16 +31,7 @@
 
             <nav class="primary-navigation" id="primary-navigation" aria-label="Navigasi utama">
             @include('partials.public-navigation')
-            @include('partials.cms-login-link')
-                <div class="language-control">
-                    <span class="google-mark" aria-hidden="true">G</span>
-                    <label class="sr-only" for="language-picker">Pilih bahasa</label>
-                    <select id="language-picker" aria-label="Pilih bahasa">
-                        <option value="id" @selected(app()->getLocale() === 'id')>Bahasa Indonesia</option>
-                        <option value="en" @selected(app()->getLocale() === 'en')>English</option>
-                    </select>
-                    <span class="language-control__arrow" aria-hidden="true">▼</span>
-                </div>
+                @include('partials.language-switcher')
             </nav>
         </div>
     </header>
@@ -85,8 +76,17 @@
                                     <p>{{ $contactTranslation->office_hours }}</p>
                                 </div>
                             @endif
-                            @if ($mapEmbedUrl)
-                                <iframe title="{{ $language === 'en' ? 'Company location map' : 'Peta lokasi perusahaan' }}" src="{{ $mapEmbedUrl }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                            @if ($contactInfo->latitude !== null && $contactInfo->longitude !== null)
+                                <section class="contact-map" aria-label="{{ $language === 'en' ? 'Company location map' : 'Peta lokasi perusahaan' }}">
+                                    <h3>{{ $language === 'en' ? 'Our location' : 'Lokasi Kami' }}</h3>
+                                    <div class="contact-map__canvas" data-contact-map data-latitude="{{ $contactInfo->latitude }}" data-longitude="{{ $contactInfo->longitude }}" data-map-label="{{ $contactTranslation?->address ?: 'PT Interskala Medika Indonesia' }}" aria-label="{{ $language === 'en' ? 'Interactive map of the company location' : 'Peta interaktif lokasi perusahaan' }}"></div>
+                                    @if ($contactInfo->maps_url)<a class="contact-map__link" href="{{ $contactInfo->maps_url }}" target="_blank" rel="noopener noreferrer">{{ $language === 'en' ? 'Open directions' : 'Buka petunjuk arah' }} ↗</a>@endif
+                                </section>
+                            @elseif ($mapEmbedUrl)
+                                <section class="contact-map" aria-label="{{ $language === 'en' ? 'Company location map' : 'Peta lokasi perusahaan' }}">
+                                    <h3>{{ $language === 'en' ? 'Our location' : 'Lokasi Kami' }}</h3>
+                                    <iframe title="{{ $language === 'en' ? 'Company location map' : 'Peta lokasi perusahaan' }}" src="{{ $mapEmbedUrl }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                                </section>
                             @endif
                         </div>
                     </article>

@@ -14,7 +14,7 @@ class SitemapController extends Controller
     {
         $staticPages = [];
         foreach (['', '/tentang', '/produk', '/produk/semua', '/dokumentasi', '/karir', '/kontak'] as $path) {
-            foreach (['id', 'en'] as $language) {
+            foreach (config('cms.content.supported_languages') as $language) {
                 $staticPages[] = url('/'.$language.$path);
             }
         }
@@ -23,8 +23,8 @@ class SitemapController extends Controller
             ->with('translations')->get()->flatMap(fn (Product $product): array => $this->localizedDetailUrls($product->translations, 'produk'));
         $articles = Documentation::query()->where('status', 'published')->where('type', 'article')->with('translations')->get()
             ->flatMap(fn (Documentation $item): array => $this->localizedDetailUrls($item->translations, 'dokumentasi'));
-        $activities = Documentation::query()->where('status', 'published')->where('type', 'activity')->get()
-            ->flatMap(fn (Documentation $item): array => ['id' => url('/id/dokumentasi/kegiatan/'.$item->id), 'en' => url('/en/dokumentasi/kegiatan/'.$item->id)]);
+        $activities = Documentation::query()->where('status', 'published')->where('type', 'activity')->with('translations')->get()
+            ->flatMap(fn (Documentation $item): array => $this->localizedDetailUrls($item->translations, 'berita') ?: [url('/id/dokumentasi/kegiatan/'.$item->id), url('/en/dokumentasi/kegiatan/'.$item->id)]);
         $careers = JobOpening::query()->where('status', 'open')->where(fn ($query) => $query->whereNull('closing_date')->orWhereDate('closing_date', '>=', today()))->get()
             ->flatMap(fn (JobOpening $job): array => ['id' => url('/id/karir/'.$job->id), 'en' => url('/en/karir/'.$job->id)]);
 
@@ -38,7 +38,7 @@ class SitemapController extends Controller
     {
         $fallback = $translations->firstWhere('lang', 'id')?->slug;
         $urls = [];
-        foreach (['id', 'en'] as $language) {
+        foreach (config('cms.content.supported_languages') as $language) {
             $slug = $translations->firstWhere('lang', $language)?->slug ?: $fallback;
             if (filled($slug)) {
                 $urls[] = url('/'.$language.'/'.$path.'/'.$slug);

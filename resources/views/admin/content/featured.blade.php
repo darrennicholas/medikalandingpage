@@ -6,12 +6,13 @@
     @if ($selectedCategory)
         <form method="GET" class="admin-featured-category-bar">
             <label for="featured-category">Kategori pemeriksaan</label>
-            <select id="featured-category" name="category" onchange="this.form.submit()">
+            <select id="featured-category" name="category">
                 @foreach ($categories as $category)
                     <option value="{{ $category->id }}" @selected($selectedCategory->id === $category->id)>{{ $category->translations->firstWhere('lang', 'id')?->name ?? 'Kategori tanpa nama' }}</option>
                 @endforeach
             </select>
             <span>{{ $products->count() }} produk Published</span>
+            <div class="admin-filter-actions"><button class="admin-button admin-button--primary" type="submit">Cari</button><a class="admin-button" href="{{ route('admin.featured.index') }}">Reset</a></div>
         </form>
 
         <section class="admin-featured-quota" aria-live="polite">

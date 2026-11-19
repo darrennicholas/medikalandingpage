@@ -22,6 +22,11 @@ class Documentation extends Model
         return ['event_date' => 'date', 'display_order' => 'integer'];
     }
 
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     public function cover(): BelongsTo
     {
         return $this->belongsTo(Media::class, 'cover_media_id');
@@ -35,7 +40,7 @@ class Documentation extends Model
     public function gallery(): BelongsToMany
     {
         return $this->belongsToMany(Media::class, 'documentation_media')
-            ->withPivot(['caption_id', 'caption_en', 'display_order'])
+            ->withPivot(['caption_id', 'caption_en', 'caption_zh', 'display_order'])
             ->orderByPivot('display_order');
     }
 }

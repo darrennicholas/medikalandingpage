@@ -11,6 +11,7 @@
             <svg class="admin-sweet-alert__symbol admin-sweet-alert__symbol--success" viewBox="0 0 48 48" fill="none"><path d="M11 24.5 20 33l17-18" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <svg class="admin-sweet-alert__symbol admin-sweet-alert__symbol--error" viewBox="0 0 48 48" fill="none"><path d="M15 15 33 33M33 15 15 33" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
             <svg class="admin-sweet-alert__symbol admin-sweet-alert__symbol--info" viewBox="0 0 48 48" fill="none"><path d="M24 21v13M24 14h.01" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+            <svg class="admin-sweet-alert__symbol admin-sweet-alert__symbol--warning" viewBox="0 0 48 48" fill="none"><path d="M24 11v17M24 36h.01" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
         </span>
         <h2 id="admin-sweet-alert-title" data-sweet-alert-title>Berhasil</h2>
         <p id="admin-sweet-alert-message" data-sweet-alert-message></p>

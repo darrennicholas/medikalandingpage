@@ -74,7 +74,7 @@
                         </button>
                         <div class="admin-nav__section-content" data-nav-section-content @if (! (in_array($currentResource, $productResources, true) || request()->routeIs('admin.featured.*'))) hidden @endif>
                             <a class="admin-nav__link admin-nav__link--child {{ $currentResource === 'product-categories' ? 'is-active' : '' }}" href="{{ route('admin.content.index', 'product-categories') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">category</span><span class="admin-nav__label">Kategori Pemeriksaan</span></a>
-                            <a class="admin-nav__link admin-nav__link--child {{ $currentResource === 'products' ? 'is-active' : '' }}" href="{{ route('admin.content.index', 'products') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">inventory_2</span><span class="admin-nav__label">Daftar Produk</span></a>
+                            <a class="admin-nav__link admin-nav__link--child {{ $currentResource === 'products' && $currentSection !== 'specifications-brochures' ? 'is-active' : '' }}" href="{{ route('admin.content.index', 'products') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">inventory_2</span><span class="admin-nav__label">Daftar Produk</span></a>
                             <a class="admin-nav__link admin-nav__link--child {{ request()->routeIs('admin.featured.*') ? 'is-active' : '' }}" href="{{ route('admin.featured.index') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">star</span><span class="admin-nav__label">Produk Unggulan</span></a>
                             <a class="admin-nav__link admin-nav__link--child {{ $currentResource === 'products' && request()->query('section') === 'specifications-brochures' ? 'is-active' : '' }}" href="{{ route('admin.content.index', ['resource' => 'products', 'section' => 'specifications-brochures']) }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">picture_as_pdf</span><span class="admin-nav__label">Spesifikasi &amp; Brosur</span></a>
                         </div>
@@ -143,18 +143,6 @@
                     </label>
                 </div>
                 <div class="admin-topbar__tools">
-                    <button class="admin-icon-button" type="button" aria-label="Ubah tema" title="Ubah tema" data-theme-toggle>
-                        <span class="material-symbols-rounded" aria-hidden="true" data-theme-icon>dark_mode</span>
-                    </button>
-                    <div class="admin-notifications">
-                        <button class="admin-icon-button" type="button" aria-label="Notifikasi" aria-expanded="false" aria-controls="admin-notification-panel" data-notification-toggle>
-                            <span class="material-symbols-rounded" aria-hidden="true">notifications</span>
-                        </button>
-                        <div class="admin-notifications__panel" id="admin-notification-panel" data-notification-panel hidden>
-                            <strong>Notifikasi</strong>
-                            <p>Tidak ada notifikasi baru.</p>
-                        </div>
-                    </div>
                     <a class="admin-topbar__public" href="{{ route('home') }}" target="_blank" rel="noopener">
                         <span class="material-symbols-rounded" aria-hidden="true">open_in_new</span><span>Lihat Website</span>
                     </a>

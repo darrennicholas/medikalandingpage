@@ -19,16 +19,7 @@
 
             <nav class="primary-navigation" id="primary-navigation" aria-label="Navigasi utama">
             @include('partials.public-navigation')
-            @include('partials.cms-login-link')
-                <div class="language-control">
-                    <span class="google-mark" aria-hidden="true">G</span>
-                    <label class="sr-only" for="language-picker">Pilih bahasa</label>
-                    <select id="language-picker" aria-label="Pilih bahasa">
-                        <option value="id" @selected(app()->getLocale() === 'id')>Bahasa Indonesia</option>
-                        <option value="en" @selected(app()->getLocale() === 'en')>English</option>
-                    </select>
-                    <span class="language-control__arrow" aria-hidden="true">▼</span>
-                </div>
+                @include('partials.language-switcher')
             </nav>
         </div>
     </header>
@@ -118,9 +109,9 @@
                     <div class="section-title">
                         <h2 id="certificates-title">{{ $language === 'en' ? 'Certificates & Awards' : 'Sertifikat & Penghargaan' }}</h2>
                     </div>
-                    <div class="certificate-carousel" aria-label="{{ $language === 'en' ? 'Company certificates' : 'Sertifikat perusahaan' }}">
+                    <div class="certificate-carousel" data-certificate-carousel role="region" aria-roledescription="carousel" aria-label="{{ $language === 'en' ? 'Company certificates' : 'Sertifikat perusahaan' }}">
                         <div class="certificate-carousel__viewport">
-                            <div class="certificate-carousel__track" id="certificate-track">
+                            <div id="certificate-track" class="certificate-grid certificate-carousel__track">
                                 @foreach ($certificates as $certificate)
                                     @php $certificateTranslation = $certificate->public_translation ?? $certificate->translations->firstWhere('lang', $language) ?? $certificate->translations->firstWhere('lang', 'id'); @endphp
                                     @if ($certificate->public_image_url)
@@ -134,7 +125,9 @@
                                 @endforeach
                             </div>
                         </div>
-                        <div class="certificate-carousel__dots" id="certificate-dots" aria-label="{{ $language === 'en' ? 'Select certificate' : 'Pilih sertifikat' }}"></div>
+                        <div class="certificate-carousel__controls" data-certificate-controls hidden>
+                            <div id="certificate-dots" class="certificate-carousel__dots" aria-label="{{ $language === 'en' ? 'Certificate slides' : 'Slide sertifikat' }}"></div>
+                        </div>
                     </div>
                 </div>
             </section>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -29,17 +29,7 @@
                 <a class="nav-link" href="{{ route('contact') }}" data-i18n="contact">Kontak</a>
                 <a class="nav-link nav-link--active" href="{{ route('documentation') }}" data-i18n="articlesNews">Artikel &amp; Berita</a>
 
-                @include('partials.cms-login-link')
-                <div class="language-control">
-                    <span class="google-mark" aria-hidden="true">G</span>
-                    <label class="sr-only" for="language-picker">Pilih bahasa</label>
-                    <select id="language-picker" aria-label="Pilih bahasa">
-                        <option value="" selected>Select Language</option>
-                        <option value="id">Bahasa Indonesia</option>
-                        <option value="en">English</option>
-                    </select>
-                    <span class="language-control__arrow" aria-hidden="true">▼</span>
-                </div>
+                @include('partials.language-switcher')
             </nav>
         </div>
     </header>
@@ -78,7 +68,7 @@
                 <p>PT Interskala Sehat Sejahtera<br>Website: <a href="https://issmedika.com/">https://issmedika.com/</a></p>
                 <p>For business inquiries, product information, or potential partnerships, please contact us through our official communication channels.</p>
                 <div class="news-detail-share"><span>Bagikan:</span><a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode(route('news.hospital-expo')) }}" target="_blank" rel="noopener noreferrer" aria-label="Bagikan ke Facebook">f</a><a href="https://twitter.com/intent/tweet?url={{ urlencode(route('news.hospital-expo')) }}" target="_blank" rel="noopener noreferrer" aria-label="Bagikan ke X">𝕏</a><a href="https://www.linkedin.com/sharing/share-offsite/?url={{ urlencode(route('news.hospital-expo')) }}" target="_blank" rel="noopener noreferrer" aria-label="Bagikan ke LinkedIn">in</a><a href="https://wa.me/?text={{ urlencode(route('news.hospital-expo')) }}" target="_blank" rel="noopener noreferrer" aria-label="Bagikan ke WhatsApp">◉</a></div>
-                <nav class="news-detail-navigation" aria-label="Navigasi berita"><a href="{{ route('news') }}">← Kembali ke Daftar Berita</a><span aria-disabled="true">Berita Selanjutnya →</span></nav>
+                <nav class="news-detail-navigation" aria-label="Navigasi berita"><a class="public-back-button" href="{{ route('news') }}">← Kembali ke Daftar Berita</a><span aria-disabled="true">Berita Selanjutnya →</span></nav>
             </article>
         </div>
     </main>

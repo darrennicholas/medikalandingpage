@@ -26,17 +26,26 @@ class AdminMediaController extends Controller
     {
         $request->validate([
             'files' => ['required', 'array', 'min:1'],
-            'files.*' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'files.*' => ['required', 'file', 'max:51200'],
             'alt_text_id' => ['nullable', 'array'],
             'alt_text_en' => ['nullable', 'array'],
+            'alt_text_zh' => ['nullable', 'array'],
         ]);
 
         $records = [];
 
         foreach ($request->file('files', []) as $index => $file) {
             $mime = $file->getMimeType();
-            abort_unless(in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true), 422, 'File harus berupa JPG, PNG, atau WebP yang valid.');
-            $record = $this->storeOptimizedImage($file, $request, $index);
+            if (in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+                abort_if($file->getSize() > 2 * 1024 * 1024, 422, 'Ukuran gambar maksimal 2 MB per file.');
+                $record = $this->storeOptimizedImage($file, $request, $index);
+            } elseif (in_array($mime, ['video/mp4', 'video/webm'], true)) {
+                $record = $this->storeVideo($file, $request, $index, $mime);
+            } else {
+                abort(422, 'File harus berupa JPG, PNG, WebP, MP4, atau WebM yang valid.');
+            }
+
+            $record->setAttribute('admin_preview_url', $this->mediaUrl($record));
             $activityLogger->log($request->user(), 'upload', Media::class, $record->id, null, $record->toArray());
             $records[] = $record;
         }
@@ -49,10 +58,11 @@ class AdminMediaController extends Controller
         $validated = $request->validate([
             'alt_text_id' => ['nullable', 'string', 'max:200'],
             'alt_text_en' => ['nullable', 'string', 'max:200'],
+            'alt_text_zh' => ['nullable', 'string', 'max:200'],
         ]);
-        $oldValues = $media->only(['alt_text_id', 'alt_text_en']);
+        $oldValues = $media->only(['alt_text_id', 'alt_text_en', 'alt_text_zh']);
         $media->fill($validated)->save();
-        $activityLogger->log($request->user(), 'update', Media::class, $media->id, $oldValues, $media->only(['alt_text_id', 'alt_text_en']));
+        $activityLogger->log($request->user(), 'update', Media::class, $media->id, $oldValues, $media->only(['alt_text_id', 'alt_text_en', 'alt_text_zh']));
 
         return response()->json(['success' => true, 'data' => $media, 'message' => 'Teks alternatif berhasil diperbarui.']);
     }
@@ -88,6 +98,16 @@ class AdminMediaController extends Controller
             }
         }
 
+        foreach (['hero_slides' => 'Draft perubahan Hero', 'content_blocks' => 'Draft perubahan blok konten'] as $table => $label) {
+            foreach (DB::table($table)->whereNotNull('draft_payload')->pluck('draft_payload') as $payload) {
+                $draft = json_decode($payload, true);
+                if ((int) ($draft['attributes']['media_id'] ?? 0) === (int) $media->id) {
+                    $usages[] = $label;
+                    break;
+                }
+            }
+        }
+
         return $usages;
     }
 
@@ -105,9 +125,12 @@ class AdminMediaController extends Controller
         $fileName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'-'.Str::uuid().'.'.$extension;
         $path = 'media/'.$fileName;
         $optimized = $this->resizeAndEncode($source, $width, $height, 1600, $extension);
-        $disk->put($path, $optimized);
+        abort_if(! $disk->put($path, $optimized), 500, 'Gambar gagal disimpan ke Media Library. Periksa kapasitas dan izin storage.');
         $thumbnail = $this->resizeAndEncode($source, $width, $height, 640, $extension);
-        $disk->put('media/thumbnails/'.$fileName, $thumbnail);
+        $thumbnailPath = 'media/thumbnails/'.$fileName;
+        abort_if(! $disk->put($thumbnailPath, $thumbnail), 500, 'Thumbnail gambar gagal disimpan ke Media Library.');
+        $this->mirrorToPublicImages($path);
+        $this->mirrorToPublicImages($thumbnailPath);
         imagedestroy($source);
 
         return Media::query()->create([
@@ -120,8 +143,65 @@ class AdminMediaController extends Controller
             'height' => max(1, (int) round($height * min(1, 1600 / max($width, $height)))),
             'alt_text_id' => $request->input('alt_text_id.'.$index),
             'alt_text_en' => $request->input('alt_text_en.'.$index),
+            'alt_text_zh' => $request->input('alt_text_zh.'.$index),
             'uploaded_by' => $request->user()->id,
         ]);
+    }
+
+    private function storeVideo(UploadedFile $file, Request $request, int $index, string $mime): Media
+    {
+        $extension = $mime === 'video/webm' ? 'webm' : 'mp4';
+        $fileName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'-'.Str::uuid().'.'.$extension;
+        $path = 'media/'.$fileName;
+        $storedPath = $file->storeAs('media', $fileName, config('cms.media.disk'));
+        abort_if($storedPath === false, 500, 'Video gagal disimpan ke Media Library. Periksa kapasitas dan izin storage.');
+
+        return Media::query()->create([
+            'file_name' => $fileName,
+            'original_name' => mb_substr($file->getClientOriginalName(), 0, 255),
+            'path' => $path,
+            'mime_type' => $mime,
+            'size_bytes' => (int) $file->getSize(),
+            'alt_text_id' => $request->input('alt_text_id.'.$index),
+            'alt_text_en' => $request->input('alt_text_en.'.$index),
+            'alt_text_zh' => $request->input('alt_text_zh.'.$index),
+            'uploaded_by' => $request->user()->id,
+        ]);
+    }
+
+    private function mediaUrl(Media $media): string
+    {
+        return route('media.stream', ['media' => $media->id]);
+    }
+
+    private function mirrorToPublicImages(string $path): void
+    {
+        $diskName = config('cms.media.disk');
+        if (config('filesystems.disks.'.$diskName.'.driver') !== 'local') {
+            return;
+        }
+
+        $publicImageDirectory = public_path('images');
+        if (is_link(public_path('images'))) {
+            return;
+        }
+
+        $disk = Storage::disk($diskName);
+        $source = $disk->path($path);
+        $destination = $publicImageDirectory.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, ltrim($path, '/'));
+        $destinationDirectory = dirname($destination);
+
+        if (! is_dir($destinationDirectory) && ! mkdir($destinationDirectory, 0755, true) && ! is_dir($destinationDirectory)) {
+            abort(500, 'Folder public/images/media tidak dapat dibuat. Periksa izin folder public.');
+        }
+
+        if (realpath($source) === realpath($destination)) {
+            return;
+        }
+
+        if (! copy($source, $destination)) {
+            abort(500, 'Gambar gagal disalin ke public/images/media. Periksa kapasitas dan izin folder public.');
+        }
     }
 
     private function resizeAndEncode(\GdImage $source, int $width, int $height, int $maximumWidth, string $extension): string

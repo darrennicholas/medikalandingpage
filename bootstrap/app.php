@@ -19,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->redirectGuestsTo(fn (Request $request): string => route('admin.login'));
+        $middleware->redirectGuestsTo(fn (Request $request): string => route('admin.login', absolute: false));
         $middleware->alias([
             'cms.role' => EnsureCmsRole::class,
             'cms.permission' => EnsureCmsPermission::class,
@@ -37,7 +37,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 && $exception instanceof HttpExceptionInterface
                 && $exception->getStatusCode() === 419
             ) {
-                return redirect()->route('admin.login')->withErrors([
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'data' => null,
+                        'message' => 'Sesi login sudah kedaluwarsa. Muat ulang halaman, lalu coba lagi.',
+                        'errors' => [],
+                    ], 419);
+                }
+
+                return redirect()->to(route('admin.login', absolute: false))->withErrors([
                     'email' => 'Sesi login sudah kedaluwarsa. Muat ulang halaman, lalu coba lagi.',
                 ]);
             }
@@ -67,7 +76,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             $status = $exception instanceof HttpExceptionInterface ? $exception->getStatusCode() : 500;
-            $message = $status >= 500 ? 'Terjadi kesalahan pada server.' : $exception->getMessage();
+            $message = $status === 429 ? 'Terlalu banyak permintaan. Silakan coba lagi nanti.' : ($status >= 500 ? 'Terjadi kesalahan pada server.' : $exception->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -75,6 +84,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 'message' => $message,
                 'errors' => [],
                 'meta' => [],
-            ], $status);
+            ], $status, $exception instanceof HttpExceptionInterface ? $exception->getHeaders() : []);
         });
     })->create();

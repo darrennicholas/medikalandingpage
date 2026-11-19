@@ -14,19 +14,17 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UserController extends Controller
 {
     public function index(): View
     {
         $request = request();
-        $usersQuery = User::query();
+        $usersQuery = $this->usersQuery($request);
 
         return view('admin.users.index', [
             'users' => (clone $usersQuery)->with('role')
-                ->when($request->filled('q'), fn (Builder $query): Builder => $query->where(fn (Builder $search): Builder => $search->where('name', 'like', '%'.$request->string('q').'%')->orWhere('email', 'like', '%'.$request->string('q').'%')))
-                ->when($request->filled('role'), fn (Builder $query): Builder => $query->whereHas('role', fn (Builder $role): Builder => $role->where('name', $request->string('role')->toString())))
-                ->when($request->filled('status'), fn (Builder $query): Builder => $query->where('status', $request->string('status')->toString()))
                 ->orderBy('name')->paginate(in_array(request()->integer('per_page'), [10, 25, 50], true) ? request()->integer('per_page') : 10)->withQueryString(),
             'roles' => Role::query()->whereIn('name', ['superadmin', 'admin'])->orderBy('id')->get(),
             'userStats' => [
@@ -35,6 +33,40 @@ class UserController extends Controller
                 'restricted' => (clone $usersQuery)->whereIn('status', ['inactive', 'locked'])->count(),
             ],
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $query = $this->usersQuery($request)->with('role')->orderBy('name');
+
+        return response()->streamDownload(function () use ($query): void {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, ['Nama', 'Email', 'Role', 'Status', 'Login Terakhir', 'Dibuat']);
+
+            $query->chunk(200, function ($users) use ($handle): void {
+                foreach ($users as $user) {
+                    fputcsv($handle, [
+                        $user->name,
+                        $user->email,
+                        ucfirst($user->role?->name ?? '-'),
+                        ucfirst($user->status),
+                        $user->last_login_at?->format('Y-m-d H:i:s') ?? '-',
+                        $user->created_at?->format('Y-m-d H:i:s') ?? '-',
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        }, 'users-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    private function usersQuery(Request $request): Builder
+    {
+        return User::query()
+            ->when($request->filled('q'), fn (Builder $query): Builder => $query->where(fn (Builder $search): Builder => $search->where('name', 'like', '%'.$request->string('q').'%')->orWhere('email', 'like', '%'.$request->string('q').'%')))
+            ->when($request->filled('role'), fn (Builder $query): Builder => $query->whereHas('role', fn (Builder $role): Builder => $role->where('name', $request->string('role')->toString())))
+            ->when($request->filled('status'), fn (Builder $query): Builder => $query->where('status', $request->string('status')->toString()));
     }
 
     public function create(): View

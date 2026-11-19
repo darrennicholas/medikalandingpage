@@ -12,7 +12,7 @@ class EnsurePasswordChanged
     public function handle(Request $request, Closure $next): Response
     {
         if ($request->user()?->must_change_password && ! $request->routeIs('admin.password.*', 'admin.logout')) {
-            return redirect()->route('admin.password.edit');
+            return redirect()->to(route('admin.password.edit', absolute: false));
         }
 
         return $next($request);

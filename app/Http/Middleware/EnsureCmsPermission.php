@@ -34,9 +34,13 @@ class EnsureCmsPermission
             && $request->route('resource') === 'social-links'
             && $status === 'published'
             && SocialLink::query()->whereKey($request->route('id'))->where('status', 'published')->exists();
+        $unchangedFooterStatus = $request->routeIs('api.admin.content-blocks.update')
+            && $request->route('id') === 'footer_about'
+            && ContentBlock::query()->where('block_key', 'footer_about')->where('status', $status)->exists();
         if ($module !== null && in_array($request->method(), ['POST', 'PUT', 'PATCH'], true)
-            && in_array($status, ['published', 'unpublished', 'open', 'closed'], true)
+            && in_array($status, ['published', 'open', 'closed'], true)
             && ! $unchangedSocialStatus
+            && ! $unchangedFooterStatus
             && ! $user->role?->hasPermission($module, 'publish')) {
             abort(403, 'Role Anda tidak memiliki izin publikasi.');
         }
@@ -75,7 +79,7 @@ class EnsureCmsPermission
             return ['users', $action];
         }
 
-        if ($routeName === 'admin.activity-logs' || $routeName === 'api.admin.activity-logs') {
+        if (str_starts_with($routeName, 'admin.activity-logs') || str_starts_with($routeName, 'api.admin.activity-logs')) {
             return ['activity_logs', 'view'];
         }
 

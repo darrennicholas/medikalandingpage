@@ -5,9 +5,9 @@
 @section('breadcrumb', 'Konten Landing Page  /  Produk  /  Kategori Pemeriksaan')
 @section('page-description', 'Kelola kategori dan urutan tab yang tampil pada katalog produk.')
 @section('page-actions')
-    <button class="admin-button admin-button--primary" type="button" data-open-category-modal>
+    <a class="admin-button admin-button--primary" href="{{ route('admin.content.create', 'product-categories') }}">
         <span class="material-symbols-rounded" aria-hidden="true">add</span>Tambah Kategori
-    </button>
+    </a>
 @endsection
 
 @section('content')
@@ -18,20 +18,23 @@
     @endphp
 
     <section class="admin-management-stats admin-category-stats" aria-label="Ringkasan kategori">
-        <article class="admin-management-stat">
+        <article class="admin-management-stat admin-summary-card">
             <span>Total Kategori</span>
             <strong>{{ $categoryTotal }}</strong>
             <a href="{{ route('admin.content.index', 'product-categories') }}">Semua kategori <span class="material-symbols-rounded" aria-hidden="true">arrow_forward</span></a>
+            <span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">category</span>
         </article>
-        <article class="admin-management-stat admin-management-stat--success">
+        <article class="admin-management-stat admin-management-stat--success admin-summary-card admin-summary-card--success">
             <span>Published</span>
             <strong>{{ $categoryPublished }}</strong>
             <span class="admin-management-stat__note">Tampil di katalog</span>
+            <span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">check_circle</span>
         </article>
-        <article class="admin-management-stat admin-management-stat--muted">
+        <article class="admin-management-stat admin-management-stat--muted admin-summary-card admin-summary-card--warning">
             <span>Draft / Nonaktif</span>
             <strong>{{ $categoryInactive }}</strong>
             <span class="admin-management-stat__note">Tidak tampil di katalog</span>
+            <span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">pending</span>
         </article>
     </section>
 
@@ -46,7 +49,7 @@
                 Status
                 <select id="category-status-filter" name="status">
                     <option value="">Semua status</option>
-                    @foreach (['published' => 'Published', 'draft' => 'Draft', 'unpublished' => 'Nonaktif'] as $value => $label)
+                    @foreach (['published' => 'Published', 'draft' => 'Draft'] as $value => $label)
                         <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
@@ -63,10 +66,7 @@
                     @endforeach
                 </select>
             </label>
-            <button class="admin-button" type="submit">Terapkan</button>
-            @if (request()->filled('q') || request()->filled('status'))
-                <a class="admin-button admin-button--light" href="{{ route('admin.content.index', 'product-categories') }}">Reset</a>
-            @endif
+            <div class="admin-filter-actions"><button class="admin-button admin-button--primary" type="submit">Cari</button><a class="admin-button" href="{{ route('admin.content.index', 'product-categories') }}">Reset</a></div>
         </form>
 
         <div class="admin-table-wrap admin-category-table-wrap" data-reorder-list="{{ implode(',', $categoryIds) }}" data-reorder-resource="product-categories">
@@ -88,26 +88,16 @@
                             $translationId = $record->translations->firstWhere('lang', 'id');
                             $translationEn = $record->translations->firstWhere('lang', 'en');
                             $orderIndex = array_search($record->id, $categoryIds, true);
-                            $statusLabel = $record->status === 'published' ? 'Published' : ($record->status === 'unpublished' ? 'Nonaktif' : 'Draft');
-                            $statusClass = $record->status === 'published' ? 'published' : ($record->status === 'unpublished' ? 'unpublished' : 'draft');
+                            $statusLabel = $record->status === 'published' ? 'Published' : 'Draft';
+                            $statusClass = $record->status === 'published' ? 'published' : 'draft';
                         @endphp
                         <tr data-category-row data-reorder-id="{{ $record->id }}">
                             <td>
                                 <div class="admin-category-actions">
                                     <a class="admin-icon-button" href="{{ route('admin.content.preview', ['resource' => 'product-categories', 'id' => $record->id]) }}" target="_blank" rel="noopener" aria-label="Pratinjau kategori" title="Pratinjau"><span class="material-symbols-rounded" aria-hidden="true">visibility</span></a>
-                                    <button class="admin-icon-button" type="button" data-edit-category
-                                        data-category-id="{{ $record->id }}"
-                                        data-category-name-id="{{ $translationId?->name }}"
-                                        data-category-slug-id="{{ $translationId?->slug }}"
-                                        data-category-name-en="{{ $translationEn?->name }}"
-                                        data-category-slug-en="{{ $translationEn?->slug }}"
-                                        data-category-order="{{ $record->display_order }}"
-                                        data-category-status="{{ $record->status }}"
-                                        aria-label="Ubah {{ $translationId?->name ?? 'kategori' }}" title="Ubah">
-                                        <span class="material-symbols-rounded" aria-hidden="true">edit</span>
-                                    </button>
-                                    <button class="admin-icon-button" type="button" aria-label="Ubah status {{ $translationId?->name ?? 'kategori' }}" title="Ubah status" data-status-url="{{ url('/api/v1/admin/product-categories/'.$record->id.'/status') }}" data-next-status="{{ $record->status === 'published' ? 'unpublished' : 'published' }}">
-                                        <span class="material-symbols-rounded" aria-hidden="true">{{ $record->status === 'published' ? 'toggle_on' : 'toggle_off' }}</span>
+                                    <a class="admin-icon-button" href="{{ route('admin.content.edit', ['resource' => 'product-categories', 'id' => $record->id]) }}" aria-label="Ubah {{ $translationId?->name ?? 'kategori' }}" title="Ubah"><span class="material-symbols-rounded" aria-hidden="true">edit</span></a>
+                                    <button class="admin-icon-button" type="button" aria-label="Ubah status {{ $translationId?->name ?? 'kategori' }}" title="Ubah status" data-status-url="{{ url('/api/v1/admin/product-categories/'.$record->id.'/status') }}" data-next-status="{{ $record->status === 'published' ? 'draft' : 'published' }}">
+                                        <span class="material-symbols-rounded" aria-hidden="true">{{ $record->status === 'published' ? 'visibility_off' : 'visibility' }}</span>
                                     </button>
                                     <button class="admin-icon-button is-danger" type="button" aria-label="Hapus {{ $translationId?->name ?? 'kategori' }}" title="Hapus" data-delete-url="{{ url('/api/v1/admin/product-categories/'.$record->id) }}">
                                         <span class="material-symbols-rounded" aria-hidden="true">delete</span>
@@ -145,76 +135,4 @@
         @include('admin.partials.pagination', ['paginator' => $records, 'label' => 'kategori'])
     </section>
 
-    <div class="admin-category-modal" data-category-modal data-next-order="{{ count($categoryIds) + 1 }}" hidden>
-        <button class="admin-category-modal__backdrop" type="button" aria-label="Tutup form kategori" data-close-category-modal></button>
-        <section class="admin-category-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="category-modal-title">
-            <header class="admin-category-modal__header">
-                <div>
-                    <span class="admin-category-modal__marker" aria-hidden="true"></span>
-                    <h2 id="category-modal-title" data-category-modal-title>Tambah Kategori Pemeriksaan</h2>
-                    <p>Atur nama kategori, slug, urutan, dan publikasi.</p>
-                </div>
-                <button class="admin-icon-button" type="button" aria-label="Tutup form kategori" data-close-category-modal><span class="material-symbols-rounded" aria-hidden="true">close</span></button>
-            </header>
-
-            <form class="admin-category-form" data-admin-form data-resource="product-categories" data-is-editing="0" data-api-url="/api/v1/admin/product-categories" data-redirect-url="{{ request()->fullUrl() }}">
-                @csrf
-                <div class="admin-category-language-tabs" role="tablist" aria-label="Bahasa kategori">
-                    <span>Bahasa konten</span>
-                    <div>
-                        <button class="is-active" type="button" role="tab" aria-selected="true" data-category-language="id"><b>ID</b> Indonesia</button>
-                        <button type="button" role="tab" aria-selected="false" data-category-language="en"><b>EN</b> English</button>
-                    </div>
-                </div>
-
-                <div class="admin-category-form__body">
-                    <div class="admin-category-form__grid">
-                        <label class="admin-category-field">
-                            <span>Nama Kategori (ID) <b>*</b></span>
-                            <input type="text" name="translations[id][name]" id="category-name-id" maxlength="80" required autocomplete="off" placeholder="Contoh: Hematologi & Koagulasi">
-                        </label>
-                        <label class="admin-category-field">
-                            <span>Nama Kategori (EN)</span>
-                            <input type="text" name="translations[en][name]" id="category-name-en" maxlength="80" autocomplete="off" placeholder="Hematology & Coagulation">
-                        </label>
-                        <label class="admin-category-field">
-                            <span>Slug (ID) <b>*</b></span>
-                            <input type="text" name="translations[id][slug]" id="category-slug-id" maxlength="100" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" autocomplete="off" placeholder="hematologi-koagulasi">
-                        </label>
-                        <label class="admin-category-field">
-                            <span>Slug (EN)</span>
-                            <input type="text" name="translations[en][slug]" id="category-slug-en" maxlength="100" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" autocomplete="off" placeholder="hematology-coagulation">
-                        </label>
-                    </div>
-
-                    <div class="admin-category-form__grid admin-category-form__grid--settings">
-                        <label class="admin-category-field admin-category-order-field">
-                            <span>Urutan Tab</span>
-                            <input type="number" name="display_order" id="category-display-order" min="1" step="1" inputmode="numeric">
-                        </label>
-                        <fieldset class="admin-category-status-field">
-                            <legend>Status Publikasi</legend>
-                            <div>
-                                <label><input type="radio" name="status" value="published"><span><strong>Published</strong><small>Tampil pada katalog publik.</small></span></label>
-                                <label><input type="radio" name="status" value="draft"><span><strong>Draft</strong><small>Tersimpan di CMS.</small></span></label>
-                                <label><input type="radio" name="status" value="unpublished"><span><strong>Nonaktif</strong><small>Disembunyikan dari katalog.</small></span></label>
-                            </div>
-                        </fieldset>
-                    </div>
-
-                    <div class="admin-category-public-preview">
-                        <div><span>Pratinjau tab publik</span><strong data-category-preview>(Nama kategori)</strong></div>
-                        <span class="admin-category-public-preview__language" data-category-preview-language>ID</span>
-                    </div>
-                </div>
-
-                <div class="admin-category-form__error admin-alert admin-alert--error" data-form-errors hidden role="alert"></div>
-                <footer class="admin-category-modal__footer">
-                    <button class="admin-button admin-button--light" type="button" data-close-category-modal>Batal</button>
-                    <button class="admin-button admin-button--light" type="submit" data-save-status="draft">Simpan Draft</button>
-                    <button class="admin-button admin-button--primary" type="submit" data-save-status="published"><span class="material-symbols-rounded" aria-hidden="true">publish</span>Simpan &amp; Publikasikan</button>
-                </footer>
-            </form>
-        </section>
-    </div>
 @endsection

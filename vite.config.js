@@ -13,6 +13,7 @@ export default defineConfig({
                 'resources/css/documentation.css',
                 'resources/js/app.js',
                 'resources/js/products.js',
+                'resources/js/contact-map.js',
                 'resources/css/admin.css',
                 'resources/js/admin.js',
             ],

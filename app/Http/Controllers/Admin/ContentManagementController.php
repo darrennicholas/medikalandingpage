@@ -261,6 +261,7 @@ class ContentManagementController extends Controller
                 'visionBlock' => $visionBlock,
                 'visionTranslationId' => $visionBlock->translations->firstWhere('lang', 'id'),
                 'visionTranslationEn' => $visionBlock->translations->firstWhere('lang', 'en'),
+                'visionTranslationZh' => $visionBlock->translations->firstWhere('lang', 'zh'),
             ]);
         }
 
@@ -320,12 +321,18 @@ class ContentManagementController extends Controller
             }
             $selectedPage = $request->string('page', 'home')->toString();
             $selectedLanguage = $request->string('lang', 'id')->toString();
-            abort_unless(isset($pageLabels[$selectedPage]) && in_array($selectedLanguage, ['id', 'en'], true), 404);
+            abort_unless(isset($pageLabels[$selectedPage]) && in_array($selectedLanguage, config('cms.content.supported_languages'), true), 404);
             $selectedMeta = SeoMeta::query()->with('ogImage')->firstOrNew(['page_key' => $selectedPage, 'lang' => $selectedLanguage]);
-            $mediaOptions = Media::query()->latest('created_at')->limit(100)->get();
+            $mediaOptions = Media::query()->whereIn('mime_type', ['image/jpeg', 'image/png', 'image/webp'])->latest('created_at')->limit(100)->get();
             $mediaOptions->each(function (Media $media): void {
                 $media->setAttribute('admin_preview_url', $this->mediaUrl($media));
             });
+            $coveragePreviewMedia = ContentBlock::query()
+                ->with('media')
+                ->where('block_key', 'home_coverage')
+                ->where('status', 'published')
+                ->first()
+                ?->media;
 
             return view('admin.content.seo-index', [
                 'records' => $seoQuery->orderBy('page_key')->orderBy('lang')->get(),
@@ -334,6 +341,8 @@ class ContentManagementController extends Controller
                 'selectedLanguage' => $selectedLanguage,
                 'selectedMeta' => $selectedMeta,
                 'mediaOptions' => $mediaOptions,
+                'sitemapPreviewImage' => $this->mediaUrl($coveragePreviewMedia) ?? asset('images/coverage-map.jpg'),
+                'sitemapPreviewAlt' => $coveragePreviewMedia?->alt_text_id ?: 'Peta jangkauan distribusi Interskala Medika',
                 'seoTotal' => SeoMeta::query()->count(),
                 'seoIndexed' => SeoMeta::query()->where('robots_index', true)->count(),
                 'seoComplete' => SeoMeta::query()->whereNotNull('meta_title')->whereNotNull('meta_description')->count(),
@@ -370,6 +379,7 @@ class ContentManagementController extends Controller
                 'resource' => $resource,
                 'records' => $records,
                 'total' => $modelClass::query()->count(),
+                'publishedCount' => $isDocumentation ? $modelClass::query()->where('status', 'published')->count() : 0,
                 'primaryCount' => $modelClass::query()->where($isDocumentation ? 'type' : 'status', $isDocumentation ? 'article' : 'open')->count(),
                 'secondaryCount' => $modelClass::query()->where($isDocumentation ? 'type' : 'status', $isDocumentation ? 'activity' : 'closed')->count(),
                 'closingCount' => $isDocumentation ? 0 : JobOpening::query()->where('status', 'open')->whereBetween('closing_date', [today(), today()->addDays(7)])->count(),
@@ -437,7 +447,13 @@ class ContentManagementController extends Controller
 
     public function create(string $resource): View
     {
-        return $this->formView($resource, new (self::MODELS[$resource] ?? $this->modelClass($resource))());
+        $record = new (self::MODELS[$resource] ?? $this->modelClass($resource))();
+        if ($resource === 'documentations') {
+            $type = request()->query('type', 'article');
+            $record->setAttribute('type', in_array($type, ['article', 'activity'], true) ? $type : 'article');
+        }
+
+        return $this->formView($resource, $record);
     }
 
     public function edit(string $resource, string $id): View
@@ -463,6 +479,7 @@ class ContentManagementController extends Controller
             'record' => $record,
             'translationId' => $record->translations->firstWhere('lang', 'id'),
             'translationEn' => $record->translations->firstWhere('lang', 'en'),
+            'translationZh' => $record->translations->firstWhere('lang', 'zh'),
             'mediaUrl' => $this->mediaUrl($record->media),
         ]);
     }
@@ -474,7 +491,8 @@ class ContentManagementController extends Controller
                 'record' => $record,
                 'translationId' => $record->translations->firstWhere('lang', 'id'),
                 'translationEn' => $record->translations->firstWhere('lang', 'en'),
-                'mediaOptions' => $this->mediaOptions(),
+                'translationZh' => $record->translations->firstWhere('lang', 'zh'),
+                'mediaOptions' => $this->mediaOptions(true),
                 'isEditing' => $record->exists,
                 'apiUrl' => '/api/v1/admin/hero-slides'.($record->exists ? '/'.$record->getKey() : ''),
                 'redirectUrl' => route('admin.content.index', 'hero-slides'),
@@ -533,12 +551,44 @@ class ContentManagementController extends Controller
                     ['name' => 'translations[en][body]', 'label' => 'Company footer text', 'type' => 'textarea', 'required' => false, 'maxlength' => 300],
                     ['name' => 'translations[en][copyright_text]', 'label' => 'Copyright text', 'type' => 'text', 'required' => false, 'maxlength' => 150],
                 ],
+                'zh' => [
+                    ['name' => 'translations[zh][body]', 'label' => '公司简介', 'type' => 'textarea', 'required' => false, 'maxlength' => 300],
+                    ['name' => 'translations[zh][copyright_text]', 'label' => '版权文字', 'type' => 'text', 'required' => false, 'maxlength' => 150],
+                ],
             ];
         }
+        if ($resource === 'documentations') {
+            foreach ($definitions['common'] as &$field) {
+                if ($field['name'] === 'type') {
+                    $field = ['name' => 'type', 'type' => 'hidden', 'value' => $record->type ?: 'article'];
+                }
+            }
+            unset($field);
+            if ($record->type === 'activity') {
+                foreach (config('cms.content.supported_languages') as $language) {
+                    foreach ($definitions[$language] as &$field) {
+                        if (str_ends_with($field['name'], '[body]')) {
+                            $field['label'] = $language === 'id' ? 'Isi Berita' : 'News Body';
+                        }
+                    }
+                    unset($field);
+                }
+            }
+        }
         if (in_array('status', $record->getFillable(), true)) {
-            $definitions['common'][] = ['name' => 'status', 'label' => 'Status', 'type' => 'select', 'required' => true, 'options' => $resource === 'job-openings'
+            $statusField = ['name' => 'status', 'label' => 'Status', 'type' => 'select', 'required' => true, 'options' => $resource === 'job-openings'
                 ? ['draft' => 'Draft', 'open' => 'Open', 'closed' => 'Closed']
-                : ['draft' => 'Draft', 'published' => 'Published', 'unpublished' => 'Unpublished']];
+                : ['draft' => 'Draft', 'published' => 'Published']];
+            if ($resource === 'documentations') {
+                $galleryIndex = array_search('gallery', array_column($definitions['common'], 'name'), true);
+                if ($galleryIndex !== false) {
+                    array_splice($definitions['common'], $galleryIndex, 0, [$statusField]);
+                } else {
+                    $definitions['common'][] = $statusField;
+                }
+            } else {
+                $definitions['common'][] = $statusField;
+            }
         }
         $translations = method_exists($record, 'translations') ? $record->translations : collect();
         $mediaOptions = $this->mediaOptions();
@@ -560,9 +610,11 @@ class ContentManagementController extends Controller
 
         return view('admin.content.form', [
             'resource' => $resource,
-            'title' => $resource === 'content-blocks' && $record->getAttribute('block_key') === 'footer_about'
-                ? 'Teks Footer'
-                : self::LABELS[$resource],
+            'title' => match (true) {
+                $resource === 'documentations' => $record->type === 'activity' ? 'Berita / Foto Kegiatan' : 'Artikel',
+                $resource === 'content-blocks' && $record->getAttribute('block_key') === 'footer_about' => 'Teks Footer',
+                default => self::LABELS[$resource],
+            },
             'record' => $record,
             'definitions' => $definitions,
             'translations' => $translations->keyBy('lang'),
@@ -599,13 +651,16 @@ class ContentManagementController extends Controller
     {
         $translationId = $record->translations->firstWhere('lang', 'id');
         $translationEn = $record->translations->firstWhere('lang', 'en');
+        $translationZh = $record->translations->firstWhere('lang', 'zh');
 
         return view('admin.content.about-company-form', [
             'record' => $record,
             'translationId' => $translationId,
             'translationEn' => $translationEn,
+            'translationZh' => $translationZh,
             'translationBodyId' => $this->plainTextForAdmin($translationId?->body),
             'translationBodyEn' => $this->plainTextForAdmin($translationEn?->body),
+            'translationBodyZh' => $this->plainTextForAdmin($translationZh?->body),
             'mediaOptions' => $this->mediaOptions(),
             'apiUrl' => '/api/v1/admin/content-blocks/about_company',
             'redirectUrl' => route('admin.content.index', ['resource' => 'content-blocks', 'section' => 'about_company']),
@@ -658,30 +713,44 @@ class ContentManagementController extends Controller
         $textarea = static fn (string $name, string $label, bool $required = false, int $maxLength = 3000): array => ['name' => $name, 'label' => $label, 'type' => 'textarea', 'required' => $required, 'maxlength' => $maxLength];
         $select = static fn (string $name, string $label, array $options, bool $required = true): array => ['name' => $name, 'label' => $label, 'type' => 'select', 'required' => $required, 'options' => $options];
 
-        $empty = ['common' => [], 'id' => [], 'en' => []];
+        $empty = ['common' => [], 'id' => [], 'en' => [], 'zh' => []];
 
-        return match ($resource) {
+        $definitions = match ($resource) {
             'hero-slides' => ['common' => [$media('media_id', 'Gambar Banner', true), $text('cta_url', 'Link CTA')], 'id' => [$text('translations[id][title]', 'Judul', true, 120), $text('translations[id][subtitle]', 'Subjudul', false, 250), $text('translations[id][cta_label]', 'Label CTA', false, 40)], 'en' => [$text('translations[en][title]', 'Title', false, 120), $text('translations[en][subtitle]', 'Subtitle', false, 250), $text('translations[en][cta_label]', 'CTA label', false, 40)]],
             'content-blocks' => ['common' => [$select('block_key', 'Section', ['home_coverage' => 'Jangkauan Kami', 'home_cta' => 'CTA Hubungi Kami', 'about_company' => 'Tentang Perusahaan', 'about_vision' => 'Visi', 'footer_about' => 'Tentang Footer', 'career_intro' => 'Pengantar Karir'], true), $media('media_id', 'Gambar'), $text('cta_url', 'Link CTA')], 'id' => [$text('translations[id][title]', 'Judul', true, 200), $text('translations[id][subtitle]', 'Subjudul', false, 300), $textarea('translations[id][body]', 'Isi', true, 10000), $text('translations[id][cta_label]', 'Label CTA', false, 60)], 'en' => [$text('translations[en][title]', 'Title', false, 200), $text('translations[en][subtitle]', 'Subtitle', false, 300), $textarea('translations[en][body]', 'Body', false, 10000), $text('translations[en][cta_label]', 'CTA label', false, 60)]],
             'brands' => ['common' => [$text('name', 'Nama Brand', true, 100), $media('logo_media_id', 'Logo', true), $text('website_url', 'Link Website'), $text('display_order', 'Urutan')], 'id' => [], 'en' => []],
             'mission-items' => ['common' => [$text('display_order', 'Urutan')], 'id' => [$textarea('translations[id][text]', 'Isi Misi', true, 300)], 'en' => [$textarea('translations[en][text]', 'Mission', false, 300)]],
             'company-summary' => ['common' => [$text('established_year', 'Tahun Berdiri', true, 4), $text('partner_count', 'Jumlah Mitra', true), $text('province_count', 'Jumlah Provinsi', true)], 'id' => [], 'en' => []],
             'certificates' => ['common' => [$media('media_id', 'Gambar', true), $text('issued_year', 'Tahun Terbit'), $text('display_order', 'Urutan')], 'id' => [$text('translations[id][title]', 'Judul', true, 150), $textarea('translations[id][description]', 'Keterangan', false, 300)], 'en' => [$text('translations[en][title]', 'Title', false, 150), $textarea('translations[en][description]', 'Description', false, 300)]],
-            'product-categories' => ['common' => [$text('display_order', 'Urutan')], 'id' => [$text('translations[id][name]', 'Nama Kategori', true, 80), $text('translations[id][slug]', 'Slug', true, 100)], 'en' => [$text('translations[en][name]', 'Category Name', false, 80), $text('translations[en][slug]', 'Slug', false, 100)]],
-            'products' => ['common' => [$select('category_id', 'Kategori', [], true), $media('media_id', 'Gambar Utama'), $text('buy_url', 'Link Beli'), ['name' => 'brochure', 'label' => 'Brosur PDF (lokal)', 'type' => 'file', 'required' => false], ['name' => 'parameters', 'label' => 'Parameter (pisahkan dengan koma)', 'type' => 'text', 'required' => false], $media('logo_top_media_id', 'Logo Atas'), $media('logo_bottom_media_id', 'Logo Watermark'), $text('display_order', 'Urutan')], 'id' => [$text('translations[id][name]', 'Nama Produk', true, 150), $text('translations[id][slug]', 'Slug', true, 150), $textarea('translations[id][description]', 'Deskripsi', true, 2000)], 'en' => [$text('translations[en][name]', 'Product Name', false, 150), $text('translations[en][slug]', 'Slug', false, 150), $textarea('translations[en][description]', 'Description', false, 2000)]],
-            'documentations' => ['common' => [$select('type', 'Tipe', ['article' => 'Artikel', 'activity' => 'Foto Kegiatan']), $media('cover_media_id', 'Gambar Sampul'), $text('event_date', 'Tanggal', true), ['name' => 'gallery', 'label' => 'Galeri Media', 'type' => 'gallery', 'required' => false]], 'id' => [$text('translations[id][title]', 'Judul', true, 150), $text('translations[id][slug]', 'Slug', true, 150), $text('translations[id][excerpt]', 'Ringkasan', false, 250), $textarea('translations[id][body]', 'Isi Artikel', false, 10000)], 'en' => [$text('translations[en][title]', 'Title', false, 150), $text('translations[en][slug]', 'Slug', false, 150), $text('translations[en][excerpt]', 'Excerpt', false, 250), $textarea('translations[en][body]', 'Article Body', false, 10000)]],
-            'job-openings' => ['common' => [$text('employment_type', 'Tipe Kepegawaian', true, 50), $text('location', 'Lokasi', true, 150), $text('posted_at', 'Tanggal Posting', true), $text('closing_date', 'Tanggal Penutupan'), $text('apply_url', 'Link HRIS Lamaran', true, 500)], 'id' => [$text('translations[id][title]', 'Posisi', true, 150), $textarea('translations[id][description]', 'Deskripsi', true, 3000), $textarea('translations[id][requirements]', 'Persyaratan', true, 3000)], 'en' => [$text('translations[en][title]', 'Position', false, 150), $textarea('translations[en][description]', 'Description', false, 3000), $textarea('translations[en][requirements]', 'Requirements', false, 3000)]],
+            'product-categories' => ['common' => [$text('display_order', 'Urutan')], 'id' => [$text('translations[id][name]', 'Nama Kategori', true, 80), $text('translations[id][slug]', 'Slug', true, 100)], 'en' => [$text('translations[en][name]', 'Category Name', false, 80), $text('translations[en][slug]', 'Slug', false, 100)], 'zh' => [$text('translations[zh][name]', 'Nama Kategori (中文)', false, 80), $text('translations[zh][slug]', 'Slug (中文)', false, 100)]],
+            'products' => ['common' => [$select('category_id', 'Kategori', [], true), $media('media_id', 'Gambar Utama'), $text('buy_url', 'Link Beli'), ['name' => 'brochure', 'label' => 'Brosur PDF (lokal)', 'type' => 'file', 'required' => false], ['name' => 'parameters', 'label' => 'Parameter (pisahkan dengan koma)', 'type' => 'text', 'required' => false], $media('logo_top_media_id', 'Logo Atas'), $media('logo_bottom_media_id', 'Logo Watermark'), $text('display_order', 'Urutan')], 'id' => [$text('translations[id][name]', 'Nama Produk', true, 150), $text('translations[id][slug]', 'Slug', true, 150), $textarea('translations[id][description]', 'Deskripsi', true, 20000)], 'en' => [$text('translations[en][name]', 'Product Name', false, 150), $text('translations[en][slug]', 'Slug', false, 150), $textarea('translations[en][description]', 'Description', false, 20000)]],
+            'documentations' => ['common' => [$select('type', 'Tipe', ['article' => 'Artikel', 'activity' => 'Foto Kegiatan']), $media('cover_media_id', 'Gambar Sampul'), $text('event_date', 'Tanggal', true), ['name' => 'gallery', 'label' => 'Galeri Media', 'type' => 'gallery', 'required' => false]], 'id' => [$text('translations[id][title]', 'Judul', true, 150), $text('translations[id][slug]', 'Slug', true, 150), $textarea('translations[id][excerpt]', 'Ringkasan', false, 250), $textarea('translations[id][body]', 'Isi Artikel', false, 20000)], 'en' => [$text('translations[en][title]', 'Title', false, 150), $text('translations[en][slug]', 'Slug', false, 150), $textarea('translations[en][excerpt]', 'Excerpt', false, 250), $textarea('translations[en][body]', 'Article Body', false, 20000)]],
+            'job-openings' => ['common' => [$text('employment_type', 'Tipe Kepegawaian', true, 50), $text('location', 'Lokasi', true, 150), $text('posted_at', 'Tanggal Posting', true), $text('closing_date', 'Tanggal Penutupan'), $text('apply_url', 'Link HRIS Lamaran', true, 500)], 'id' => [$textarea('translations[id][title]', 'Posisi', true, 150), $textarea('translations[id][description]', 'Deskripsi', true, 20000), $textarea('translations[id][requirements]', 'Persyaratan', true, 20000)], 'en' => [$textarea('translations[en][title]', 'Position', false, 150), $textarea('translations[en][description]', 'Description', false, 20000), $textarea('translations[en][requirements]', 'Requirements', false, 20000)]],
             'contact-info' => ['common' => [$text('phone', 'Nomor Telepon', true, 20), $text('email', 'Email', true, 150), $text('maps_url', 'Link Google Maps'), $text('latitude', 'Latitude'), $text('longitude', 'Longitude')], 'id' => [$textarea('translations[id][address]', 'Alamat', true, 300), $text('translations[id][office_hours]', 'Jam Operasional', false, 150)], 'en' => [$textarea('translations[en][address]', 'Address', false, 300), $text('translations[en][office_hours]', 'Office Hours', false, 150)]],
             'social-links' => ['common' => [$select('platform', 'Platform', ['Instagram' => 'Instagram', 'LinkedIn' => 'LinkedIn', 'Facebook' => 'Facebook', 'YouTube' => 'YouTube', 'TikTok' => 'TikTok']), $text('url', 'URL', true, 500), $text('display_order', 'Urutan')], 'id' => [], 'en' => []],
-            'seo-metas' => ['common' => [$select('page_key', 'Halaman', ['home' => 'Beranda', 'about' => 'Tentang', 'products' => 'Produk', 'documentation' => 'Dokumentasi', 'careers' => 'Karir', 'contact' => 'Kontak']), $select('lang', 'Bahasa', ['id' => 'Bahasa Indonesia', 'en' => 'English']), $text('meta_title', 'Meta Title', false, 70), $textarea('meta_description', 'Meta Description', false, 160), $text('canonical_url', 'Canonical URL'), $media('og_media_id', 'Gambar Open Graph'), $select('robots_index', 'Izinkan Diindeks', ['1' => 'Ya', '0' => 'Tidak'])], 'id' => [], 'en' => []],
+            'seo-metas' => ['common' => [$select('page_key', 'Halaman', ['home' => 'Beranda', 'about' => 'Tentang', 'products' => 'Produk', 'documentation' => 'Dokumentasi', 'careers' => 'Karir', 'contact' => 'Kontak']), $select('lang', 'Bahasa', ['id' => 'Bahasa Indonesia', 'en' => 'English', 'zh' => '中文']), $text('meta_title', 'Meta Title', false, 70), $textarea('meta_description', 'Meta Description', false, 160), $text('canonical_url', 'Canonical URL'), $media('og_media_id', 'Gambar Open Graph'), $select('robots_index', 'Izinkan Diindeks', ['1' => 'Ya', '0' => 'Tidak'])], 'id' => [], 'en' => []],
             default => $empty,
         };
+
+        $definitions['zh'] = array_map(static function (array $field): array {
+            $field['name'] = str_replace('translations[id]', 'translations[zh]', $field['name']);
+            $field['label'] = '中文 / '.$field['label'];
+            $field['required'] = false;
+
+            return $field;
+        }, $definitions['id']);
+
+        return $definitions;
     }
 
     /** @return Collection<int, Media> */
-    private function mediaOptions(): Collection
+    private function mediaOptions(bool $includeVideos = false): Collection
     {
-        $mediaOptions = Media::query()->orderByDesc('created_at')->get();
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if ($includeVideos) {
+            $allowedTypes = [...$allowedTypes, 'video/mp4', 'video/webm'];
+        }
+        $mediaOptions = Media::query()->whereIn('mime_type', $allowedTypes)->orderByDesc('created_at')->get();
         $mediaOptions->each(function (Media $media): void {
             $media->setAttribute('admin_preview_url', $this->mediaUrl($media));
         });
@@ -695,11 +764,7 @@ class ContentManagementController extends Controller
             return null;
         }
 
-        $path = ltrim($media->path, '/');
-
-        return file_exists(public_path($path))
-            ? asset($path)
-            : Storage::disk(config('cms.media.disk'))->url($path);
+        return route('media.stream', ['media' => $media->id]);
     }
 
     private function modelClass(string $resource): string

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ContactInfo;
 use App\Models\ContentBlock;
+use App\Models\Media;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\SeoMeta;
@@ -46,7 +47,7 @@ class ProductController extends Controller
         $categories = ProductCategory::query()
             ->where('status', 'published')
             ->whereHas('products', fn ($query) => $query->where('status', 'published'))
-            ->with(['translations', 'featuredProducts' => fn ($query) => $query->where('status', 'published')->with(['translations', 'media', 'topLogo', 'bottomLogo'])])
+            ->with(['translations', 'featuredProducts' => fn ($query) => $query->where('status', 'published')->whereColumn('products.category_id', 'category_featured_products.category_id')->with(['translations', 'media', 'topLogo', 'bottomLogo'])])
             ->orderBy('display_order')
             ->get()
             ->map(function (ProductCategory $category) use ($catalogMode, $catalogPage): array {
@@ -74,6 +75,7 @@ class ProductController extends Controller
         $contactTranslation = $contact ? $this->localizedTranslation($contact->translations, $language) : null;
         $footerAbout = ContentBlock::query()->where('block_key', 'footer_about')->where('status', 'published')->with('translations')->first();
         $footerTranslation = $footerAbout ? $this->localizedTranslation($footerAbout->translations, $language) : null;
+        $footerSettings = ContentBlock::query()->where('block_key', 'footer_about')->first();
 
         return view('produk', [
             'categories' => $categories,
@@ -84,10 +86,12 @@ class ProductController extends Controller
                 'description' => $seo?->meta_description ?: 'Jelajahi katalog alat kesehatan PT Interskala Medika Indonesia.',
                 'canonical' => $seo?->canonical_url ?: request()->url(),
                 'robots_index' => $seo?->robots_index ?? true,
-                'og_image' => $seo?->ogImage ? $this->localAsset($seo->ogImage->path) : null,
+                'og_image' => $this->mediaUrl($seo?->ogImage),
             ],
             'footer' => [
                 'about' => $footerTranslation,
+                'show_phone' => $footerSettings?->footer_show_phone ?? true,
+                'show_email' => $footerSettings?->footer_show_email ?? true,
                 'contact' => $contact ? ['phone' => $contact->phone, 'email' => $contact->email, 'address' => $contactTranslation?->address] : null,
                 'social_links' => SocialLink::query()->where('status', 'published')->orderBy('display_order')->get(),
                 'copyright_text' => $footerTranslation?->copyright_text,
@@ -100,15 +104,18 @@ class ProductController extends Controller
     {
         return [
             'name' => $this->localizedValue($product->translations, 'name'),
-            'subtitle' => $this->localizedValue($product->translations, 'description'),
+            'slug' => $this->localizedValue($product->translations, 'slug'),
+            'subtitle' => $this->plainText($this->localizedValue($product->translations, 'description')),
             'parameter' => '',
             'parameters' => $product->parameters ?? [],
-            'image' => $this->localAsset($product->media?->path),
-            'image_alt' => app()->getLocale() === 'en'
-                ? ($product->media?->alt_text_en ?: $product->media?->alt_text_id)
-                : $product->media?->alt_text_id,
-            'logo_top' => $this->localAsset($product->topLogo?->path),
-            'logo_bottom' => $this->localAsset($product->bottomLogo?->path),
+            'image' => $this->mediaUrl($product->media),
+            'image_alt' => match (app()->getLocale()) {
+                'zh' => $product->media?->alt_text_zh ?: ($product->media?->alt_text_en ?: $product->media?->alt_text_id),
+                'en' => $product->media?->alt_text_en ?: $product->media?->alt_text_id,
+                default => $product->media?->alt_text_id,
+            },
+            'logo_top' => $this->mediaUrl($product->topLogo),
+            'logo_bottom' => $this->mediaUrl($product->bottomLogo),
             'buy_url' => $product->buy_url,
             'brochure_url' => $this->brochureUrl($product->brochure_path),
             'subcategory' => $product->subcategory ?? '',
@@ -117,10 +124,23 @@ class ProductController extends Controller
 
     private function localizedValue(Collection $translations, string $field): string
     {
-        $language = app()->getLocale() === 'en' ? 'en' : 'id';
+        $language = app()->getLocale();
         $translation = $translations->firstWhere('lang', $language) ?? $translations->firstWhere('lang', 'id');
 
         return (string) ($translation?->{$field} ?: $translations->firstWhere('lang', 'id')?->{$field} ?: '');
+    }
+
+    private function plainText(string $value): string
+    {
+        if ($value === '') {
+            return '';
+        }
+
+        $text = preg_replace('/<(?:br|\/p|\/li|\/h[1-6])\b[^>]*>/i', ' ', $value) ?? $value;
+        $text = strip_tags($text);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return trim((string) preg_replace('/\s+/u', ' ', $text));
     }
 
     private function localizedTranslation(Collection $translations, string $language): ?object
@@ -140,15 +160,13 @@ class ProductController extends Controller
         return $selected;
     }
 
-    private function localAsset(?string $path): string
+    private function mediaUrl(?Media $media): string
     {
-        if (! $path) {
+        if ($media === null) {
             return '';
         }
 
-        $normalizedPath = ltrim($path, '/');
-
-        return file_exists(public_path($normalizedPath)) ? asset($normalizedPath) : Storage::disk(config('cms.media.disk'))->url($normalizedPath);
+        return route('media.stream', ['media' => $media->id]);
     }
 
     private function brochureUrl(?string $path): string

@@ -5,9 +5,9 @@
 <div class="permission-page">
     <div class="permission-intro"><p class="admin-eyebrow">CMS Landing / Pengaturan Sistem / Hak Akses</p><h2>Hak Akses</h2><p>Kelola peran pengguna dan izin setiap modul CMS.</p></div>
     <div class="permission-stats">
-        <article><div><span>Total Role</span><strong>{{ $roles->count() }} Role <small>Sistem</small></strong><p>Superadmin &amp; Admin Konten</p></div><span class="material-symbols-rounded">shield_person</span></article>
-        <article><div><span>Role Dapat Dikonfigurasi</span><strong>1 Role</strong><p>Izin Admin dapat disesuaikan</p></div><span class="material-symbols-rounded is-green">verified</span></article>
-        <article><div><span>Modul Otorisasi</span><strong>{{ count($modules) }} Modul</strong><p>Kontrol akses per tindakan</p></div><span class="material-symbols-rounded">lock</span></article>
+        <article class="admin-summary-card"><div><span>Total Role</span><strong>{{ $roles->count() }} Role</strong><p>Superadmin &amp; Admin Konten</p></div><span class="material-symbols-rounded admin-summary-card__icon">shield_person</span></article>
+        <article class="admin-summary-card admin-summary-card--success"><div><span>Role Bisa Diubah</span><strong>1 Role</strong><p>Izin Admin dapat disesuaikan</p></div><span class="material-symbols-rounded admin-summary-card__icon">verified</span></article>
+        <article class="admin-summary-card"><div><span>Modul Otorisasi</span><strong>{{ count($modules) }} Modul</strong><p>Kontrol akses per tindakan</p></div><span class="material-symbols-rounded admin-summary-card__icon">lock</span></article>
     </div>
     <section class="admin-panel permission-panel">
         <div class="permission-heading"><div><h3><span class="material-symbols-rounded">shield_person</span> Daftar Peran Pengguna (System Roles)</h3><p>Struktur peran dan akses pengguna pengelola CMS.</p></div></div>

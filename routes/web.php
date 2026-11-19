@@ -8,9 +8,11 @@ use App\Http\Controllers\Admin\FeaturedProductsController;
 use App\Http\Controllers\Admin\MediaLibraryController;
 use App\Http\Controllers\Admin\PermissionMatrixController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicPageController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Middleware\LocalizeChinesePublicPage;
 use App\Http\Middleware\SetPublicLanguage;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +27,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('/dashboard/export', [DashboardController::class, 'export'])->name('dashboard.export');
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/featured-products', [FeaturedProductsController::class, 'index'])->name('featured.index');
+        Route::post('/preview/{resource}', [PublicPageController::class, 'previewUnsaved'])->where('resource', 'products|documentations|job-openings|hero-slides|brands|mission-items|product-categories|certificates')->name('content.preview-unsaved');
         Route::get('/preview/{resource}/{id}', [PublicPageController::class, 'preview'])->where('resource', 'products|product-categories|documentations|job-openings|hero-slides|content-blocks|brands|mission-items|certificates|social-links')->name('content.preview');
         Route::get('/content/{resource}', [ContentManagementController::class, 'index'])->where('resource', 'hero-slides|content-blocks|brands|mission-items|company-summary|certificates|product-categories|products|documentations|job-openings|contact-info|social-links|seo-metas')->name('content.index');
         Route::get('/content/{resource}/create', [ContentManagementController::class, 'create'])->where('resource', 'hero-slides|content-blocks|brands|mission-items|company-summary|certificates|product-categories|products|documentations|job-openings|contact-info|social-links|seo-metas')->name('content.create');
@@ -32,8 +35,10 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('/content/{resource}/{id}/edit', [ContentManagementController::class, 'edit'])->where('resource', 'hero-slides|content-blocks|brands|mission-items|company-summary|certificates|product-categories|products|documentations|job-openings|contact-info|social-links|seo-metas')->name('content.edit');
         Route::get('/media', [MediaLibraryController::class, 'index'])->name('media.index');
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs');
+        Route::get('/activity-logs/export', [ActivityLogController::class, 'export'])->middleware('cms.role:superadmin')->name('activity-logs.export');
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+        Route::get('/users/export', [UserController::class, 'export'])->middleware('cms.role:superadmin')->name('users.export');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
@@ -50,10 +55,11 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
 
 Route::get('/sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+Route::get('/media/{media}/file', [MediaController::class, 'show'])->whereNumber('media')->name('media.stream');
 
 Route::prefix('{locale}')
-    ->where(['locale' => 'id|en'])
-    ->middleware(SetPublicLanguage::class)
+    ->where(['locale' => 'id|en|zh'])
+    ->middleware([SetPublicLanguage::class, LocalizeChinesePublicPage::class])
     ->name('localized.')
     ->group(function (): void {
         Route::get('/', [PublicPageController::class, 'home'])->name('home');
@@ -63,6 +69,7 @@ Route::prefix('{locale}')
         Route::get('/produk/{slug}', [PublicPageController::class, 'productDetail'])->name('products.show');
         Route::get('/artikel', [PublicPageController::class, 'articles'])->name('articles');
         Route::get('/berita', [PublicPageController::class, 'news'])->name('news');
+        Route::get('/berita/{slug}', [PublicPageController::class, 'activityDetailBySlug'])->name('news.show');
         Route::get('/dokumentasi', [PublicPageController::class, 'documentation'])->name('documentation');
         Route::get('/dokumentasi/kegiatan/{id}', [PublicPageController::class, 'activityDetail'])->whereNumber('id')->name('documentation.activity');
         Route::get('/dokumentasi/{slug}', [PublicPageController::class, 'documentationDetail'])->name('documentation.show');

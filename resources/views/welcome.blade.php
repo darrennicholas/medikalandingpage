@@ -19,32 +19,28 @@
 
             <nav class="primary-navigation" id="primary-navigation" aria-label="Navigasi utama">
             @include('partials.public-navigation')
-            @include('partials.cms-login-link')
-                <div class="language-control">
-                    <span class="google-mark" aria-hidden="true">G</span>
-                    <label class="sr-only" for="language-picker">Pilih bahasa</label>
-                    <select id="language-picker" aria-label="Pilih bahasa">
-                        <option value="id" @selected(app()->getLocale() === 'id')>Bahasa Indonesia</option>
-                        <option value="en" @selected(app()->getLocale() === 'en')>English</option>
-                    </select>
-                    <span class="language-control__arrow" aria-hidden="true">▼</span>
-                </div>
+                @include('partials.language-switcher')
             </nav>
         </div>
     </header>
 
         <main>
         @if ($slides->isNotEmpty())
-            <section class="hero{{ $slides->count() > 1 ? ' hero--slider' : '' }}" id="beranda" aria-labelledby="hero-title" data-hero-slider>
+            <section class="hero{{ $slides->count() > 1 ? ' hero--slider' : '' }}" id="beranda" aria-label="{{ app()->getLocale() === 'en' ? 'Highlights' : 'Sorotan' }}" data-hero-slider>
                 @foreach ($slides as $slideIndex => $slide)
                     <div class="hero__slide" data-hero-slide @if ($slideIndex !== 0) hidden @endif aria-hidden="{{ $slideIndex === 0 ? 'false' : 'true' }}">
+                        @if ($slide->public_image_url && str_starts_with($slide->public_media_type ?? '', 'video/'))<video class="hero__image hero__video" autoplay muted loop playsinline preload="metadata" aria-hidden="true"><source src="{{ $slide->public_image_url }}" type="{{ $slide->public_media_type }}"></video>@elseif ($slide->public_image_url)<img class="hero__image" src="{{ $slide->public_image_url }}" alt="{{ $slide->public_image_alt ?? '' }}" @if ($slideIndex > 0) loading="lazy" @endif>@endif
                         <div class="container hero__content">
-                            @if ($slide->public_title)<h1 id="hero-title">{{ $slide->public_title }}</h1>@endif
+                            @if ($slide->public_title)<h1>{{ $slide->public_title }}</h1>@endif
                             @if ($slide->public_subtitle)<p>{{ $slide->public_subtitle }}</p>@endif
-                            @if ($slide->public_cta_label && $slide->cta_url)<a class="contact-cta__button" href="{{ preg_replace('#^/(id|en)(?=/|$)#', '/'.app()->getLocale(), $slide->cta_url) }}">{{ $slide->public_cta_label }}</a>@endif
+                            @if ($slide->public_cta_label && $slide->cta_url)<a class="contact-cta__button" href="{{ preg_replace('#^/(id|en|zh)(?=/|$)#', '/'.app()->getLocale(), $slide->cta_url) }}">{{ $slide->public_cta_label }}</a>@endif
                         </div>
                     </div>
                 @endforeach
+                @if ($slides->count() > 1)
+                    <button type="button" class="hero__control hero__control--previous" data-hero-previous aria-label="{{ app()->getLocale() === 'en' ? 'Previous slide' : 'Slide sebelumnya' }}">‹</button>
+                    <button type="button" class="hero__control hero__control--next" data-hero-next aria-label="{{ app()->getLocale() === 'en' ? 'Next slide' : 'Slide berikutnya' }}">›</button>
+                @endif
             </section>
         @endif
 
@@ -91,7 +87,7 @@
                         <div class="contact-cta__actions">
                             @foreach ($homeCta['buttons'] as $button)
                                 @if (filled($button['label'] ?? null) && filled($button['url'] ?? null))
-                                    @php($buttonUrl = preg_replace('#^/(id|en)(?=/|$)#', '/'.app()->getLocale(), $button['url']))
+                                    @php($buttonUrl = preg_replace('#^/(id|en|zh)(?=/|$)#', '/'.app()->getLocale(), $button['url']))
                                     @php($isExternalButton = Illuminate\Support\Str::startsWith($buttonUrl, ['https://', 'http://']))
                                     <a class="contact-cta__button contact-cta__button--{{ $button['style'] ?? 'primary' }}" href="{{ $buttonUrl }}" @if ($isExternalButton) target="_blank" rel="noopener noreferrer" @endif>
                                         @if (filled($button['icon'] ?? null))<span class="material-symbols-rounded" aria-hidden="true">{{ $button['icon'] }}</span>@endif
@@ -100,7 +96,7 @@
                                 @endif
                             @endforeach
                         </div>
-                    @elseif ($homeCta['cta_label'] && $homeCta['cta_url'])<a class="contact-cta__button" href="{{ preg_replace('#^/(id|en)(?=/|$)#', '/'.app()->getLocale(), $homeCta['cta_url']) }}">{{ $homeCta['cta_label'] }}</a>@endif
+                    @elseif ($homeCta['cta_label'] && $homeCta['cta_url'])<a class="contact-cta__button" href="{{ preg_replace('#^/(id|en|zh)(?=/|$)#', '/'.app()->getLocale(), $homeCta['cta_url']) }}">{{ $homeCta['cta_label'] }}</a>@endif
                 </div>
             </section>
         @endif

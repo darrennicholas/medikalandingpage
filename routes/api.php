@@ -25,7 +25,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/seo/{pageKey}', [PublicContentApiController::class, 'seo'])->name('seo');
     });
 
-    Route::prefix('admin')->name('api.admin.')->middleware('web')->group(function (): void {
+    Route::prefix('admin')->name('api.admin.')->middleware(['web', 'throttle:cms-api'])->group(function (): void {
         Route::post('/auth/login', [AuthController::class, 'apiLogin'])->middleware('throttle:5,1')->name('login');
 
         Route::middleware(['auth', 'cms.password', 'cms.role:superadmin,admin', 'cms.permission'])->group(function (): void {

@@ -18,6 +18,7 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\SeoMeta;
 use App\Models\SocialLink;
+use App\Services\PublicRichText;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -28,6 +29,155 @@ use Illuminate\Support\Facades\Storage;
 
 class PublicPageController extends Controller
 {
+    public function previewUnsaved(Request $request, string $resource): Response
+    {
+        $validated = $request->validate([
+            'translations' => ['nullable', 'array'],
+            'translations.id' => ['nullable', 'array'],
+            'translations.en' => ['nullable', 'array'],
+            'translations.zh' => ['nullable', 'array'],
+            'translations.en.name' => ['nullable', 'string', 'max:150'],
+            'translations.en.title' => ['nullable', 'string', 'max:150'],
+            'translations.en.excerpt' => ['nullable', 'string', 'max:250'],
+            'translations.en.subtitle' => ['nullable', 'string', 'max:250'],
+            'translations.en.cta_label' => ['nullable', 'string', 'max:40'],
+            'translations.en.description' => ['nullable', 'string', 'max:3000'],
+            'translations.en.requirements' => ['nullable', 'string', 'max:3000'],
+            'translations.en.body' => ['nullable', 'string', 'max:10000'],
+            'translations.zh.name' => ['nullable', 'string', 'max:150'],
+            'translations.zh.title' => ['nullable', 'string', 'max:150'],
+            'translations.zh.excerpt' => ['nullable', 'string', 'max:250'],
+            'translations.zh.subtitle' => ['nullable', 'string', 'max:250'],
+            'translations.zh.cta_label' => ['nullable', 'string', 'max:40'],
+            'translations.zh.description' => ['nullable', 'string', 'max:3000'],
+            'translations.zh.requirements' => ['nullable', 'string', 'max:3000'],
+            'translations.zh.body' => ['nullable', 'string', 'max:10000'],
+            'preview_lang' => ['nullable', 'in:id,en,zh'],
+            'gallery_captions' => ['nullable', 'array'],
+            'gallery_captions.*.id' => ['nullable', 'string', 'max:200'],
+            'gallery_captions.*.en' => ['nullable', 'string', 'max:200'],
+            'gallery_captions.*.zh' => ['nullable', 'string', 'max:200'],
+            'name' => ['nullable', 'string', 'max:100'],
+            'logo_media_id' => ['nullable', 'integer', 'exists:media,id'],
+            'translations.id.text' => ['nullable', 'string', 'max:300'],
+            'translations.en.text' => ['nullable', 'string', 'max:300'],
+            'translations.zh.text' => ['nullable', 'string', 'max:300'],
+            'translations.id.name' => ['nullable', 'string', 'max:150'],
+            'translations.id.title' => ['nullable', 'string', 'max:150'],
+            'translations.id.excerpt' => ['nullable', 'string', 'max:250'],
+            'translations.id.subtitle' => ['nullable', 'string', 'max:250'],
+            'translations.id.cta_label' => ['nullable', 'string', 'max:40'],
+            'cta_url' => ['nullable', 'string', 'max:500', 'regex:/^(https:\/\/|\/(?!\/))/i'],
+            'translations.id.description' => ['nullable', 'string', 'max:3000'],
+            'translations.id.requirements' => ['nullable', 'string', 'max:3000'],
+            'translations.id.body' => ['nullable', 'string', 'max:10000'],
+            'issued_year' => ['nullable', 'integer', 'digits:4'],
+            'media_id' => ['nullable', 'integer', 'exists:media,id'],
+            'cover_media_id' => ['nullable', 'integer', 'exists:media,id'],
+            'gallery_media_ids' => ['nullable', 'array', 'max:30'],
+            'gallery_media_ids.*' => ['integer', 'distinct', 'exists:media,id'],
+            'type' => ['nullable', 'in:article,activity'],
+            'event_date' => ['nullable', 'date'],
+            'location' => ['nullable', 'string', 'max:150'],
+            'employment_type' => ['nullable', 'string', 'max:50'],
+            'apply_url' => ['nullable', 'url:https', 'max:500'],
+        ]);
+        $language = $validated['preview_lang'] ?? 'id';
+        app()->setLocale($language);
+        $translationFields = $validated['translations']['id'] ?? [];
+        if ($language !== 'id') {
+            foreach ($validated['translations'][$language] ?? [] as $field => $value) {
+                if (filled($value)) {
+                    $translationFields[$field] = $value;
+                }
+            }
+        }
+        $translation = (object) array_merge(['name' => null, 'title' => null, 'excerpt' => null, 'description' => null, 'requirements' => null, 'body' => null], $translationFields);
+        $data = ['language' => $language, 'footer' => $this->footerData($language), 'seo' => ['title' => 'Pratinjau', 'description' => '', 'robots_index' => false]];
+        if (in_array($resource, ['brands', 'mission-items', 'product-categories', 'certificates'], true)) {
+            if ($resource === 'brands') {
+                $view = $this->home();
+                $data = $view->getData();
+                $brand = new Brand(['name' => $validated['name'] ?? '']);
+                $image = Media::query()->find($validated['logo_media_id'] ?? null);
+                $brand->setAttribute('public_logo_url', $this->mediaUrl($image));
+                $brand->setAttribute('public_logo_alt', $image?->alt_text_id);
+                $data['brands']->push($brand);
+                $template = 'welcome';
+            } elseif ($resource === 'mission-items') {
+                $view = $this->about();
+                $data = $view->getData();
+                $mission = new MissionItem;
+                $mission->setAttribute('public_translation', $translation);
+                $data['missions']->push($mission);
+                $template = 'tentang';
+            } elseif ($resource === 'certificates') {
+                $view = $this->about();
+                $data = $view->getData();
+                $certificate = new Certificate(['issued_year' => $validated['issued_year'] ?? null]);
+                $image = Media::query()->find($validated['media_id'] ?? null);
+                $certificate->setAttribute('public_translation', $translation);
+                $certificate->setAttribute('public_image_url', $this->mediaUrl($image));
+                $certificate->setAttribute('public_image_alt', $this->localizedAltText($image, $language));
+                $data['certificates']->push($certificate);
+                $template = 'tentang';
+            } else {
+                $view = app(ProductController::class)->index();
+                $data = $view->getData();
+                $data['categories'][] = ['id' => 'preview', 'name' => $translation->name ?? '', 'products' => []];
+                $template = 'produk';
+            }
+            $data['seo']['robots_index'] = false;
+
+            return response()->view($template, $data)->header('X-Robots-Tag', 'noindex, nofollow')->header('Cache-Control', 'private, no-store');
+        }
+        if ($resource === 'hero-slides') {
+            $slide = new HeroSlide;
+            $image = Media::query()->find($validated['media_id'] ?? null);
+            $slide->setAttribute('public_title', $translation->title ?? '');
+            $slide->setAttribute('public_subtitle', $translation->subtitle ?? '');
+            $slide->setAttribute('public_cta_label', $translation->cta_label ?? '');
+            $slide->setAttribute('cta_url', $validated['cta_url'] ?? null);
+            $slide->setAttribute('public_image_url', $this->mediaUrl($image));
+            $slide->setAttribute('public_image_alt', $image?->alt_text_id);
+            $slide->setAttribute('public_media_type', $image?->mime_type);
+            $view = $this->home();
+            $data = $view->getData();
+            $data['slides'] = collect([$slide]);
+            $data['seo']['robots_index'] = false;
+
+            return response()->view('welcome', $data)->header('X-Robots-Tag', 'noindex, nofollow')->header('Cache-Control', 'private, no-store');
+        } elseif ($resource === 'products') {
+            $product = new Product;
+            $image = Media::query()->find($validated['media_id'] ?? null);
+            $product->setAttribute('public_image_url', $this->mediaUrl($image));
+            $product->setAttribute('public_image_alt', $image?->alt_text_id);
+            $product->setAttribute('public_brochure_url', null);
+            $data += ['kind' => 'product', 'product' => $product, 'translation' => $translation];
+        } elseif ($resource === 'documentations') {
+            $item = new Documentation(['type' => $validated['type'] ?? 'article', 'event_date' => $validated['event_date'] ?? null]);
+            $cover = Media::query()->find($validated['cover_media_id'] ?? null);
+            $item->setAttribute('public_title', $translation->title ?? '');
+            $item->setAttribute('public_excerpt', $translation->excerpt ?? '');
+            $item->setAttribute('public_body', PublicRichText::render($translation->body ?? ''));
+            $item->setAttribute('public_cover_url', $this->mediaUrl($cover));
+            $item->setAttribute('public_cover_alt', $cover?->alt_text_id);
+            $galleryMedia = Media::query()->whereIn('id', $validated['gallery_media_ids'] ?? [])->get()->keyBy('id');
+            $gallery = collect($validated['gallery_media_ids'] ?? [])->map(function ($id) use ($galleryMedia, $validated, $language): array {
+                $media = $galleryMedia->get($id);
+
+                return ['url' => $this->mediaUrl($media), 'alt' => $this->localizedAltText($media, $language), 'caption' => ($validated['gallery_captions'][$id][$language] ?? null) ?: ($validated['gallery_captions'][$id]['id'] ?? null)];
+            })->all();
+            $item->setAttribute('public_gallery', $gallery);
+            $data += ['kind' => 'documentation', 'item' => $item, 'translation' => $translation];
+        } else {
+            $job = new JobOpening(['location' => $validated['location'] ?? null, 'employment_type' => $validated['employment_type'] ?? null, 'apply_url' => $validated['apply_url'] ?? null]);
+            $data += ['kind' => 'career', 'job' => $job, 'translation' => $translation];
+        }
+
+        return response()->view('public-detail', $data)->header('X-Robots-Tag', 'noindex, nofollow')->header('Cache-Control', 'private, no-store');
+    }
+
     public function preview(string $resource, string $id): Response
     {
         $language = request()->query('lang') === 'en' ? 'en' : 'id';
@@ -113,6 +263,7 @@ class PublicPageController extends Controller
             $record->setAttribute('public_cta_label', $translation?->cta_label);
             $record->setAttribute('public_image_url', $this->mediaUrl($record->media));
             $record->setAttribute('public_image_alt', $record->media?->alt_text_id);
+            $record->setAttribute('public_media_type', $record->media?->mime_type);
             $data['slides'] = $data['slides']->reject(fn ($item) => $item->id === $record->id)->push($record)->sortBy('display_order')->values();
         } elseif ($resource === 'brands') {
             $record->setAttribute('public_logo_url', $this->mediaUrl($record->logo));
@@ -153,11 +304,12 @@ class PublicPageController extends Controller
             $slide->setAttribute('public_subtitle', $translation?->subtitle);
             $slide->setAttribute('public_cta_label', $translation?->cta_label);
             $slide->setAttribute('public_image_url', $this->mediaUrl($slide->media));
-            $slide->setAttribute('public_image_alt', $language === 'en' ? ($slide->media?->alt_text_en ?: $slide->media?->alt_text_id) : $slide->media?->alt_text_id);
+            $slide->setAttribute('public_image_alt', $this->localizedAltText($slide->media, $language));
+            $slide->setAttribute('public_media_type', $slide->media?->mime_type);
         });
         $brands->each(function (Brand $brand) use ($language): void {
             $brand->setAttribute('public_logo_url', $this->mediaUrl($brand->logo));
-            $brand->setAttribute('public_logo_alt', $language === 'en' ? ($brand->logo?->alt_text_en ?: $brand->logo?->alt_text_id) : $brand->logo?->alt_text_id);
+            $brand->setAttribute('public_logo_alt', $this->localizedAltText($brand->logo, $language));
         });
 
         return view('welcome', [
@@ -179,7 +331,7 @@ class PublicPageController extends Controller
         $certificates->each(function (Certificate $certificate) use ($language): void {
             $certificate->setAttribute('public_translation', $this->translation($certificate->translations, $language));
             $certificate->setAttribute('public_image_url', $this->mediaUrl($certificate->media));
-            $certificate->setAttribute('public_image_alt', $language === 'en' ? ($certificate->media?->alt_text_en ?: $certificate->media?->alt_text_id) : $certificate->media?->alt_text_id);
+            $certificate->setAttribute('public_image_alt', $this->localizedAltText($certificate->media, $language));
         });
 
         $missions = MissionItem::query()->where('status', 'published')->with('translations')->orderBy('display_order')->get();
@@ -301,6 +453,22 @@ class PublicPageController extends Controller
         ]);
     }
 
+    public function activityDetailBySlug(string $locale, string $slug): View
+    {
+        $language = app()->getLocale();
+        $item = Documentation::query()->where('status', 'published')->where('type', 'activity')
+            ->whereHas('translations', fn (Builder $query): Builder => $query->where('slug', $slug)->whereIn('lang', [$language, 'id']))
+            ->with(['translations', 'cover', 'gallery'])->firstOrFail();
+        $translation = $this->translation($item->translations, $language);
+        $this->decorateDocumentationItem($item, $language);
+
+        return view('public-detail', [
+            'kind' => 'documentation', 'item' => $item, 'translation' => $translation, 'language' => $language,
+            'footer' => $this->footerData($language),
+            'seo' => $this->detailSeo($item->translations, $translation?->title ?? 'Berita', $translation?->excerpt ?? '', 'news.show', $item->cover),
+        ]);
+    }
+
     public function activityDetail(string $locale, int $id): View
     {
         $language = app()->getLocale();
@@ -326,14 +494,6 @@ class PublicPageController extends Controller
             ->with('translations')->orderByDesc('posted_at')->paginate(9)->withQueryString();
         $jobs->getCollection()->each(fn (JobOpening $job) => $job->setAttribute('public_translation', $this->translation($job->translations, $language)));
         $careerIntro = $this->publishedBlocks($language)->get('career_intro');
-        if (empty($careerIntro['image_url'])) {
-            $defaultImage = Media::query()->where('path', 'images/gambartentangmedika.jpeg')->first();
-            if ($defaultImage) {
-                $careerIntro ??= [];
-                $careerIntro['image_url'] = $this->mediaUrl($defaultImage);
-                $careerIntro['image_alt'] = $language === 'en' ? ($defaultImage->alt_text_en ?: $defaultImage->alt_text_id) : $defaultImage->alt_text_id;
-            }
-        }
 
         return view('careers', [
             'jobs' => $jobs,
@@ -369,9 +529,7 @@ class PublicPageController extends Controller
             ->with(['translations', 'media', 'category.translations'])->firstOrFail();
         $translation = $this->translation($product->translations, $language);
         $product->setAttribute('public_image_url', $this->mediaUrl($product->media));
-        $product->setAttribute('public_image_alt', $language === 'en'
-            ? ($product->media?->alt_text_en ?: $product->media?->alt_text_id)
-            : $product->media?->alt_text_id);
+        $product->setAttribute('public_image_alt', $this->localizedAltText($product->media, $language));
         $product->setAttribute('public_brochure_url', $this->fileUrl($product->brochure_path));
 
         return view('public-detail', [
@@ -401,7 +559,7 @@ class PublicPageController extends Controller
                     'buttons' => $translation?->buttons ?? [],
                     'cta_url' => $block->cta_url,
                     'image_url' => $this->mediaUrl($block->media),
-                    'image_alt' => $language === 'en' ? ($block->media?->alt_text_en ?: $block->media?->alt_text_id) : $block->media?->alt_text_id,
+                    'image_alt' => $this->localizedAltText($block->media, $language),
                 ]];
             });
     }
@@ -412,9 +570,12 @@ class PublicPageController extends Controller
         $contact = ContactInfo::query()->with('translations')->first();
         $translation = $contact ? $this->translation($contact->translations, $language) : null;
         $about = $this->publishedBlocks($language)->get('footer_about');
+        $footerSettings = ContentBlock::query()->where('block_key', 'footer_about')->first();
 
         return [
             'about' => $about,
+            'show_phone' => $footerSettings?->footer_show_phone ?? true,
+            'show_email' => $footerSettings?->footer_show_email ?? true,
             'contact' => $contact ? ['phone' => $contact->phone, 'email' => $contact->email, 'address' => $translation?->address] : null,
             'social_links' => SocialLink::query()->where('status', 'published')->orderBy('display_order')->get(),
             'copyright_text' => $about ? ($about['copyright_text'] ?? null) : null,
@@ -425,7 +586,6 @@ class PublicPageController extends Controller
     {
         $language = app()->getLocale();
         $seo = SeoMeta::query()->where('page_key', $pageKey)->where('lang', $language)->with('ogImage')->first();
-        $alternateSeo = SeoMeta::query()->where('page_key', $pageKey)->where('lang', $language === 'id' ? 'en' : 'id')->first();
 
         return [
             'title' => $seo?->meta_title ?: $fallbackTitle,
@@ -434,7 +594,6 @@ class PublicPageController extends Controller
             'robots_index' => $seo?->robots_index ?? true,
             'og_image' => $seo?->ogImage ? $this->mediaUrl($seo->ogImage) : null,
             'language' => $language,
-            'alternate' => $alternateSeo?->canonical_url,
         ];
     }
 
@@ -484,11 +643,11 @@ class PublicPageController extends Controller
         $item->setAttribute('public_excerpt', $translation?->excerpt);
         $item->setAttribute('public_body', $translation?->body);
         $item->setAttribute('public_cover_url', $this->mediaUrl($item->cover));
-        $item->setAttribute('public_cover_alt', $language === 'en' ? ($item->cover?->alt_text_en ?: $item->cover?->alt_text_id) : $item->cover?->alt_text_id);
+        $item->setAttribute('public_cover_alt', $this->localizedAltText($item->cover, $language));
         $item->setAttribute('public_gallery', $item->gallery->map(fn ($media): array => [
             'url' => $this->mediaUrl($media),
-            'alt' => $language === 'en' ? ($media->alt_text_en ?: $media->alt_text_id) : $media->alt_text_id,
-            'caption' => $language === 'en' ? ($media->pivot->caption_en ?: $media->pivot->caption_id) : $media->pivot->caption_id,
+            'alt' => $this->localizedAltText($media, $language),
+            'caption' => $media->pivot->{'caption_'.$language} ?: ($language === 'zh' ? ($media->pivot->caption_en ?: $media->pivot->caption_id) : $media->pivot->caption_id),
         ])->all());
     }
 
@@ -498,7 +657,16 @@ class PublicPageController extends Controller
             return null;
         }
 
-        return $this->fileUrl($media->path);
+        return route('media.stream', ['media' => $media->id]);
+    }
+
+    private function localizedAltText(?object $media, string $language): ?string
+    {
+        return match ($language) {
+            'zh' => $media?->alt_text_zh ?: ($media?->alt_text_en ?: $media?->alt_text_id),
+            'en' => $media?->alt_text_en ?: $media?->alt_text_id,
+            default => $media?->alt_text_id,
+        };
     }
 
     private function fileUrl(?string $path): ?string

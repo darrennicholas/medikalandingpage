@@ -1,6 +1,56 @@
+import Quill from 'quill';
+import 'quill/dist/quill.snow.css';
+
 const csrfToken = document.querySelector('input[name="_token"]')?.value || '';
 
 if (document.body.classList.contains('admin-body')) {
+    document.addEventListener('click', (event) => {
+        const trigger = event.target.closest('[data-date-picker-target]');
+        const input = trigger && document.getElementById(trigger.dataset.datePickerTarget);
+        if (!input) return;
+
+        if (typeof input.showPicker === 'function') {
+            input.showPicker();
+        } else {
+            input.focus();
+            input.click();
+        }
+    });
+
+    document.querySelectorAll('.admin-main form[method="get" i]:not(.admin-dashboard-range)').forEach((form, index) => {
+        const filterId = form.id || `admin-filter-panel-${index + 1}`;
+        form.id = filterId;
+        form.dataset.cmsCollapsibleFilter = '';
+        form.hidden = true;
+
+        const toggle = document.createElement('button');
+        const icon = document.createElement('span');
+        const label = document.createElement('span');
+        const chevron = document.createElement('span');
+
+        toggle.type = 'button';
+        toggle.className = 'admin-filter-toggle';
+        toggle.setAttribute('aria-controls', filterId);
+        toggle.setAttribute('aria-expanded', 'false');
+        icon.className = 'material-symbols-rounded';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = 'tune';
+        label.textContent = 'Filter';
+        chevron.className = 'material-symbols-rounded admin-filter-toggle__chevron';
+        chevron.setAttribute('aria-hidden', 'true');
+        chevron.textContent = 'expand_more';
+        toggle.append(icon, label, chevron);
+        form.before(toggle);
+
+        toggle.addEventListener('click', () => {
+            const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+            toggle.setAttribute('aria-expanded', String(!isExpanded));
+            label.textContent = isExpanded ? 'Filter' : 'Sembunyikan Filter';
+            chevron.textContent = isExpanded ? 'expand_more' : 'expand_less';
+            form.hidden = isExpanded;
+        });
+    });
+
     const menu = document.createElement('div');
     menu.className = 'admin-select-menu';
     menu.id = 'admin-select-menu';
@@ -193,6 +243,20 @@ document.addEventListener('change', (event) => {
 
         preview.replaceChildren();
         if (option?.dataset.imageUrl) {
+            if (option.dataset.mediaType?.startsWith('video/')) {
+                const video = document.createElement('video');
+                video.src = option.dataset.imageUrl;
+                video.controls = true;
+                video.muted = true;
+                video.playsInline = true;
+                video.preload = 'metadata';
+                video.setAttribute('aria-label', `Pratinjau ${option.textContent.trim()}`);
+                video.load();
+                const name = document.createElement('span');
+                name.textContent = option.textContent.trim();
+                preview.append(video, name);
+                return;
+            }
             const image = document.createElement('img');
             image.src = option.dataset.imageUrl;
             image.alt = option.textContent.trim();
@@ -216,15 +280,52 @@ document.querySelector('[data-admin-login-form]')?.addEventListener('submit', as
     showGlobalLoading('Memverifikasi akun CMS...');
 
     try {
-        const result = await responseMessage(await fetch(form.action, {
-            method: 'POST',
-            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken },
-            credentials: 'same-origin',
-            body: new FormData(form),
-        }));
+        const submitLogin = (token) => {
+            const formData = new FormData(form);
+            formData.set('_token', token);
+
+            return fetch(form.action, {
+                method: 'POST',
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': token },
+                credentials: 'same-origin',
+                body: formData,
+            });
+        };
+
+        let response = await submitLogin(csrfToken);
+        if (response.status === 419 || response.redirected) {
+            const refreshResponse = await fetch(form.dataset.loginRefreshUrl || '/admin/login', {
+                method: 'GET',
+                headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+                cache: 'no-store',
+            });
+            if (!refreshResponse.ok) {
+                throw new Error('Sesi login kedaluwarsa dan token baru tidak dapat dimuat. Muat ulang halaman, lalu coba lagi.');
+            }
+
+            const loginPage = new DOMParser().parseFromString(await refreshResponse.text(), 'text/html');
+            const freshToken = loginPage.querySelector('input[name="_token"]')?.value;
+            if (!freshToken) {
+                throw new Error('Token sesi login tidak ditemukan. Muat ulang halaman, lalu coba lagi.');
+            }
+
+            const tokenField = form.querySelector('input[name="_token"]');
+            if (tokenField) tokenField.value = freshToken;
+            response = await submitLogin(freshToken);
+        }
+
+        if (response.redirected) {
+            throw new Error('Login dialihkan ke halaman lain. Periksa sesi, lalu coba lagi.');
+        }
+
+        const result = await responseMessage(response);
+        if (result.success !== true) {
+            throw new Error(result.message || 'Login belum berhasil. Periksa email dan kata sandi.');
+        }
+
         hideGlobalLoading();
-        await showSweetAlert({ icon: 'success', title: 'Login berhasil', text: result.message || 'Anda akan diarahkan ke dashboard CMS.' });
-        window.location.assign(result.data?.redirect_url || '/admin');
+        window.location.replace(result.data?.redirect_url || '/admin');
     } catch (error) {
         hideGlobalLoading();
         showError(errors, error.message);
@@ -263,7 +364,8 @@ document.querySelectorAll('[data-password-toggle]').forEach((button) => {
         } else {
             button.textContent = input.type === 'password' ? 'Lihat' : 'Sembunyikan';
         }
-        button.setAttribute('aria-label', input.type === 'password' ? 'Tampilkan password' : 'Sembunyikan password');
+        button.setAttribute('aria-label', input.type === 'password' ? 'Tampilkan kata sandi' : 'Sembunyikan kata sandi');
+        button.setAttribute('aria-pressed', String(input.type === 'text'));
     });
 });
 
@@ -436,9 +538,17 @@ document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
 });
 
 document.querySelectorAll('[data-confirm]').forEach((form) => {
-    form.addEventListener('submit', (event) => {
-        if (!window.confirm(form.dataset.confirm || 'Apakah Anda yakin ingin menghapus data ini?')) {
-            event.preventDefault();
+    form.addEventListener('submit', async (event) => {
+        if (form.dataset.confirmed === 'true') {
+            form.dataset.confirmed = 'false';
+            return;
+        }
+
+        event.preventDefault();
+        const confirmed = await showSweetAlert({ icon: 'warning', title: 'Konfirmasi tindakan', text: form.dataset.confirm || 'Apakah Anda yakin ingin menghapus data ini?', showCancel: true, confirmText: 'Ya, lanjutkan' });
+        if (confirmed) {
+            form.dataset.confirmed = 'true';
+            form.requestSubmit();
         }
     });
 });
@@ -453,6 +563,10 @@ document.querySelectorAll('[data-language-tab]').forEach((tab) => {
 const reindexRepeater = (list) => {
     const [type] = String(list.dataset.repeaterList || '').split('-');
     [...list.children].forEach((row, index) => {
+        if (type === 'buttons') {
+            const heading = row.querySelector('.admin-editor-repeater__item-heading strong');
+            if (heading) heading.textContent = `Tombol ${index + 1}`;
+        }
         row.querySelectorAll('[name]').forEach((field) => {
             field.name = field.name.replace(new RegExp(`\\[${type}\\]\\[(?:__index__|\\d+)\\]`, 'g'), `[${type}][${index}]`);
         });
@@ -501,14 +615,43 @@ const initializeLiveEditor = (form) => {
         setText('title', editorType === 'cta' ? '' : (form.dataset.previewTitleFallback || (editorType === 'hero' ? 'Judul banner tampil di sini' : 'Judul jangkauan')), editorType === 'cta');
         setText('subtitle', '');
         setText('body', editorType === 'cta' ? '' : (form.dataset.previewBodyFallback || 'Deskripsi jangkauan tampil di sini.'), editorType === 'cta');
-        setText('cta_label', 'Hubungi Kami');
+        if (editorType === 'hero') {
+            const button = form.querySelector('[data-preview-output="cta_label"]');
+            if (button) {
+                const label = valueFor('cta_label');
+                const url = form.querySelector('[name="cta_url"]')?.value.trim();
+                button.textContent = label;
+                button.hidden = !label || !url;
+            }
+        } else {
+            setText('cta_label', 'Hubungi Kami');
+        }
 
         const mediaSelect = form.querySelector('[data-hero-media], [data-block-media]');
-        const imageUrl = mediaSelect?.selectedOptions?.[0]?.dataset.imageUrl || '';
+        const mediaOption = mediaSelect?.selectedOptions?.[0];
+        const imageUrl = mediaOption?.dataset.imageUrl || '';
         const heroPreview = form.querySelector('[data-hero-preview]');
         if (heroPreview) {
-            if (imageUrl) heroPreview.style.setProperty('--hero-preview-image', `url("${imageUrl}")`);
-            else heroPreview.style.removeProperty('--hero-preview-image');
+            const video = heroPreview.querySelector('.admin-hero-preview__video');
+            if (mediaOption?.dataset.mediaType?.startsWith('video/') && imageUrl) {
+                heroPreview.style.removeProperty('--hero-preview-image');
+                const previewVideo = video || document.createElement('video');
+                previewVideo.className = 'admin-hero-preview__video';
+                previewVideo.src = imageUrl;
+                previewVideo.autoplay = true;
+                previewVideo.muted = true;
+                previewVideo.loop = true;
+                previewVideo.playsInline = true;
+                previewVideo.preload = 'metadata';
+                previewVideo.setAttribute('aria-hidden', 'true');
+                if (!video) heroPreview.prepend(previewVideo);
+                previewVideo.load();
+                previewVideo.play().catch(() => {});
+            } else {
+                video?.remove();
+                if (imageUrl) heroPreview.style.setProperty('--hero-preview-image', `url("${imageUrl}")`);
+                else heroPreview.style.removeProperty('--hero-preview-image');
+            }
         }
         const blockImage = form.querySelector('[data-block-image-preview]');
         if (blockImage && mediaSelect) {
@@ -652,7 +795,7 @@ document.addEventListener('click', (event) => {
 });
 
 const normalizeEditorRepeaters = (formData, form) => {
-    for (const language of ['id', 'en']) {
+    for (const language of ['id', 'en', 'zh']) {
         for (const type of ['metrics', 'buttons']) {
             const list = form.querySelector(`[data-repeater-list="${type}-${language}"]`);
             if (!list) continue;
@@ -680,7 +823,7 @@ const normalizeEditorRepeaters = (formData, form) => {
     }
 
     if (form.dataset.liveEditor === 'cta') {
-        for (const language of ['id', 'en']) {
+        for (const language of ['id', 'en', 'zh']) {
             const firstLabel = form.querySelector(`[data-repeater-list="buttons-${language}"] [data-button-label]`)?.value.trim() || '';
             if (form.querySelector(`[data-legacy-cta-label="${language}"]`)) formData.set(`translations[${language}][cta_label]`, firstLabel);
         }
@@ -690,6 +833,7 @@ const normalizeEditorRepeaters = (formData, form) => {
 };
 
 const submitContentForm = async (form, event) => {
+    if (event.submitter?.hasAttribute('data-preview-unsaved')) return;
     event.preventDefault();
     const errors = form.querySelector('[data-form-errors]');
     errors.hidden = true;
@@ -700,6 +844,19 @@ const submitContentForm = async (form, event) => {
         const valid = form.reportValidity();
         requiredFields.forEach((field) => { field.required = true; });
         if (!valid) return;
+    }
+    if (submitButton?.dataset.saveStatus !== 'draft') {
+        const emptyRichField = [...form.querySelectorAll('textarea[data-rich-required]')]
+            .find((field) => field.value.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() === '');
+        if (emptyRichField) {
+            const richHost = emptyRichField.closest('[data-rich-editor]');
+            richHost?.classList.add('is-invalid');
+            errors.textContent = 'Lengkapi kolom bertanda * yang masih kosong sebelum mempublikasikan.';
+            errors.hidden = false;
+            richHost?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            richHost?.querySelector('.ql-editor')?.focus();
+            return;
+        }
     }
     const resource = form.dataset.resource;
     const isEditing = form.dataset.isEditing === '1';
@@ -715,18 +872,6 @@ const submitContentForm = async (form, event) => {
         parameters.forEach((parameter) => formData.append('parameters[]', parameter));
     }
 
-    if (resource === 'documentations') {
-        const selectedMedia = [...form.querySelectorAll('[name="gallery_media_ids[]"]:checked')];
-        formData.set('gallery_present', '1');
-        formData.delete('gallery_media_ids[]');
-        selectedMedia.forEach((input, index) => {
-            const galleryItem = input.closest('[data-gallery-item]');
-            formData.append(`gallery[${index}][media_id]`, input.value);
-            formData.append(`gallery[${index}][caption_id]`, galleryItem?.querySelector('[data-gallery-caption-id]')?.value || '');
-            formData.append(`gallery[${index}][caption_en]`, galleryItem?.querySelector('[data-gallery-caption-en]')?.value || '');
-        });
-    }
-
     let endpoint = form.dataset.apiUrl;
     let method = isEditing ? 'PUT' : 'POST';
     if (['company-summary', 'contact-info'].includes(resource)) method = 'PUT';
@@ -736,6 +881,10 @@ const submitContentForm = async (form, event) => {
         method = 'PUT';
     }
     if (resource === 'seo-metas') {
+        const canonicalField = form.querySelector('[name="canonical_url"][data-canonical-default]');
+        if (canonicalField && canonicalField.value.trim() === canonicalField.dataset.canonicalDefault) {
+            formData.set('canonical_url', '');
+        }
         const pageKey = formData.get('page_key');
         const language = formData.get('lang') || 'id';
         endpoint = `/api/v1/admin/seo-metas/${encodeURIComponent(pageKey)}?lang=${encodeURIComponent(language)}`;
@@ -744,11 +893,17 @@ const submitContentForm = async (form, event) => {
 
     formData.set('_method', method);
     try {
-        const result = await withGlobalLoading('Menyimpan perubahan...', async () => responseMessage(await fetch(endpoint, {
-            method: 'POST',
-            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken },
-            body: formData,
-        })));
+        const hasPendingUploads = Boolean(form.querySelector('select[data-pending-upload="1"]'));
+        const result = await withGlobalLoading(hasPendingUploads ? 'Menyimpan media dan perubahan...' : 'Menyimpan perubahan...', async () => {
+            await savePendingMediaSelects(form, formData);
+            if (resource === 'documentations') serializeDocumentationGallery(formData, form);
+
+            return responseMessage(await fetch(endpoint, {
+                method: 'POST',
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken },
+                body: formData,
+            }));
+        });
         await showSweetAlert({ icon: 'success', title: 'Perubahan tersimpan', text: result.message || 'Konten berhasil disimpan.' });
         window.location.assign(form.dataset.redirectUrl || `/admin/content/${resource}`);
     } catch (error) {
@@ -765,12 +920,13 @@ const refreshCertificateBatch = (form) => {
     if (tabs) {
         tabs.replaceChildren();
         entries.forEach((entry, index) => {
-            const title = entry.querySelector('[data-certificate-title]')?.value.trim() || `Sertifikat Baru #${index + 1}`;
+            const enteredTitle = entry.querySelector('[data-certificate-title]')?.value.trim() || '';
+            const title = enteredTitle || `Sertifikat #${index + 1}`;
             const tab = document.createElement('button');
             tab.type = 'button';
             tab.dataset.certificateEntryTab = String(index);
             tab.className = `admin-certificate-batch-tab${index === Number(form.dataset.activeIndex || 0) ? ' is-active' : ''}`;
-            tab.textContent = `${index + 1}  ${title}`;
+            tab.textContent = title;
             tabs.append(tab);
             entry.querySelector('[data-certificate-entry-number]').textContent = String(index + 1);
             entry.querySelector('[data-certificate-entry-label]').textContent = `#${index + 1}`;
@@ -780,8 +936,9 @@ const refreshCertificateBatch = (form) => {
             if (order && !order.value) order.placeholder = String(index + 1);
 
             const titleOutput = entry.querySelector('[data-certificate-entry-title]');
-            if (titleOutput) titleOutput.textContent = title || '(Belum diberi judul)';
-            const ready = Boolean(title && entry.querySelector('[data-certificate-field="media_id"]')?.value);
+            if (titleOutput) titleOutput.textContent = enteredTitle || 'Belum diberi judul';
+            const mediaSelect = entry.querySelector('[data-certificate-field="media_id"]');
+            const ready = Boolean(enteredTitle && (mediaSelect?.value || mediaSelect?._pendingUploadFile));
             const state = entry.querySelector('[data-certificate-entry-state]');
             if (state) {
                 state.textContent = ready ? 'Siap' : (entry.dataset.recordId ? 'Tersimpan' : 'Draft');
@@ -798,19 +955,28 @@ document.querySelectorAll('[data-certificate-batch]').forEach((form) => {
     const template = document.querySelector('[data-certificate-entry-template]');
     const list = form.querySelector('[data-certificate-entry-list]');
     const errors = form.querySelector('[data-certificate-batch-error]');
-    const addEntry = () => {
+    const addEntry = (focusNew = true) => {
         if (!template || !list) return;
         list.append(template.content.cloneNode(true));
         form.dataset.activeIndex = String(list.children.length - 1);
         refreshCertificateBatch(form);
-        list.lastElementChild?.querySelector('[data-certificate-title]')?.focus();
+        if (focusNew) list.lastElementChild?.querySelector('[data-certificate-title]')?.focus();
     };
 
-    addEntry();
-    form.parentElement.querySelector('[data-add-certificate-entry]')?.addEventListener('click', addEntry);
+    addEntry(false);
+    form.parentElement.querySelector('[data-add-certificate-entry]')?.addEventListener('click', () => addEntry());
     form.addEventListener('input', () => refreshCertificateBatch(form));
     form.addEventListener('change', () => refreshCertificateBatch(form));
-    form.addEventListener('click', (event) => {
+    form.addEventListener('focusin', (event) => {
+        const entry = event.target.closest('[data-certificate-entry]');
+        if (!entry) return;
+        const index = [...form.querySelectorAll('[data-certificate-entry]')].indexOf(entry);
+        if (index >= 0 && index !== Number(form.dataset.activeIndex || 0)) {
+            form.dataset.activeIndex = String(index);
+            refreshCertificateBatch(form);
+        }
+    });
+    form.parentElement.addEventListener('click', (event) => {
         const entryTab = event.target.closest('[data-certificate-entry-tab]');
         if (entryTab) {
             form.dataset.activeIndex = entryTab.dataset.certificateEntryTab;
@@ -822,6 +988,32 @@ document.querySelectorAll('[data-certificate-batch]').forEach((form) => {
             }
             entry?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             refreshCertificateBatch(form);
+            return;
+        }
+
+        const previewButton = event.target.closest('[data-certificate-preview]');
+        if (previewButton) {
+            const entries = [...form.querySelectorAll('[data-certificate-entry]')];
+            const entry = entries[Number(form.dataset.activeIndex || 0)];
+            if (!entry) return;
+            const previewForm = document.createElement('form');
+            previewForm.method = 'POST';
+            previewForm.action = form.dataset.certificatePreviewUrl;
+            previewForm.target = '_blank';
+            previewForm.hidden = true;
+            const addField = (name, value) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                previewForm.append(input);
+            };
+            addField('_token', csrfToken);
+            addField('preview_lang', previewButton.dataset.certificatePreview);
+            entry.querySelectorAll('[data-certificate-field]').forEach((field) => addField(field.dataset.certificateField, field.value));
+            document.body.append(previewForm);
+            previewForm.submit();
+            previewForm.remove();
             return;
         }
 
@@ -861,7 +1053,10 @@ document.querySelectorAll('[data-certificate-batch]').forEach((form) => {
         const entries = [...form.querySelectorAll('[data-certificate-entry]')];
         const status = event.submitter?.dataset.certificateBatchStatus || 'draft';
         if (status === 'published') {
-            const missingEntry = entries.find((entry) => !entry.querySelector('[data-certificate-title]')?.value.trim() || !entry.querySelector('[data-certificate-field="media_id"]')?.value);
+            const missingEntry = entries.find((entry) => {
+                const mediaSelect = entry.querySelector('[data-certificate-field="media_id"]');
+                return !entry.querySelector('[data-certificate-title]')?.value.trim() || (!mediaSelect?.value && !mediaSelect?._pendingUploadFile);
+            });
             if (missingEntry) {
                 const itemNumber = entries.indexOf(missingEntry) + 1;
                 showError(errors, `Sertifikat #${itemNumber} memerlukan judul Bahasa Indonesia dan gambar atau dokumen sebelum diterbitkan.`);
@@ -873,6 +1068,7 @@ document.querySelectorAll('[data-certificate-batch]').forEach((form) => {
         let savedCount = 0;
         try {
             await withGlobalLoading(`Menyimpan ${entries.length} sertifikat...`, async () => {
+                await savePendingMediaSelects(form, new FormData());
                 for (const [index, entry] of entries.entries()) {
                     const formData = new FormData();
                     formData.set('_token', csrfToken);
@@ -904,12 +1100,217 @@ document.querySelectorAll('[data-certificate-batch]').forEach((form) => {
 
 document.querySelectorAll('[data-admin-form]').forEach((form) => form.addEventListener('submit', (event) => submitContentForm(form, event)));
 
+const appendMediaOption = (select, media) => {
+    clearPendingMedia(select);
+    const option = document.createElement('option');
+    option.value = String(media.id);
+    option.textContent = `${media.original_name} · ${media.mime_type.replace('image/', '').replace('video/', '').toUpperCase()} · ${Math.round(media.size_bytes / 1024)} KB`;
+    option.dataset.imageUrl = media.admin_preview_url;
+    option.dataset.mediaType = media.mime_type;
+    select.add(option);
+    select.value = String(media.id);
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+};
+
+const clearPendingMedia = (select) => {
+    if (!select) return;
+    const pendingOption = [...select.options].find((option) => option.value === select._pendingOptionValue);
+    const selectedPendingOption = select.value === select._pendingOptionValue;
+    pendingOption?.remove();
+    if (selectedPendingOption) select.value = '';
+    if (select._pendingPreviewUrl) URL.revokeObjectURL(select._pendingPreviewUrl);
+    delete select._pendingUploadFile;
+    delete select._pendingPreviewUrl;
+    delete select._pendingOptionValue;
+    delete select._pendingUploadUrl;
+    delete select.dataset.pendingUpload;
+};
+
+const stageMediaFile = (file, select, uploadUrl, allowVideo = false) => {
+    const extensionMime = /\.mp4$/i.test(file.name) ? 'video/mp4' : (/\.webm$/i.test(file.name) ? 'video/webm' : '');
+    const mediaType = file.type || extensionMime;
+    const isVideo = mediaType.startsWith('video/');
+    const allowedTypes = allowVideo ? ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'] : ['image/jpeg', 'image/png', 'image/webp'];
+    if (mediaType && !allowedTypes.includes(mediaType)) {
+        throw new Error(allowVideo ? 'Pilih JPG, PNG, WebP, MP4, atau WebM.' : 'Pilih gambar JPG, PNG, atau WebP.');
+    }
+    if (file.size > (isVideo ? 50 : 2) * 1024 * 1024) {
+        throw new Error(isVideo ? 'Ukuran video maksimal 50 MB.' : 'Ukuran gambar maksimal 2 MB.');
+    }
+
+    clearPendingMedia(select);
+    const previewUrl = URL.createObjectURL(file);
+    const optionValue = `pending-media-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const option = document.createElement('option');
+    option.value = optionValue;
+    option.textContent = file.name;
+    option.dataset.imageUrl = previewUrl;
+    option.dataset.mediaType = mediaType;
+    option.dataset.localPending = '1';
+    select.add(option);
+    select.value = optionValue;
+    select._pendingUploadFile = file;
+    select._pendingPreviewUrl = previewUrl;
+    select._pendingOptionValue = optionValue;
+    select._pendingUploadUrl = uploadUrl;
+    select.dataset.pendingUpload = '1';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+};
+
+const uploadMediaFile = async (file, uploadUrl) => {
+    const formData = new FormData();
+    formData.append('files[]', file);
+    const result = await responseMessage(await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken },
+        body: formData,
+    }));
+    const media = result.data?.[0];
+    if (!media?.id || !media.admin_preview_url) throw new Error('File tersimpan, tetapi pratinjaunya belum tersedia. Coba muat ulang CMS.');
+
+    return media;
+};
+
+const savePendingMediaSelects = async (form, formData) => {
+    for (const select of form.querySelectorAll('select[data-pending-upload="1"]')) {
+        const media = await uploadMediaFile(select._pendingUploadFile, select._pendingUploadUrl);
+        appendMediaOption(select, media);
+        if (select.name) formData.set(select.name, select.value);
+    }
+};
+
+const serializeDocumentationGallery = (formData, form) => {
+    for (const key of new Set([...formData.keys()])) {
+        if (key === 'gallery_media_ids[]' || key.startsWith('gallery_captions[') || key.startsWith('gallery[')) formData.delete(key);
+    }
+    formData.set('gallery_present', '1');
+    const selectedMedia = [...form.querySelectorAll('[name="gallery_media_ids[]"]:checked')];
+    selectedMedia.forEach((input, index) => {
+        const galleryItem = input.closest('[data-gallery-item]');
+        formData.append(`gallery[${index}][media_id]`, input.value);
+        formData.append(`gallery[${index}][caption_id]`, galleryItem?.querySelector('[data-gallery-caption-id]')?.value || '');
+        formData.append(`gallery[${index}][caption_en]`, galleryItem?.querySelector('[data-gallery-caption-en]')?.value || '');
+        formData.append(`gallery[${index}][caption_zh]`, galleryItem?.querySelector('[data-gallery-caption-zh]')?.value || '');
+    });
+};
+
+const initializeMediaSelectUpload = (select) => {
+    if (!select.dataset.pendingClearBound) {
+        select.dataset.pendingClearBound = '1';
+        select.addEventListener('change', () => {
+            if (select._pendingUploadFile && select.value !== select._pendingOptionValue) clearPendingMedia(select);
+        });
+    }
+    if (select.closest('.admin-cms-form[data-resource="products"]') && select.name !== 'media_id') return;
+    if (select.dataset.inlineUploadReady || select.matches('[data-hero-media]')) return;
+    const field = select.closest('.admin-field');
+    if (!field) return;
+    select.dataset.inlineUploadReady = '1';
+
+    const uploadControl = document.createElement('div');
+    uploadControl.className = 'admin-media-inline-upload';
+    const uploadCopy = document.createElement('div');
+    uploadCopy.className = 'admin-media-inline-upload__copy';
+    uploadCopy.innerHTML = '<strong>Upload gambar dari perangkat</strong><small>Pratinjau muncul langsung. Gambar disimpan ke Media Library saat konten disimpan.</small>';
+    const button = document.createElement('button');
+    button.className = 'admin-button admin-button--soft';
+    button.type = 'button';
+    button.innerHTML = '<span class="material-symbols-rounded" aria-hidden="true">add_photo_alternate</span>Pilih gambar';
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/webp';
+    input.hidden = true;
+    input.setAttribute('aria-label', 'Pilih gambar baru untuk diunggah');
+    const errors = document.createElement('div');
+    errors.className = 'admin-form__error';
+    errors.hidden = true;
+    button.addEventListener('click', () => input.click());
+    input.addEventListener('change', async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        try {
+            stageMediaFile(file, select, '/api/v1/admin/media');
+            input.value = '';
+        } catch (error) {
+            showError(errors, error.message);
+            input.value = '';
+        }
+    });
+    uploadControl.append(uploadCopy, button, input, errors);
+    field.insertAdjacentElement('afterend', uploadControl);
+};
+
+const findMediaSelects = (root) => {
+    if (root.matches?.('select[data-media-preview-select], select[data-block-media], select[name="og_media_id"]')) initializeMediaSelectUpload(root);
+    root.querySelectorAll?.('select[data-media-preview-select], select[data-block-media], select[name="og_media_id"]').forEach(initializeMediaSelectUpload);
+};
+
+findMediaSelects(document);
+new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
+        if (node instanceof Element) findMediaSelects(node);
+    }));
+}).observe(document.body, { childList: true, subtree: true });
+
+document.querySelectorAll('[data-gallery-picker]').forEach((picker) => {
+    const dialog = picker.querySelector('[data-gallery-caption-dialog]');
+    if (!dialog) return;
+
+    const languages = ['id', 'en', 'zh'];
+    const dialogInputs = languages.map((language) => dialog.querySelector(`[data-gallery-dialog-caption="${language}"]`));
+    picker.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-gallery-caption-open]');
+        const item = button?.closest('[data-gallery-item]');
+        if (!item) return;
+
+        dialog._galleryItem = item;
+        languages.forEach((language, index) => {
+            dialogInputs[index].value = item.querySelector(`[data-gallery-caption-${language}]`)?.value || '';
+        });
+        dialog.showModal();
+        dialogInputs[0]?.focus();
+    });
+
+    dialog.querySelector('[data-gallery-caption-cancel]')?.addEventListener('click', () => dialog.close());
+    dialog.querySelector('[data-gallery-caption-save]')?.addEventListener('click', () => {
+        const item = dialog._galleryItem;
+        if (!item) return dialog.close();
+
+        languages.forEach((language, index) => {
+            const input = item.querySelector(`[data-gallery-caption-${language}]`);
+            if (input) input.value = dialogInputs[index].value.trim();
+        });
+        const button = item.querySelector('[data-gallery-caption-open]');
+        if (button) button.textContent = dialogInputs.some((input) => input.value.trim()) ? 'Ubah keterangan' : 'Tambah keterangan';
+        dialog.close();
+    });
+});
+
+document.querySelectorAll('[data-hero-upload]').forEach((input) => {
+    input.closest('[data-hero-upload-container]')?.querySelector('[data-hero-upload-trigger]')?.addEventListener('click', () => input.click());
+    input.addEventListener('change', async () => {
+        const file = input.files?.[0];
+        const form = input.closest('form');
+        const select = form?.querySelector('[data-hero-media]');
+        const errors = input.closest('[data-hero-upload-container]')?.querySelector('[data-hero-upload-errors]');
+        if (!file || !select) return;
+        if (errors) errors.hidden = true;
+        try {
+            stageMediaFile(file, select, input.dataset.uploadUrl, true);
+            input.value = '';
+        } catch (error) {
+            showError(errors, error.message);
+            input.value = '';
+        }
+    });
+});
+
 document.querySelectorAll('[data-status-url]').forEach((button) => {
     button.addEventListener('click', async () => {
         const nextStatus = button.dataset.nextStatus;
         const statusDescription = {
             published: 'dipublikasikan',
-            unpublished: 'tidak dipublikasikan',
+            draft: 'disimpan sebagai draft',
             open: 'dibuka',
             closed: 'ditutup',
             active: 'diaktifkan',
@@ -944,7 +1345,9 @@ document.querySelectorAll('[data-status-url]').forEach((button) => {
 
 document.querySelectorAll('[data-delete-url]').forEach((button) => {
     button.addEventListener('click', async () => {
-        if (!window.confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
+        const label = button.getAttribute('aria-label')?.replace(/^Hapus\s*/i, '').trim();
+        const confirmed = await showSweetAlert({ icon: 'warning', title: 'Hapus data?', text: label ? `Data “${label}” akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.` : 'Data ini akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.', showCancel: true, confirmText: 'Ya, hapus' });
+        if (!confirmed) return;
         try {
             const result = await withGlobalLoading('Menghapus konten...', async () => responseMessage(await fetch(button.dataset.deleteUrl, {
                 method: 'DELETE',
@@ -997,108 +1400,6 @@ document.querySelectorAll('[data-gallery-move]').forEach((button) => {
     });
 });
 
-const categoryModal = document.querySelector('[data-category-modal]');
-if (categoryModal) {
-    const categoryForm = categoryModal.querySelector('[data-admin-form]');
-    const categoryFields = {
-        nameId: categoryModal.querySelector('#category-name-id'),
-        slugId: categoryModal.querySelector('#category-slug-id'),
-        nameEn: categoryModal.querySelector('#category-name-en'),
-        slugEn: categoryModal.querySelector('#category-slug-en'),
-        order: categoryModal.querySelector('#category-display-order'),
-    };
-    const categoryTitle = categoryModal.querySelector('[data-category-modal-title]');
-    const categoryPreview = categoryModal.querySelector('[data-category-preview]');
-    const categoryPreviewLanguage = categoryModal.querySelector('[data-category-preview-language]');
-    let activeCategoryLanguage = 'id';
-    let categorySlugIdWasEdited = false;
-    let categorySlugEnWasEdited = false;
-
-    const slugifyCategory = (value) => value
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .slice(0, 100);
-
-    const updateCategoryPreview = () => {
-        const field = activeCategoryLanguage === 'id' ? categoryFields.nameId : categoryFields.nameEn;
-        categoryPreview.textContent = field.value.trim() || categoryFields.nameId.value.trim() || '(Nama kategori)';
-        categoryPreviewLanguage.textContent = activeCategoryLanguage.toUpperCase();
-    };
-
-    const setCategoryLanguage = (language) => {
-        activeCategoryLanguage = language;
-        categoryModal.querySelectorAll('[data-category-language]').forEach((tab) => {
-            const selected = tab.dataset.categoryLanguage === language;
-            tab.classList.toggle('is-active', selected);
-            tab.setAttribute('aria-selected', String(selected));
-        });
-        updateCategoryPreview();
-    };
-
-    const closeCategoryModal = () => {
-        categoryModal.hidden = true;
-        document.body.classList.remove('admin-category-modal-open');
-    };
-
-    const openCategoryModal = (record = null) => {
-        categoryForm.reset();
-        categoryForm.dataset.isEditing = record ? '1' : '0';
-        categoryForm.dataset.apiUrl = record
-            ? `/api/v1/admin/product-categories/${record.id}`
-            : '/api/v1/admin/product-categories';
-        categorySlugIdWasEdited = Boolean(record?.slugId);
-        categorySlugEnWasEdited = Boolean(record?.slugEn);
-        categoryFields.nameId.value = record?.nameId || '';
-        categoryFields.slugId.value = record?.slugId || '';
-        categoryFields.nameEn.value = record?.nameEn || '';
-        categoryFields.slugEn.value = record?.slugEn || '';
-        categoryFields.order.value = record?.order || String(Number(categoryModal.dataset.nextOrder || 1));
-        categoryModal.querySelectorAll('[name="status"]').forEach((radio) => {
-            radio.checked = radio.value === (record?.status || 'draft');
-        });
-        categoryModal.querySelector('[data-form-errors]').hidden = true;
-        categoryTitle.textContent = record ? 'Ubah Kategori Pemeriksaan' : 'Tambah Kategori Pemeriksaan';
-        setCategoryLanguage('id');
-        hideGlobalLoading();
-        categoryModal.hidden = false;
-        document.body.classList.add('admin-category-modal-open');
-        categoryFields.nameId.focus();
-    };
-
-    document.querySelector('[data-open-category-modal]')?.addEventListener('click', () => openCategoryModal());
-    document.querySelectorAll('[data-edit-category]').forEach((button) => {
-        button.addEventListener('click', () => openCategoryModal({
-            id: button.dataset.categoryId,
-            nameId: button.dataset.categoryNameId,
-            slugId: button.dataset.categorySlugId,
-            nameEn: button.dataset.categoryNameEn,
-            slugEn: button.dataset.categorySlugEn,
-            order: button.dataset.categoryOrder,
-            status: button.dataset.categoryStatus,
-        }));
-    });
-    categoryModal.querySelectorAll('[data-close-category-modal]').forEach((button) => button.addEventListener('click', closeCategoryModal));
-    categoryModal.querySelectorAll('[data-category-language]').forEach((button) => {
-        button.addEventListener('click', () => setCategoryLanguage(button.dataset.categoryLanguage));
-    });
-    categoryFields.nameId.addEventListener('input', () => {
-        if (!categorySlugIdWasEdited) categoryFields.slugId.value = slugifyCategory(categoryFields.nameId.value);
-        updateCategoryPreview();
-    });
-    categoryFields.nameEn.addEventListener('input', () => {
-        if (!categorySlugEnWasEdited) categoryFields.slugEn.value = slugifyCategory(categoryFields.nameEn.value);
-        updateCategoryPreview();
-    });
-    categoryFields.slugId.addEventListener('input', () => { categorySlugIdWasEdited = categoryFields.slugId.value !== ''; });
-    categoryFields.slugEn.addEventListener('input', () => { categorySlugEnWasEdited = categoryFields.slugEn.value !== ''; });
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && !categoryModal.hidden) closeCategoryModal();
-    });
-}
-
 document.querySelectorAll('[data-media-upload]').forEach((form) => {
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -1122,6 +1423,7 @@ document.querySelectorAll('[data-media-save]').forEach((button) => {
         const payload = {
             alt_text_id: card.querySelector('[name="alt_text_id"]').value,
             alt_text_en: card.querySelector('[name="alt_text_en"]').value,
+            alt_text_zh: card.querySelector('[name="alt_text_zh"]').value,
         };
         try {
             const result = await withGlobalLoading('Menyimpan teks alternatif...', async () => responseMessage(await fetch(card.dataset.apiUrl, {
@@ -1138,7 +1440,8 @@ document.querySelectorAll('[data-media-save]').forEach((button) => {
 document.querySelectorAll('[data-media-delete]').forEach((button) => {
     button.addEventListener('click', async () => {
         const card = button.closest('[data-media-id]');
-        if (!window.confirm('Apakah Anda yakin ingin menghapus media ini?')) return;
+        const confirmed = await showSweetAlert({ icon: 'warning', title: 'Hapus media?', text: 'Media ini akan dihapus permanen. Media yang sedang digunakan mungkin tidak dapat dihapus.', showCancel: true, confirmText: 'Ya, hapus' });
+        if (!confirmed) return;
         try {
             const result = await withGlobalLoading('Menghapus media...', async () => responseMessage(await fetch(card.dataset.apiUrl, { method: 'DELETE', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken } })));
             await showSweetAlert({ icon: 'success', title: 'Media dihapus', text: result.message || 'Media berhasil dihapus.' });
@@ -1350,8 +1653,9 @@ if (featuredForm) {
         updateFeaturedState();
     });
 
-    document.querySelector('[data-featured-reset]')?.addEventListener('click', () => {
-        if (!window.confirm('Hapus semua pilihan unggulan? Landing page akan memakai enam produk Published pertama sesuai urutan katalog.')) return;
+    document.querySelector('[data-featured-reset]')?.addEventListener('click', async () => {
+        const confirmed = await showSweetAlert({ icon: 'warning', title: 'Hapus semua pilihan?', text: 'Landing page akan memakai enam produk Published pertama sesuai urutan katalog.', showCancel: true, confirmText: 'Ya, hapus pilihan' });
+        if (!confirmed) return;
         selectedItems().forEach((item) => item.remove());
         updateFeaturedState();
     });
@@ -1376,7 +1680,7 @@ if (featuredForm) {
     updateFeaturedState();
 }
 
-document.querySelectorAll('[data-preview-url]').forEach((button) => {
+document.querySelectorAll('button[data-preview-url]').forEach((button) => {
     button.addEventListener('click', () => window.open(button.dataset.previewUrl, '_blank', 'noopener'));
 });
 
@@ -1435,7 +1739,9 @@ document.querySelectorAll('[data-count-for]').forEach((counter) => {
     const field = document.querySelector(`[name="${counter.dataset.countFor}"]`);
     if (!field) return;
     const updateCounter = () => {
-        counter.textContent = `${field.value.length}/${field.maxLength} karakter`;
+        counter.textContent = counter.dataset.countFor === 'meta_title'
+            ? `Sisa ${Math.max(0, field.maxLength - field.value.length)} karakter`
+            : `${field.value.length}/${field.maxLength} karakter`;
         const preview = document.querySelector(`[data-seo-preview-${counter.dataset.countFor === 'meta_title' ? 'title' : 'description'}]`);
         if (preview) preview.textContent = field.value.trim() || (counter.dataset.countFor === 'meta_title' ? 'Judul halaman | PT Interskala Medika Indonesia' : 'Informasi resmi PT Interskala Medika Indonesia.');
     };
@@ -1465,7 +1771,7 @@ document.querySelectorAll('[data-permission-default]').forEach((button) => {
 
 // Generate editable slugs for content forms.
 document.querySelectorAll('.admin-cms-form').forEach((form) => {
-    for (const language of ['id', 'en']) {
+    for (const language of ['id', 'en', 'zh']) {
         const source = form.querySelector(`[name="translations[${language}][name]"], [name="translations[${language}][title]"]`);
         const slug = form.querySelector(`[name="translations[${language}][slug]"]`);
         if (!source || !slug) continue;
@@ -1474,37 +1780,148 @@ document.querySelectorAll('.admin-cms-form').forEach((form) => {
         source.addEventListener('input', () => { if (!edited) slug.value = source.value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); });
     }
 });
-document.querySelectorAll('[data-rich-toolbar]').forEach((toolbar) => {
-    const field = toolbar.parentElement.querySelector('textarea');
+document.querySelectorAll('[data-rich-editor]').forEach((host) => {
+    if (host.dataset.richInitialized === 'true') return;
+
+    const field = host.querySelector('textarea');
     if (!field) return;
-    const editor = document.createElement('div');
-    editor.className = 'admin-rich-editor';
-    editor.contentEditable = 'true';
-    editor.setAttribute('role', 'textbox');
-    editor.setAttribute('aria-multiline', 'true');
+
+    const editorElement = document.createElement('div');
+    editorElement.className = 'admin-rich-editor__content';
+    host.append(editorElement);
+
+    const editor = new Quill(editorElement, {
+        theme: 'snow',
+        placeholder: host.dataset.placeholder || 'Tulis konten di sini...',
+        formats: ['bold', 'italic', 'underline', 'color', 'list', 'link'],
+        modules: {
+            toolbar: [
+                ['bold', 'italic'],
+                [{ list: 'ordered' }, { list: 'bullet' }],
+                ['link'],
+            ],
+        },
+    });
+    const toolbar = editor.getModule('toolbar');
+    const linkButton = toolbar.container.querySelector('.ql-link');
+    linkButton?.setAttribute('aria-label', 'Teks bergaya tautan');
+    linkButton?.setAttribute('title', 'Teks bergaris bawah biru');
+    const syncLinkButtonState = () => {
+        const range = editor.getSelection();
+        const format = range ? editor.getFormat(range.index, range.length) : {};
+        const color = String(format.color || '').toLowerCase().replace(/\s/g, '');
+        const active = Boolean(format.link || (format.underline && ['#315bd5', 'rgb(49,91,213)'].includes(color)));
+
+        linkButton?.classList.toggle('ql-active', active);
+        linkButton?.setAttribute('aria-pressed', String(active));
+    };
+    toolbar.addHandler('link', () => {
+        let range = editor.getSelection(true);
+        if (!range) {
+            editor.focus();
+            range = { index: Math.max(editor.getLength() - 1, 0), length: 0 };
+            editor.setSelection(range.index, 0, Quill.sources.SILENT);
+        }
+
+        const format = editor.getFormat(range.index, range.length);
+        const color = String(format.color || '').toLowerCase().replace(/\s/g, '');
+        const isLinkStyle = Boolean(format.underline && ['#315bd5', 'rgb(49,91,213)'].includes(color));
+        const enabled = !isLinkStyle;
+
+        if (range.length > 0) {
+            editor.formatText(range.index, range.length, {
+                underline: enabled,
+                color: enabled ? '#315bd5' : false,
+            }, Quill.sources.USER);
+            editor.setSelection(range.index, range.length, Quill.sources.SILENT);
+        } else {
+            editor.format('underline', enabled, Quill.sources.USER);
+            editor.format('color', enabled ? '#315bd5' : false, Quill.sources.USER);
+        }
+        syncLinkButtonState();
+    });
+    linkButton?.addEventListener('click', syncLinkButtonState);
+    editor.on('selection-change', syncLinkButtonState);
+    editor.on('text-change', syncLinkButtonState);
+    toolbar.addHandler('italic', () => {
+        const range = editor.getSelection(true);
+        if (!range) return;
+
+        if (range.length > 0) {
+            const isItalic = Boolean(editor.getFormat(range.index, range.length).italic);
+            editor.formatText(range.index, range.length, 'italic', !isItalic, Quill.sources.USER);
+            editor.setSelection(range.index, range.length, Quill.sources.SILENT);
+
+            return;
+        }
+
+        const text = editor.getText();
+        let start = range.index;
+        let end = range.index;
+        const isWordCharacter = (character) => Boolean(character && /[\p{L}\p{N}_-]/u.test(character));
+
+        while (start > 0 && isWordCharacter(text[start - 1])) start -= 1;
+        while (end < text.length && isWordCharacter(text[end])) end += 1;
+
+        if (end > start) {
+            const isItalic = Boolean(editor.getFormat(start, end - start).italic);
+            editor.formatText(start, end - start, 'italic', !isItalic, Quill.sources.USER);
+            editor.setSelection(range.index, 0, Quill.sources.SILENT);
+
+            return;
+        }
+
+        editor.format('italic', !editor.getFormat(range.index).italic, Quill.sources.USER);
+    });
+    host.dataset.richInitialized = 'true';
+    editorElement.setAttribute('aria-label', host.dataset.placeholder || 'Editor teks');
+
     const parsed = new DOMParser().parseFromString(field.value, 'text/html');
-    parsed.querySelectorAll('script,style,iframe,object').forEach((node) => node.remove());
+    parsed.querySelectorAll('script,style,iframe,object,embed').forEach((node) => node.remove());
     parsed.querySelectorAll('*').forEach((node) => [...node.attributes].forEach((attribute) => {
         if (attribute.name.startsWith('on') || (attribute.name === 'href' && !/^(https:\/\/|\/(?!\/))/i.test(attribute.value))) node.removeAttribute(attribute.name);
     }));
-    editor.innerHTML = parsed.body.innerHTML;
+    editor.clipboard.dangerouslyPasteHTML(parsed.body.innerHTML, 'silent');
+
     field.hidden = true;
     field.required = false;
-    field.after(editor);
-    const sync = () => { field.value = editor.innerHTML; field.dispatchEvent(new Event('input', { bubbles: true })); };
-    editor.addEventListener('input', sync);
-    toolbar.addEventListener('mousedown', (event) => event.preventDefault());
-    toolbar.addEventListener('click', (event) => {
-        const tag = event.target.closest('[data-rich-tag]')?.dataset.richTag;
-        if (!tag) return;
-        editor.focus();
-        if (tag === 'a') {
-            const url = window.prompt('Masukkan URL HTTPS atau tautan internal:');
-            if (!url || !/^(https:\/\/|\/(?!\/))/i.test(url)) return;
-            document.execCommand('createLink', false, url);
-        } else {
-            document.execCommand({ strong: 'bold', em: 'italic', ul: 'insertUnorderedList' }[tag], false);
-        }
-        sync();
-    });
+
+    const hasContent = () => {
+        if (editor.getText().replace(/\u200B/g, '').trim() !== '') return true;
+
+        return Boolean(editor.root.querySelector('li, a, img, iframe'));
+    };
+
+    const sync = () => {
+        field.value = hasContent() ? editor.root.innerHTML : '';
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+
+    editor.on('text-change', sync);
+    field.form?.addEventListener('submit', sync, true);
+    field.form?.addEventListener('formdata', sync);
+    host.addEventListener('focusin', () => host.classList.remove('is-invalid'));
+    sync();
 });
+
+const sitemapPreviewModal = document.querySelector('[data-sitemap-modal]');
+if (sitemapPreviewModal) {
+    const setSitemapPreviewOpen = (open) => {
+        sitemapPreviewModal.hidden = !open;
+        document.body.classList.toggle('admin-sitemap-modal-open', open);
+        if (open) {
+            sitemapPreviewModal.querySelector('[data-close-sitemap-modal]')?.focus();
+        }
+    };
+    document.querySelectorAll('[data-open-sitemap-preview]').forEach((button) => {
+        button.addEventListener('click', () => setSitemapPreviewOpen(true));
+    });
+    sitemapPreviewModal.querySelectorAll('[data-close-sitemap-modal]').forEach((button) => {
+        button.addEventListener('click', () => setSitemapPreviewOpen(false));
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !sitemapPreviewModal.hidden) {
+            setSitemapPreviewOpen(false);
+        }
+    });
+}

@@ -18,25 +18,19 @@ class FeaturedProductsController extends Controller
             ? $selectedCategory->products()->where('status', 'published')->with('translations', 'media')->orderBy('display_order')->get()
             : collect();
         $selectedProducts = $selectedCategory
-            ? $selectedCategory->featuredProducts()->where('products.status', 'published')->with('translations', 'media')->get()
+            ? $selectedCategory->featuredProducts()->where('products.status', 'published')->whereColumn('products.category_id', 'category_featured_products.category_id')->with('translations', 'media')->get()
             : collect();
         $selectedIds = $selectedProducts->pluck('id')->all();
 
         $products->each(function ($product): void {
             if ($product->media) {
-                $path = ltrim($product->media->path, '/');
-                $product->media->setAttribute('admin_preview_url', file_exists(public_path($path))
-                    ? asset($path)
-                    : Storage::disk(config('cms.media.disk'))->url($path));
+                $product->media->setAttribute('admin_preview_url', route('media.stream', ['media' => $product->media->id]));
             }
         });
 
         $selectedProducts->each(function ($product): void {
             if ($product->media) {
-                $path = ltrim($product->media->path, '/');
-                $product->media->setAttribute('admin_preview_url', file_exists(public_path($path))
-                    ? asset($path)
-                    : Storage::disk(config('cms.media.disk'))->url($path));
+                $product->media->setAttribute('admin_preview_url', route('media.stream', ['media' => $product->media->id]));
             }
         });
 

@@ -5,6 +5,7 @@
 @section('content')
     <section class="admin-summary-layout">
         <form class="admin-panel admin-summary-form" data-admin-form data-resource="company-summary" data-api-url="{{ $apiUrl }}" data-is-editing="{{ $record->exists ? '1' : '0' }}" data-redirect-url="{{ $redirectUrl }}">
+            @include('admin.partials.record-version', ['record' => $record])
             @csrf
             <div class="admin-summary-form__heading">
                 <span class="material-symbols-rounded" aria-hidden="true">analytics</span>

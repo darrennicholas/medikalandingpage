@@ -4,6 +4,7 @@
     $hasPendingDraft = is_array($record->draft_payload);
     $translationId = $translations->get('id');
     $translationEn = $translations->get('en');
+    $translationZh = $translations->get('zh');
     $previewMetricRows = [];
 
     if ($fallbackMetrics !== null) {
@@ -23,6 +24,7 @@
 @section('content')
     @if ($hasPendingDraft)<div class="admin-alert admin-alert--info"><span class="material-symbols-rounded" aria-hidden="true">info</span><span>Draft perubahan tersimpan. Versi Published pada halaman beranda tetap aktif sampai Anda memilih <strong>Simpan &amp; Publish</strong>.</span></div>@endif
     <form class="admin-editor admin-editor--block" novalidate data-admin-form data-live-editor="{{ $isCoverage ? 'coverage' : 'cta' }}" data-resource="content-blocks" data-api-url="{{ $apiUrl }}" data-is-editing="{{ $record->exists ? '1' : '0' }}" data-redirect-url="{{ $redirectUrl }}" enctype="multipart/form-data">
+        @include('admin.partials.record-version', ['record' => $record])
         @csrf
         <input type="hidden" name="block_key" value="{{ $blockKey }}">
         <input type="hidden" name="status" value="{{ $record->status ?? 'draft' }}" data-editor-status>
@@ -30,16 +32,16 @@
         <div class="admin-editor__main">
             <section class="admin-panel admin-editor__panel">
                 <div class="admin-panel__header"><div><p class="admin-eyebrow">Beranda</p><h2>{{ $isCoverage ? 'Informasi Jangkauan' : 'Konten & Aksi CTA' }}</h2></div><span class="admin-status admin-status--{{ $hasPendingDraft ? 'draft' : ($record->status ?? 'draft') }}" data-editor-status-label>{{ $hasPendingDraft ? 'Draft perubahan' : (($record->status ?? 'draft') === 'published' ? 'Published' : 'Draft') }}</span></div>
-                <div class="admin-editor__language" role="tablist" aria-label="Bahasa konten"><button type="button" class="is-active" data-language-tab="id">Indonesia <span>*</span></button><button type="button" data-language-tab="en">English</button></div>
+                <div class="admin-editor__language" role="tablist" aria-label="Bahasa konten"><button type="button" class="is-active" data-language-tab="id">Indonesia <span>*</span></button><button type="button" data-language-tab="en">English</button><button type="button" data-language-tab="zh">中文</button></div>
 
-                @foreach (['id' => 'Bahasa Indonesia', 'en' => 'English'] as $language => $languageLabel)
-                    @php($translation = $language === 'id' ? $translationId : $translationEn)
+                @foreach (['id' => 'Bahasa Indonesia', 'en' => 'English', 'zh' => '中文'] as $language => $languageLabel)
+                    @php($translation = match ($language) { 'id' => $translationId, 'en' => $translationEn, default => $translationZh })
                     @php($metricRows = $translation?->metrics ?? [])
                     @php($buttonRows = $translation?->buttons ?? [])
                     @if (! $isCoverage && $buttonRows === [] && filled($translation?->cta_label))
                         @php($buttonRows = [['label' => $translation->cta_label, 'url' => $record->cta_url, 'style' => 'primary', 'icon' => 'chat']])
                     @endif
-                    <div class="admin-language-panel {{ $language === 'en' ? 'is-hidden' : '' }}" data-language-panel="{{ $language }}">
+                    <div class="admin-language-panel {{ $language !== 'id' ? 'is-hidden' : '' }}" data-language-panel="{{ $language }}">
                         <div class="admin-editor__fields">
                             <label class="admin-field"><span>{{ $language === 'id' ? 'Judul Bagian / Headline' : 'Section Title / Headline' }} <b>*</b></span><input type="text" name="translations[{{ $language }}][title]" value="{{ $translation?->title }}" maxlength="120" data-preview-field="title"><small>Maksimal 120 karakter.</small></label>
                             @if ($isCoverage)
@@ -57,12 +59,31 @@
                 @endforeach
 
                 @if ($isCoverage)
-                    <section class="admin-editor__media-block"><div><strong>Gambar Ilustrasi / Peta Jangkauan <b>*</b></strong><small>Pilih gambar yang digunakan pada bagian jangkauan di halaman beranda.</small></div><label class="admin-field"><span>Media Library</span><select name="media_id" data-block-media><option value="">Pilih gambar jangkauan...</option>@foreach ($mediaOptions as $media)<option value="{{ $media->id }}" data-image-url="{{ $media->admin_preview_url }}" @selected((int) $record->media_id === $media->id)>{{ $media->original_name }} · {{ number_format($media->size_bytes / 1024, 0) }} KB</option>@endforeach</select></label></section>
+                    <section class="admin-editor__media-block admin-editor__media-block--coverage">
+                        <div><strong>Gambar Ilustrasi / Peta Jangkauan <b>*</b></strong><small>Pilih gambar yang digunakan pada bagian jangkauan di halaman beranda.</small></div>
+                        <label class="admin-field">
+                            <span>Pilih dari Media Library <b>*</b></span>
+                            <select name="media_id" data-block-media data-media-preview-select>
+                                <option value="">Pilih gambar jangkauan...</option>
+                                @foreach ($mediaOptions as $media)
+                                    <option value="{{ $media->id }}" data-image-url="{{ $media->admin_preview_url }}" @selected((int) $record->media_id === $media->id)>{{ $media->original_name }} · {{ number_format($media->size_bytes / 1024, 0) }} KB</option>
+                                @endforeach
+                            </select>
+                            <span class="admin-media-preview" data-media-preview>
+                                @if ($mediaUrl)
+                                    <img src="{{ $mediaUrl }}" alt="{{ $record->media?->alt_text_id ?? 'Gambar jangkauan' }}" loading="lazy">
+                                    <span>{{ $record->media?->original_name ?? 'Gambar jangkauan terpilih' }}</span>
+                                @else
+                                    <span>Pilih gambar untuk melihat pratinjau.</span>
+                                @endif
+                            </span>
+                        </label>
+                    </section>
                 @endif
 
-                <div class="admin-editor__publish"><div><strong>Status Publikasi <b>*</b></strong><small>Published memperbarui bagian beranda publik setelah disimpan.</small></div><div class="admin-editor__status-options"><button type="button" data-set-status="published" class="{{ ! $hasPendingDraft && ($record->status ?? 'draft') === 'published' ? 'is-selected' : '' }}"><span class="admin-status-dot admin-status-dot--published"></span><span><b>Published (Tayang)</b><small>Perubahan tampil pada landing page.</small></span></button><button type="button" data-set-status="draft" class="{{ $hasPendingDraft || ($record->status ?? 'draft') !== 'published' ? 'is-selected' : '' }}"><span class="admin-status-dot admin-status-dot--draft"></span><span><b>Draft Internal</b><small>Simpan tanpa mengubah konten publik.</small></span></button></div></div>
+                <div class="admin-editor__publish"><div><strong>Status Publikasi <b>*</b></strong><small>Published memperbarui bagian beranda publik setelah disimpan.</small></div><div class="admin-editor__status-options"><button type="button" data-set-status="published" class="{{ ! $hasPendingDraft && ($record->status ?? 'draft') === 'published' ? 'is-selected' : '' }}"><span class="admin-status-dot admin-status-dot--published"></span><span><b>Published (Tayang)</b><small>Perubahan tampil pada landing page.</small></span></button><button type="button" data-set-status="draft" class="{{ $hasPendingDraft || ($record->status ?? 'draft') !== 'published' ? 'is-selected' : '' }}"><span class="admin-status-dot admin-status-dot--draft"></span><span><b>Draft</b><small>Simpan tanpa menampilkan perubahan.</small></span></button></div></div>
                 <div class="admin-form__error" data-form-errors hidden></div>
-                <div class="admin-editor__actions"><a class="admin-button" href="{{ route('admin.content.index', ['resource' => 'content-blocks', 'section' => $blockKey]) }}">Batal</a><button class="admin-button" type="submit" data-save-status="draft">Simpan Draft</button><button class="admin-button admin-button--primary" type="submit" data-save-status="published"><span class="material-symbols-rounded" aria-hidden="true">publish</span>Simpan &amp; Publish</button></div>
+                <div class="admin-editor__actions"><a class="admin-button" href="{{ route('admin.content.index', ['resource' => 'content-blocks', 'section' => $blockKey]) }}">Batal</a><button class="admin-button" type="submit" data-save-status="draft" formnovalidate>Simpan Draft</button><button class="admin-button admin-button--primary" type="submit" data-save-status="published"><span class="material-symbols-rounded" aria-hidden="true">publish</span>Simpan &amp; Publish</button></div>
             </section>
         </div>
 

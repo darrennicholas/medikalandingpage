@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
+use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
+    private const RECENT_ACTIVITY_LIMIT = 10;
+
     public function api(): JsonResponse
     {
         $contentTables = [
@@ -47,7 +50,7 @@ class DashboardController extends Controller
                 'jobs_closing_soon' => DB::table('job_openings')->where('status', 'open')
                     ->whereBetween('closing_date', [today(), today()->addDays(7)])->count(),
                 'recent_activities' => $user?->hasRole('superadmin')
-                    ? ActivityLog::query()->with('user')->latest('created_at')->limit(10)->get()
+                    ? ActivityLog::query()->with('user')->latest('created_at')->limit(self::RECENT_ACTIVITY_LIMIT)->get()
                     : [],
             ],
             'message' => 'Dashboard berhasil dimuat.',
@@ -147,15 +150,18 @@ class DashboardController extends Controller
         $translationPercent = $totalIndonesianContent > 0
             ? (int) round(($translationCompleted / $totalIndonesianContent) * 100)
             : 0;
-        $range = $request->string('range', '30')->toString();
-        if (! in_array($range, ['7', '30', '90', 'all'], true)) {
-            $range = '30';
-        }
+        $dates = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
+        $fromDate = $dates['from'] ?? $dates['to'] ?? now()->startOfMonth()->toDateString();
+        $toDate = $dates['to'] ?? $dates['from'] ?? now()->endOfMonth()->toDateString();
         $isSuperadmin = $request->user()?->hasRole('superadmin') ?? false;
         $activityQuery = ActivityLog::query()->with('user')->latest('created_at');
-        if ($range !== 'all') {
-            $activityQuery->where('created_at', '>=', now()->subDays((int) $range));
-        }
+        $activityQuery->whereBetween('created_at', [
+            Carbon::parse($fromDate)->startOfDay(),
+            Carbon::parse($toDate)->endOfDay(),
+        ]);
 
         return view('admin.dashboard', [
             'dashboardStats' => $dashboardStats,
@@ -164,14 +170,15 @@ class DashboardController extends Controller
             'translationPercent' => $translationPercent,
             'missingEnglishTranslations' => $missingEnglishTranslations,
             'missingEnglishItems' => $missingEnglishItems->take(6),
-            'recentActivities' => $isSuperadmin ? $activityQuery->limit(10)->get() : collect(),
+            'recentActivities' => $isSuperadmin ? $activityQuery->limit(self::RECENT_ACTIVITY_LIMIT)->get() : collect(),
             'jobStats' => [
                 'open' => DB::table('job_openings')->whereNull('deleted_at')->where('status', 'open')->count(),
                 'closed' => DB::table('job_openings')->whereNull('deleted_at')->where('status', 'closed')->count(),
                 'closingSoon' => DB::table('job_openings')->whereNull('deleted_at')->where('status', 'open')->whereBetween('closing_date', [today(), today()->addDays(7)])->count(),
             ],
             'isSuperadmin' => $isSuperadmin,
-            'range' => $range,
+            'fromDate' => $fromDate,
+            'toDate' => $toDate,
         ]);
     }
 
@@ -202,16 +209,15 @@ class DashboardController extends Controller
                 $statuses->sum(),
                 $statuses->get('published', 0),
                 $statuses->get('draft', 0),
-                $statuses->get('unpublished', 0),
             ];
         }
 
         return response()->streamDownload(static function () use ($rows): void {
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF<html><head><meta charset=\"UTF-8\"></head><body><table border=\"1\">");
-            fwrite($output, '<tr><th colspan="5">Ringkasan CMS</th></tr>');
-            fwrite($output, '<tr><td colspan="5">'.e(now()->format('d-m-Y H:i')).'</td></tr>');
-            fwrite($output, '<tr><th>Konten</th><th>Total</th><th>Published</th><th>Draft</th><th>Unpublished</th></tr>');
+            fwrite($output, '<tr><th colspan="4">Ringkasan CMS</th></tr>');
+            fwrite($output, '<tr><td colspan="4">'.e(now()->format('d-m-Y H:i')).'</td></tr>');
+            fwrite($output, '<tr><th>Konten</th><th>Total</th><th>Published</th><th>Draft</th></tr>');
             foreach ($rows as $row) {
                 fwrite($output, '<tr>'.implode('', array_map(static fn (string|int $cell): string => '<td>'.e((string) $cell).'</td>', $row)).'</tr>');
             }

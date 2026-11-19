@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -29,24 +29,14 @@
                 <a class="nav-link" href="{{ route('contact') }}" data-i18n="contact">Kontak</a>
                 <a class="nav-link nav-link--active" href="{{ route('documentation') }}" data-i18n="articlesNews">Artikel &amp; Berita</a>
 
-                @include('partials.cms-login-link')
-                <div class="language-control">
-                    <span class="google-mark" aria-hidden="true">G</span>
-                    <label class="sr-only" for="language-picker">Pilih bahasa</label>
-                    <select id="language-picker" aria-label="Pilih bahasa">
-                        <option value="" selected>Select Language</option>
-                        <option value="id">Bahasa Indonesia</option>
-                        <option value="en">English</option>
-                    </select>
-                    <span class="language-control__arrow" aria-hidden="true">▼</span>
-                </div>
+                @include('partials.language-switcher')
             </nav>
         </div>
     </header>
 
     <main class="article-detail-main">
         <div class="article-detail-container">
-            <a class="media-list-back" href="{{ route('articles') }}">← Kembali ke Artikel</a>
+            <a class="media-list-back public-back-button" href="{{ route('articles') }}">← Kembali ke Artikel</a>
             <article class="article-detail" id="article-detail" hidden>
                 <h1 id="article-detail-title"></h1>
                 <div class="article-detail-meta"><time id="article-detail-date"></time><span id="article-detail-author"></span></div>

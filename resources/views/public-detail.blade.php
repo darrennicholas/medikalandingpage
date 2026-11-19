@@ -12,14 +12,13 @@
         <button class="menu-toggle" id="menu-toggle" type="button" aria-controls="primary-navigation" aria-expanded="false" aria-label="Buka menu"><span></span><span></span><span></span></button>
         <nav class="primary-navigation" id="primary-navigation" aria-label="Navigasi utama">
             @include('partials.public-navigation')
-            @include('partials.cms-login-link')
-            <div class="language-control"><label class="sr-only" for="language-picker">Pilih bahasa</label><select id="language-picker" aria-label="Pilih bahasa"><option value="id" @selected($language === 'id')>Bahasa Indonesia</option><option value="en" @selected($language === 'en')>English</option></select></div>
+            @include('partials.language-switcher')
         </nav>
     </div></header>
     <main class="container public-detail-main">
         @if ($kind === 'documentation')
             <article class="public-detail">
-                <a class="public-detail__back" href="{{ route($item->type === 'article' ? 'localized.articles' : 'localized.news', ['locale' => $language]) }}">← {{ $language === 'en' ? ($item->type === 'article' ? 'Back to articles' : 'Back to news') : ($item->type === 'article' ? 'Kembali ke artikel' : 'Kembali ke berita') }}</a>
+                <a class="public-detail__back public-back-button documentation-back-button" href="{{ route($item->type === 'article' ? 'localized.articles' : 'localized.news', ['locale' => $language]) }}">{{ $language === 'en' ? 'Back' : 'Kembali' }}</a>
                 <header class="public-detail__heading">
                     <span class="public-detail__category">{{ $item->type === 'article' ? ($language === 'en' ? 'Article' : 'Artikel') : ($language === 'en' ? 'News' : 'Berita') }}</span>
                     <h1>{{ $item->public_title }}</h1>
@@ -44,6 +43,7 @@
                 @endif
             </article>
         @elseif ($kind === 'career')
+            <a class="public-back-button public-detail__back" href="{{ route('localized.careers', ['locale' => $language]) }}">← {{ $language === 'en' ? 'Back to careers' : 'Kembali ke Karir' }}</a>
             <article>
                 <h1>{{ $translation?->title }}</h1>
                 <p>{{ $job->location }} · {{ $job->employment_type }}</p>
@@ -53,11 +53,31 @@
                 <a class="contact-cta__button" href="{{ $job->apply_url }}" target="_blank" rel="noopener noreferrer">{{ $language === 'en' ? 'Apply' : 'Lamar' }}</a>
             </article>
         @elseif ($kind === 'product')
-            <article>
-                @if ($product->public_image_url)<img src="{{ $product->public_image_url }}" alt="{{ $product->public_image_alt }}" style="max-width:100%;height:auto">@endif
-                <h1>{{ $translation?->name }}</h1>
-                <div>{!! \App\Services\PublicRichText::render($translation?->description) !!}</div>
-                @if ($product->public_brochure_url)<a href="{{ $product->public_brochure_url }}" target="_blank" rel="noopener">{{ $language === 'en' ? 'View brochure PDF' : 'Lihat brosur PDF' }}</a>@endif
+            <a class="public-back-button public-detail__back" href="{{ route('localized.products', ['locale' => $language]) }}">{{ $language === 'en' ? 'Back to products' : 'Kembali ke Produk' }}</a>
+            <article class="product-detail">
+                <div class="product-detail__overview">
+                    @if ($product->public_image_url)
+                        <figure class="product-detail__image-wrap">
+                            <img class="product-detail__image" src="{{ $product->public_image_url }}" alt="{{ $product->public_image_alt ?: $translation?->name }}">
+                        </figure>
+                    @endif
+                    <div class="product-detail__summary">
+                        <span class="public-detail__category">{{ $language === 'en' ? 'Product' : 'Produk' }}</span>
+                        <h1>{{ $translation?->name }}</h1>
+                        @if ($product->public_brochure_url)
+                            <div class="product-detail__actions">
+                                <span class="product-detail__actions-label">{{ $language === 'en' ? 'Product document' : 'Dokumen produk' }}</span>
+                                <a class="product-detail__brochure" href="{{ $product->public_brochure_url }}" target="_blank" rel="noopener noreferrer"><span class="material-symbols-rounded" aria-hidden="true">picture_as_pdf</span>{{ $language === 'en' ? 'View brochure PDF' : 'Lihat brosur PDF' }}</a>
+                            </div>
+                        @endif
+                        @if ($translation?->description)
+                            <section class="product-detail__description" aria-labelledby="product-detail-description-title">
+                                <h2 id="product-detail-description-title">{{ $language === 'en' ? 'Product information' : 'Informasi Produk' }}</h2>
+                                <div class="product-detail__content">{!! \App\Services\PublicRichText::render($translation->description) !!}</div>
+                            </section>
+                        @endif
+                    </div>
+                </div>
             </article>
         @endif
     </main>

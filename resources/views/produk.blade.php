@@ -30,16 +30,7 @@
 
             <nav class="primary-navigation" id="primary-navigation" aria-label="Navigasi utama">
             @include('partials.public-navigation')
-            @include('partials.cms-login-link')
-                <div class="language-control">
-                    <span class="google-mark" aria-hidden="true">G</span>
-                    <label class="sr-only" for="language-picker">Pilih bahasa</label>
-                    <select id="language-picker" aria-label="Pilih bahasa">
-                        <option value="id" @selected(app()->getLocale() === 'id')>Bahasa Indonesia</option>
-                        <option value="en" @selected(app()->getLocale() === 'en')>English</option>
-                    </select>
-                    <span class="language-control__arrow" aria-hidden="true">▼</span>
-                </div>
+                @include('partials.language-switcher')
             </nav>
         </div>
     </header>
@@ -60,10 +51,23 @@
             </div>
 
             @php
-                $categoryNamesById = collect($categories)->pluck('name', 'id');
-                $idsForCategoryNames = fn (array $names): string => collect($categories)
-                    ->filter(fn (array $category): bool => in_array($category['name'], $names, true))
-                    ->pluck('id')
+                $categoryIdsByEnglishName = [
+                    'Drugs Abuse' => '1',
+                    'Rapid Test' => '2',
+                    'Molecular' => '3',
+                    'Rapid Test (Master)' => '4',
+                    'POCT' => '5',
+                    'Point of Care Testing (POCT)' => '5',
+                    'Medical Instruments' => '6',
+                    'Instrument and Consumable' => '6',
+                    'Medical Consumables' => '7',
+                    'Medical Consumable' => '7',
+                    'Rapid Test COVID-19' => '2',
+                ];
+                $idsForCategoryNames = fn (array $names): string => collect($names)
+                    ->map(fn (string $name): ?string => $categoryIdsByEnglishName[$name] ?? null)
+                    ->filter(fn (?string $id): bool => $id !== null && collect($categories)->contains(fn (array $category): bool => (string) $category['id'] === $id))
+                    ->unique()
                     ->implode(',');
                 $sidebarGroups = [
                     [
@@ -188,7 +192,7 @@
                                 <div class="product-grid">
                                     @foreach ($category['products'] as $product)
                                         @php
-                                            $isDrugAbuse = strcasecmp($category['name'], 'Drugs Abuse') === 0;
+                                            $isDrugAbuse = (string) $category['id'] === '1';
                                             $productImageName = basename($product['image']);
                                             $isDoaSevenProductImage = $productImageName === 'doa-7-new-cutout.png';
                                             $isCompactProductImage = in_array($productImageName, ['doa-10-cup.png', 'doa-3-amp-thc-meth-new.png', 'doa-3-amp-thc-mop-new.png', 'doa-3-revamp-1.png', 'doa-5-new.png', 'doa-6-new.png', 'doa-7-new.png'], true);
@@ -209,7 +213,7 @@
                                             @endif
                                             <div class="product-card__image-wrap">
                                                 @if ($product['image'])
-                                                    <img class="product-card__image{{ $isDoaSevenProductImage ? ' product-card__image--doa-seven-right' : '' }}{{ $isAlignedDoaProductImage ? ' product-card__image--doa-aligned' : '' }}{{ $isCompactProductImage ? ' product-card__image--compact' : '' }}{{ $isCompactProductImageLarger ? ' product-card__image--compact-larger' : '' }}{{ $compactProductImageSizeClass }}" src="{{ $product['image'] }}" alt="{{ $product['image_alt'] ?: $product['name'] }}" loading="lazy">
+                                                    @if (!empty($product['slug']))<a class="product-card__image-preview" href="{{ route('localized.products.show', ['locale' => app()->getLocale(), 'slug' => $product['slug']]) }}" aria-label="{{ app()->getLocale() === 'en' ? 'View details of ' : 'Lihat detail ' }}{{ $product['name'] }}">@endif<img class="product-card__image{{ $isDoaSevenProductImage ? ' product-card__image--doa-seven-right' : '' }}{{ $isAlignedDoaProductImage ? ' product-card__image--doa-aligned' : '' }}{{ $isCompactProductImage ? ' product-card__image--compact' : '' }}{{ $isCompactProductImageLarger ? ' product-card__image--compact-larger' : '' }}{{ $compactProductImageSizeClass }}" src="{{ $product['image'] }}" alt="{{ $product['image_alt'] ?: $product['name'] }}" loading="lazy">@if (!empty($product['slug']))</a>@endif
                                                 @else
                                                     <span class="product-card__image-empty">{{ app()->getLocale() === 'en' ? 'Product image unavailable' : 'Gambar produk belum tersedia' }}</span>
                                                 @endif
@@ -218,7 +222,7 @@
                                                 @endif
                                             </div>
                                             <div class="product-card__content">
-                                                <h4 class="product-card__title" title="{{ $product['name'] }}">{{ $product['name'] }}</h4>
+                                                <h4 class="product-card__title" title="{{ $product['name'] }}">@if (!empty($product['slug']))<a href="{{ route('localized.products.show', ['locale' => app()->getLocale(), 'slug' => $product['slug']]) }}">{{ $product['name'] }}</a>@else{{ $product['name'] }}@endif</h4>
                                                 @if ($parameterLabels->isNotEmpty())
                                                     <div class="product-card__parameters" aria-label="Parameter produk">
                                                         @foreach ($parameterLabels as $parameterLabel)
@@ -249,7 +253,7 @@
 
                     <nav class="product-pagination" id="product-pagination" aria-label="Halaman produk">@if ($catalogMode)<span>{{ app()->getLocale() === 'en' ? 'Showing' : 'Menampilkan' }} {{ $catalogPage->firstItem() ?? 0 }}–{{ $catalogPage->lastItem() ?? 0 }} {{ app()->getLocale() === 'en' ? 'of' : 'dari' }} {{ $catalogPage->total() }}</span> @if ($catalogPage->previousPageUrl())<a href="{{ $catalogPage->previousPageUrl() }}">{{ app()->getLocale() === 'en' ? '‹ Previous' : '‹ Sebelumnya' }}</a>@endif @if ($catalogPage->nextPageUrl())<a href="{{ $catalogPage->nextPageUrl() }}">{{ app()->getLocale() === 'en' ? 'Next ›' : 'Berikutnya ›' }}</a>@endif @endif</nav>
                     @if ($catalogMode)
-                        <a class="product-catalog__all-link" href="{{ route('localized.products', ['locale' => app()->getLocale()]) }}">{{ app()->getLocale() === 'en' ? 'Back to Featured Products' : 'Kembali ke Produk Unggulan' }}</a>
+                        <a class="product-catalog__all-link public-back-button" href="{{ route('localized.products', ['locale' => app()->getLocale()]) }}">{{ app()->getLocale() === 'en' ? 'Back to Featured Products' : 'Kembali ke Produk Unggulan' }}</a>
                     @else
                         <a class="product-catalog__all-link" href="{{ route('localized.products.all', ['locale' => app()->getLocale()]) }}" data-catalog-link>{{ app()->getLocale() === 'en' ? 'View All Products' : 'Lihat Semua Produk' }}</a>
                     @endif

@@ -5,11 +5,12 @@
 @php
     $currentLanguage = app()->getLocale();
     $otherLanguage = $currentLanguage === 'id' ? 'en' : 'id';
-    $alternateUrl = $seo['alternate'] ?? preg_replace('#/(id|en)(?=/|$)#', '/'.$otherLanguage, request()->url());
-    $defaultUrl = $currentLanguage === 'en' && !empty($seo['alternate']) ? $seo['alternate'] : preg_replace('#/(id|en)(?=/|$)#', '/id', request()->url());
+    $alternateUrl = $seo['alternate'] ?? preg_replace('#/(id|en|zh)(?=/|$)#', '/'.$otherLanguage, request()->url());
+    $defaultUrl = $currentLanguage === 'en' && !empty($seo['alternate']) ? $seo['alternate'] : preg_replace('#/(id|en|zh)(?=/|$)#', '/id', request()->url());
 @endphp
-<link rel="alternate" hreflang="{{ $currentLanguage }}" href="{{ $seo['canonical'] ?? request()->url() }}">
+<link rel="alternate" hreflang="{{ $currentLanguage }}" href="{{ request()->url() }}">
 <link rel="alternate" hreflang="{{ $otherLanguage }}" href="{{ $alternateUrl }}">
+<link rel="alternate" hreflang="zh-CN" href="{{ preg_replace('#/(id|en|zh)(?=/|$)#', '/zh', request()->url()) }}">
 <link rel="alternate" hreflang="x-default" href="{{ $defaultUrl }}">
 <meta property="og:type" content="website">
 <meta property="og:title" content="{{ $seo['title'] ?? 'PT Interskala Medika Indonesia' }}">

@@ -8,6 +8,7 @@ use App\Services\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -15,9 +16,16 @@ use Illuminate\View\View;
 
 class AuthController extends Controller
 {
-    public function create(): View
+    public function create(Request $request): View|RedirectResponse|Response
     {
-        return view('admin.auth.login');
+        if ($request->user()?->status === 'active' && $request->user()->canAccessCms()) {
+            return redirect()->to(route('admin.dashboard', absolute: false));
+        }
+
+        return response()
+            ->view('admin.auth.login')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, private')
+            ->header('Pragma', 'no-cache');
     }
 
     public function store(Request $request, ActivityLogger $activityLogger): RedirectResponse|JsonResponse
@@ -36,9 +44,9 @@ class AuthController extends Controller
         }
 
         if ($user->status === 'locked' && $user->locked_until?->isFuture()) {
-            $activityLogger->log($user, 'login_failed', User::class, $user->id);
+            $activityLogger->log($user, 'login_failed', User::class, $user->id, null, ['reason' => 'locked']);
 
-            return $this->loginFailure($request, 'Akun terkunci sementara. Coba lagi setelah waktu penguncian berakhir.');
+            return $this->loginFailure($request, 'Email atau password salah.');
         }
 
         if ($user->status === 'locked' && ($user->locked_until === null || $user->locked_until->isPast())) {
@@ -46,9 +54,9 @@ class AuthController extends Controller
         }
 
         if ($user->status === 'inactive') {
-            $activityLogger->log($user, 'login_failed', User::class, $user->id);
+            $activityLogger->log($user, 'login_failed', User::class, $user->id, null, ['reason' => 'inactive']);
 
-            return $this->loginFailure($request, 'Akun tidak aktif. Hubungi Superadmin.');
+            return $this->loginFailure($request, 'Email atau password salah.');
         }
 
         if (! Hash::check($credentials['password'], $user->password_hash)) {
@@ -66,9 +74,7 @@ class AuthController extends Controller
                 'locked_until' => $lockedUntil?->toIso8601String(),
             ]);
 
-            return $this->loginFailure($request, $shouldLock
-                ? 'Akun terkunci selama 15 menit setelah percobaan login gagal berulang.'
-                : 'Email atau password salah.');
+            return $this->loginFailure($request, 'Email atau password salah.');
         }
 
         if (! $user->canAccessCms()) {
@@ -89,12 +95,12 @@ class AuthController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'data' => ['redirect_url' => route('admin.dashboard')],
+                'data' => ['redirect_url' => route('admin.dashboard', absolute: false)],
                 'message' => 'Login berhasil.',
             ]);
         }
 
-        return redirect()->route('admin.dashboard')->with('status', 'Login berhasil.');
+        return redirect()->to(route('admin.dashboard', absolute: false))->with('status', 'Login berhasil.');
     }
 
     public function apiLogin(Request $request, ActivityLogger $activityLogger): JsonResponse
@@ -102,6 +108,16 @@ class AuthController extends Controller
         $credentials = $request->validate(['email' => ['required', 'email'], 'password' => ['required', 'string']]);
         $email = strtolower($credentials['email']);
         $user = User::query()->where('email', $email)->first();
+
+        if ($user !== null && ($user->status === 'inactive' || ($user->status === 'locked' && $user->locked_until?->isFuture()))) {
+            $activityLogger->log($user, 'login_failed', User::class, $user->id, null, ['reason' => $user->status]);
+
+            return $this->apiLoginFailure();
+        }
+
+        if ($user?->status === 'locked' && ($user->locked_until === null || $user->locked_until->isPast())) {
+            $user->forceFill(['status' => 'active', 'locked_until' => null, 'failed_login_count' => 0])->save();
+        }
 
         if ($user === null || ! Hash::check($credentials['password'], $user->password_hash)) {
             if ($user !== null) {
@@ -118,25 +134,19 @@ class AuthController extends Controller
                 $activityLogger->log(null, 'login_failed', User::class, null, null, ['email' => $email]);
             }
 
-            return response()->json(['success' => false, 'data' => null, 'message' => 'Email atau password salah.', 'errors' => ['email' => ['Email atau password salah.']]], 422);
-        }
-
-        if ($user->status === 'locked' && $user->locked_until?->isFuture()) {
-            return response()->json(['success' => false, 'data' => null, 'message' => 'Akun terkunci sementara.', 'errors' => []], 423);
-        }
-
-        if ($user->status === 'locked' && ($user->locked_until === null || $user->locked_until->isPast())) {
-            $user->forceFill(['status' => 'active', 'locked_until' => null, 'failed_login_count' => 0])->save();
+            return $this->apiLoginFailure();
         }
 
         if ($user->status !== 'active') {
-            return response()->json(['success' => false, 'data' => null, 'message' => 'Akun tidak aktif. Hubungi Superadmin.', 'errors' => []], 403);
+            $activityLogger->log($user, 'login_failed', User::class, $user->id, null, ['reason' => $user->status]);
+
+            return $this->apiLoginFailure();
         }
 
         if (! $user->canAccessCms()) {
             $activityLogger->log($user, 'login_failed', User::class, $user->id);
 
-            return response()->json(['success' => false, 'data' => null, 'message' => 'Email atau password salah.', 'errors' => []], 403);
+            return $this->apiLoginFailure();
         }
 
         Auth::login($user);
@@ -196,6 +206,13 @@ class AuthController extends Controller
         return back()->withErrors(['email' => $message])->onlyInput('email');
     }
 
+    private function apiLoginFailure(): JsonResponse
+    {
+        $message = 'Email atau password salah.';
+
+        return response()->json(['success' => false, 'data' => null, 'message' => $message, 'errors' => ['email' => [$message]]], 422);
+    }
+
     public function editPassword(Request $request): View
     {
         $user = $request->user()->loadMissing('role');
@@ -225,11 +242,11 @@ class AuthController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'data' => ['redirect_url' => route('admin.dashboard')],
+                'data' => ['redirect_url' => route('admin.dashboard', absolute: false)],
                 'message' => 'Password berhasil diubah.',
             ]);
         }
 
-        return redirect()->route('admin.dashboard')->with('status', 'Password berhasil diubah.');
+        return redirect()->to(route('admin.dashboard', absolute: false))->with('status', 'Password berhasil diubah.');
     }
 }

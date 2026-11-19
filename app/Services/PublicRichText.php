@@ -28,7 +28,13 @@ class PublicRichText
             }
             $tag = strtolower($node->tagName);
             $target = $parent;
-            if (in_array($tag, ['p', 'br', 'strong', 'b', 'em', 'i', 'ul', 'ol', 'li', 'a'], true)) {
+            $colorStyle = strtolower(preg_replace('/\s+/', '', $node->getAttribute('style')) ?? '');
+            if ($tag === 'span' && in_array($colorStyle, ['color:#315bd5', 'color:rgb(49,91,213)', 'color:rgb(49,91,213);'], true)) {
+                $target = $output->createElement('span');
+                $target->setAttribute('style', 'color:#315bd5');
+                $parent->appendChild($target);
+            }
+            if (in_array($tag, ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'a'], true)) {
                 $target = $output->createElement($tag);
                 if ($tag === 'a') {
                     $href = trim($node->getAttribute('href'));

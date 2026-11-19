@@ -7,29 +7,33 @@
     @vite(['resources/css/app.css', 'resources/css/careers.css', 'resources/js/app.js'])
 </head>
 <body>
-    <header class="site-header"><div class="site-header__inner">
+    <header class="site-header" id="site-header"><div class="site-header__inner">
         <a class="site-logo" href="{{ route('localized.home', ['locale' => $language]) }}"><img src="{{ asset('images/medika-logo.png') }}" alt="IMI Medika" width="120" height="72"></a>
         <button class="menu-toggle" id="menu-toggle" type="button" aria-controls="primary-navigation" aria-expanded="false" aria-label="Buka menu"><span></span><span></span><span></span></button>
         <nav class="primary-navigation" id="primary-navigation" aria-label="Navigasi utama">
             @include('partials.public-navigation')
-            @include('partials.cms-login-link')
-            <div class="language-control"><label class="sr-only" for="language-picker">Pilih bahasa</label><select id="language-picker" aria-label="Pilih bahasa"><option value="id" @selected($language === 'id')>Bahasa Indonesia</option><option value="en" @selected($language === 'en')>English</option></select></div>
+            @include('partials.language-switcher')
         </nav>
     </div></header>
     <main class="careers-page">
         <section class="careers-hero" aria-labelledby="careers-title">
             <div class="container careers-hero__inner">
                 <div class="careers-hero__copy">
+                    @php
+                        $careerButton = collect($careerIntro['buttons'] ?? [])->first(fn ($button) => filled($button['label'] ?? null) && filled($button['url'] ?? null));
+                        $careerButtonUrl = $careerButton['url'] ?? ($careerIntro['cta_url'] ?? null);
+                        $careerButtonLabel = $careerButton['label'] ?? ($careerIntro['cta_label'] ?? null);
+                    @endphp
                     <h1 id="careers-title">{{ $careerIntro['title'] ?? ($language === 'en' ? 'Grow with us' : 'Berkembang bersama kami') }}</h1>
+                    <span class="careers-hero__rule" aria-hidden="true"></span>
                     <p>{{ $careerIntro['body'] ?? ($language === 'en' ? 'Join our team and help support better healthcare in Indonesia.' : 'Bergabunglah bersama kami dan ikut menghadirkan layanan kesehatan yang lebih baik untuk Indonesia.') }}</p>
-                    <a class="careers-hero__button" href="#lowongan">{{ $language === 'en' ? 'Explore opportunities' : 'Lihat lowongan' }}</a>
+                    <a class="careers-hero__button" href="{{ $careerButtonUrl ? preg_replace('#^/(id|en|zh)(?=/|$)#', '/'.$language, $careerButtonUrl) : '#lowongan' }}">{{ $careerButtonLabel ?: ($language === 'en' ? 'Explore opportunities' : 'Lihat lowongan') }}</a>
                 </div>
-                <div class="careers-hero__visual"><img src="{{ $careerIntro['image_url'] ?? asset('images/gambartentangmedika.jpeg') }}" alt="{{ ($careerIntro['image_alt'] ?? null) ?: ($language === 'en' ? 'IMI Medika team' : 'Tim IMI Medika') }}"></div>
             </div>
         </section>
         <section class="careers-openings" id="lowongan" aria-labelledby="careers-openings-title">
             <div class="container">
-                <div class="careers-openings__heading"><div><h2 id="careers-openings-title">{{ $language === 'en' ? 'Explore open positions' : 'Temukan peluang karir' }}</h2><p>{{ $language === 'en' ? 'Discover opportunities to make an impact with our team.' : 'Temukan kesempatan untuk berkarya dan bertumbuh bersama tim kami.' }}</p></div></div>
+                <div class="careers-openings__heading"><div><h2 id="careers-openings-title">{{ $language === 'en' ? 'Explore open positions' : 'Temukan peluang karir' }}</h2><span class="careers-openings__rule" aria-hidden="true"></span><p>{{ $language === 'en' ? 'Discover opportunities to make an impact with our team.' : 'Temukan kesempatan untuk berkarya dan bertumbuh bersama tim kami.' }}</p></div></div>
                 <div class="careers-grid">
                     @forelse ($jobs as $job)
                         @php($jobTranslation = $job->public_translation ?? $job->translations->firstWhere('lang', $language) ?? $job->translations->firstWhere('lang', 'id'))

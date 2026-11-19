@@ -29,11 +29,11 @@
             @if ($errors->any())<span data-admin-flash-error="{{ $errors->first() }}" hidden></span>
                 <div class="admin-alert admin-alert--error" role="alert"><span class="material-symbols-rounded" aria-hidden="true">error</span><span>{{ $errors->first() }}</span></div>
             @endif
-            <form method="POST" action="{{ route('admin.login.store') }}" class="admin-form admin-login-form" data-admin-login-form>
+            <form method="POST" action="{{ route('admin.login.store', absolute: false) }}" data-login-refresh-url="{{ route('admin.login', absolute: false) }}" class="admin-form admin-login-form" data-admin-login-form>
                 @csrf
                 <div class="admin-form__error" data-login-errors hidden role="alert"></div>
                 <label class="admin-field" for="login-email"><span>Alamat Email <b>*</b></span><span class="admin-input-wrap"><span class="material-symbols-rounded" aria-hidden="true">mail</span><input id="login-email" type="email" name="email" value="{{ old('email') }}" autocomplete="username" placeholder="nama@perusahaan.co.id" required autofocus></span></label>
-                <label class="admin-field" for="login-password"><span>Kata Sandi <b>*</b></span><span class="admin-password-field"><span class="material-symbols-rounded admin-password-field__icon" aria-hidden="true">lock</span><input id="login-password" type="password" name="password" autocomplete="current-password" placeholder="Masukkan kata sandi" required><button type="button" data-password-toggle aria-label="Tampilkan atau sembunyikan kata sandi"><span class="material-symbols-rounded" aria-hidden="true">visibility</span></button></span></label>
+                <label class="admin-field" for="login-password"><span>Kata Sandi <b>*</b></span><span class="admin-password-field"><span class="material-symbols-rounded admin-password-field__icon" aria-hidden="true">lock</span><input id="login-password" type="password" name="password" autocomplete="current-password" placeholder="Masukkan kata sandi" required><button type="button" data-password-toggle aria-label="Tampilkan kata sandi" aria-pressed="false"><span class="material-symbols-rounded" aria-hidden="true">visibility</span></button></span></label>
                 <button class="admin-button admin-button--primary admin-login-submit" type="submit"><span>Masuk</span><span class="material-symbols-rounded" aria-hidden="true">arrow_forward</span></button>
             </form>
         </main>
