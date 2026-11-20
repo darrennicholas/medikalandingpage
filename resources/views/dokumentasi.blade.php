@@ -126,7 +126,7 @@
                                     @if (!empty($activity->public_gallery))
                                         <div class="public-documentation__gallery" aria-label="{{ $language === 'en' ? 'Activity gallery' : 'Galeri kegiatan' }}">
                                             @foreach (array_slice($activity->public_gallery, 0, 4) as $image)
-                                                <a href="{{ ($activity->public_slug ? route('localized.news.show', ['locale' => $language, 'slug' => $activity->public_slug]) : route('localized.documentation.activity', ['locale' => $language, 'id' => $activity->id])) }}" target="_blank" rel="noopener noreferrer"><img src="{{ $image['url'] }}" alt="{{ $image['alt'] ?: $image['caption'] ?: $activity->public_title }}" loading="lazy"></a>
+                                                <a href="{{ ($activity->public_slug ? route('localized.news.show', ['locale' => $language, 'slug' => $activity->public_slug]) : route('localized.documentation.activity', ['locale' => $language, 'id' => $activity->id])) }}" target="_blank" rel="noopener noreferrer"><x-public-image :src="$image['url']" :alt="$image['alt'] ?: $image['caption'] ?: $activity->public_title" sizes="(max-width: 640px) 100vw, 33vw"/></a>
                                             @endforeach
                                         </div>
                                     @endif

@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\Api\PublicContentApiController;
+use App\Http\Middleware\CachePublicApiResponses;
 use App\Models\ActivityLog;
 use App\Models\Brand;
 use App\Models\Certificate;
@@ -19,17 +21,53 @@ use App\Models\SeoMeta;
 use App\Models\SocialLink;
 use App\Models\User;
 use App\Services\ContentVersion;
+use App\Services\PublicApiCache;
 use App\Services\PublicRichText;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use PDOException;
+use RuntimeException;
 use Tests\TestCase;
 
 class CmsFsdComplianceTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_indonesian_only_content_can_be_published_and_falls_back_in_english(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $image = $this->media('fallback-certificate.png');
+        $certificate = Certificate::factory()->create(['status' => 'draft', 'media_id' => $image->id]);
+        $certificate->translations()->create(['lang' => 'id', 'title' => 'Sertifikat Indonesia']);
+
+        $this->actingAs($admin)->patchJson('/api/v1/admin/certificates/'.$certificate->id.'/status', ['status' => 'published'])->assertOk();
+        $this->get('/en/tentang')->assertOk()->assertSee('Sertifikat Indonesia');
+    }
+
+    public function test_legacy_draft_media_requires_login_until_published(): void
+    {
+        Storage::fake('public');
+        $path = 'images/site-assets/draft-example.png';
+        Storage::disk('public')->put($path, 'image');
+        $media = Media::factory()->create(['file_name' => 'draft-example.png', 'original_name' => 'draft-example.png', 'path' => $path, 'mime_type' => 'image/png', 'size_bytes' => 5]);
+        $brand = Brand::factory()->create(['logo_media_id' => $media->id, 'status' => 'draft']);
+
+        $this->get('/media/'.$media->id.'/file')->assertNotFound();
+        $this->get('/images/draft-example.png')->assertNotFound();
+        $this->actingAs($this->cmsUser('superadmin'))->get('/images/draft-example.png')->assertOk();
+        auth()->logout();
+        $brand->update(['status' => 'published']);
+        $this->get('/media/'.$media->id.'/file')->assertOk();
+        $this->get('/images/draft-example.png')->assertOk();
+    }
 
     public function test_same_second_concurrent_edits_are_rejected_without_overwriting_first_save(): void
     {
@@ -310,8 +348,8 @@ class CmsFsdComplianceTest extends TestCase
     {
         Storage::fake(config('cms.media.disk'));
         $admin = $this->cmsUser('superadmin');
-        $this->actingAs($admin)->postJson('/api/v1/admin/media', ['files' => [UploadedFile::fake()->create('invalid.pdf', 10, 'application/pdf')]])->assertUnprocessable();
-        $this->actingAs($admin)->postJson('/api/v1/admin/media', ['files' => [UploadedFile::fake()->image('large.jpg')->size(2049)]])->assertUnprocessable();
+        $this->actingAs($admin)->postJson('/api/v1/admin/media', ['files' => [UploadedFile::fake()->create('invalid.pdf', 10, 'application/pdf')]])->assertStatus(415);
+        $this->actingAs($admin)->postJson('/api/v1/admin/media', ['files' => [UploadedFile::fake()->image('large.jpg')->size(2049)]])->assertStatus(413);
         $image = $this->media('used.png');
         Brand::factory()->create(['logo_media_id' => $image->id, 'status' => 'published']);
         $this->actingAs($admin)->deleteJson('/api/v1/admin/media/'.$image->id)->assertUnprocessable()->assertJsonPath('data.usages.0', 'Brand');
@@ -366,6 +404,39 @@ class CmsFsdComplianceTest extends TestCase
         $payload['buy_url'] = 'not-a-valid-url';
         $this->postJson('/api/v1/admin/products', $payload)->assertUnprocessable()->assertJsonValidationErrors('buy_url');
         $this->get('/admin/content/products/create')->assertOk()->assertSee('data-save-status="draft" formnovalidate', false);
+    }
+
+    public function test_product_brochure_filename_uses_product_name_and_replaces_old_file_safely(): void
+    {
+        Storage::fake('public');
+        $admin = $this->cmsUser('superadmin');
+        $payload = [
+            'status' => 'draft',
+            'category_id' => null,
+            'translations' => ['id' => ['name' => 'DOA 10 Drugs Panel Test', 'slug' => 'doa-10-drugs-panel-test']],
+            'brochure' => UploadedFile::fake()->create('random-name-123.pdf', 10, 'application/pdf'),
+        ];
+
+        $productId = $this->actingAs($admin)->post('/api/v1/admin/products', $payload)->assertCreated()->json('data.id');
+        $firstPath = Product::query()->findOrFail($productId)->brochure_path;
+        $this->assertSame('brochures/cms/doa-10-drugs-panel-test.pdf', $firstPath);
+        Storage::disk('public')->assertExists($firstPath);
+
+        $this->post('/api/v1/admin/products/'.$productId, [
+            '_method' => 'PUT',
+            'status' => 'draft',
+            'category_id' => null,
+            'translations' => ['id' => ['name' => 'DOA 10 Drugs Panel Test', 'slug' => 'doa-10-drugs-panel-test']],
+            'brochure' => UploadedFile::fake()->create('another-random-name.pdf', 10, 'application/pdf'),
+        ])->assertOk();
+
+        $updatedPath = Product::query()->findOrFail($productId)->brochure_path;
+        $this->assertSame('brochures/cms/doa-10-drugs-panel-test-2.pdf', $updatedPath);
+        Storage::disk('public')->assertMissing($firstPath);
+        Storage::disk('public')->assertExists($updatedPath);
+
+        $response = $this->actingAs($admin)->get('/brochures/cms/doa-10-drugs-panel-test-2.pdf')->assertOk();
+        $this->assertStringContainsString('doa-10-drugs-panel-test.pdf', $response->headers->get('Content-Disposition'));
     }
 
     public function test_new_product_defaults_to_existing_logo_pair_and_can_be_changed(): void
@@ -438,6 +509,88 @@ class CmsFsdComplianceTest extends TestCase
         $publicRole = Role::query()->create(['name' => 'user', 'description' => 'Public']);
         $this->actingAs($superadmin)->postJson('/api/v1/admin/users', ['name' => 'Example', 'email' => 'new@example.com', 'role_id' => $publicRole->id, 'status' => 'active', 'password' => 'Password123', 'password_confirmation' => 'Password123'])->assertUnprocessable()->assertJsonValidationErrors('role_id');
         $this->actingAs($superadmin)->get('/admin/users/create')->assertOk()->assertDontSee('User (akses publik saja)');
+    }
+
+    public function test_public_api_serves_last_successful_response_after_database_failure(): void
+    {
+        $request = Request::create(url('/api/v1/public/home'));
+        $publicApiCache = app(PublicApiCache::class);
+        Cache::store('public')->put($publicApiCache->staleResponseKey($request), [
+            'content' => json_encode(['success' => true, 'message' => 'cached response']),
+            'status' => 200,
+        ], now()->addDay());
+        $controller = \Mockery::mock(PublicContentApiController::class);
+        $controller->shouldReceive('home')->once()->andThrow(new QueryException('sqlite', 'select 1', [], new PDOException('database unavailable')));
+        app()->instance(PublicContentApiController::class, $controller);
+
+        $this->getJson('/api/v1/public/home')->assertOk()->assertJsonPath('message', 'cached response')->assertHeader('Cache-Control', 'no-cache');
+    }
+
+    public function test_localized_page_serves_stale_html_after_database_failure(): void
+    {
+        $request = Request::create(url('/id'));
+        $route = new Route('GET', '/id', ['uses' => static fn (): null => null]);
+        $route->name('localized.home');
+        $request->setRouteResolver(static fn (): Route => $route);
+        $publicApiCache = app(PublicApiCache::class);
+        Cache::store('public')->put($publicApiCache->staleResponseKey($request), [
+            'content' => '<main>halaman tersimpan</main>',
+            'status' => 200,
+            'content_type' => 'text/html; charset=UTF-8',
+        ], now()->addDay());
+
+        $response = app(CachePublicApiResponses::class)->handle(
+            $request,
+            static fn () => throw new QueryException('sqlite', 'select 1', [], new PDOException('database unavailable')),
+        );
+
+        $this->assertSame('<main>halaman tersimpan</main>', $response->getContent());
+        $this->assertSame('text/html; charset=UTF-8', $response->headers->get('Content-Type'));
+        $this->assertSame('no-cache', $response->headers->get('Cache-Control'));
+    }
+
+    public function test_public_api_cache_invalidation_retries_after_a_cache_failure(): void
+    {
+        $attempts = 0;
+        $cache = \Mockery::mock(Repository::class);
+        $cache->shouldReceive('forever')->twice()->andReturnUsing(function () use (&$attempts): bool {
+            $attempts++;
+            if ($attempts === 1) {
+                throw new RuntimeException('temporary cache failure');
+            }
+
+            return true;
+        });
+
+        Cache::shouldReceive('store')->once()->with('public')->andReturn($cache);
+
+        app(PublicApiCache::class)->invalidate();
+
+        $this->assertSame(2, $attempts);
+    }
+
+    public function test_admin_user_changes_keep_an_active_superadmin(): void
+    {
+        $actor = $this->cmsUser('superadmin');
+        $target = $this->cmsUser('superadmin');
+        $this->actingAs($actor)->putJson('/api/v1/admin/users/'.$target->id, [
+            'name' => $target->name,
+            'email' => $target->email,
+            'role_id' => $target->role_id,
+            'status' => 'inactive',
+        ])->assertOk();
+        $this->assertSame('inactive', $target->fresh()->status);
+
+        $this->putJson('/api/v1/admin/users/'.$actor->id, [
+            'name' => $actor->name,
+            'email' => $actor->email,
+            'role_id' => Role::query()->where('name', 'admin')->value('id'),
+            'status' => 'active',
+        ])->assertUnprocessable();
+        $this->assertSame('active', $actor->fresh()->status);
+
+        $this->delete('/admin/users/'.$actor->id)->assertSessionHasErrors('user');
+        $this->assertSame('active', $actor->fresh()->status);
     }
 
     public function test_media_can_be_filtered_by_format_and_alt_text_and_shows_usage(): void
@@ -541,7 +694,8 @@ class CmsFsdComplianceTest extends TestCase
     {
         $expired = JobOpening::factory()->create(['status' => 'open', 'closing_date' => today()->subDay()]);
         $current = JobOpening::factory()->create(['status' => 'open', 'closing_date' => today()]);
-        $event = collect(app(Schedule::class)->events())->last();
+        $event = collect(app(Schedule::class)->events())->firstWhere('description', 'close-expired-job-openings');
+        $this->assertNotNull($event);
         $event->run(app());
         $event->run(app());
         $this->assertSame('closed', $expired->fresh()->status);

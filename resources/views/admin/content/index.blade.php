@@ -108,10 +108,11 @@
                                 $isFeatured = $record->featuredCategories->contains('id', $record->category_id);
                                 $brochurePath = $record->brochure_path ? ltrim($record->brochure_path, '/') : null;
                                 $brochureUrl = $brochurePath
-                                    ? (file_exists(public_path($brochurePath))
-                                        ? asset($brochurePath)
-                                        : Illuminate\Support\Facades\Storage::disk(config('cms.media.disk'))->url($brochurePath))
+                                    ? route('stored.brochure', ['path' => preg_replace('#^(?:public/)?brochures/#', '', $brochurePath)])
                                     : null;
+                                $brochureName = $translation?->name
+                                    ? \Illuminate\Support\Str::slug($translation->name).'.pdf'
+                                    : ($record->brochure_path ? basename($record->brochure_path) : null);
                                 $specificationText = collect($record->parameters ?? [])->flatten()->filter()->implode(' · ');
                             @endphp
                             <tr>
@@ -123,7 +124,7 @@
                                     <td class="admin-product-brochure">
                                         @if ($brochureUrl)
                                             <a href="{{ $brochureUrl }}" target="_blank" rel="noopener"><span class="material-symbols-rounded" aria-hidden="true">picture_as_pdf</span>Buka PDF</a>
-                                            <small>{{ basename($record->brochure_path) }}</small>
+                                            <small>{{ $brochureName }}</small>
                                         @else
                                             <span class="admin-status">Belum ada PDF</span>
                                         @endif
@@ -175,9 +176,7 @@
                     $imageUrl = $imageMedia ? route('media.stream', ['media' => $imageMedia->id]) : null;
                     $brochurePath = $record->brochure_path ? ltrim($record->brochure_path, '/') : null;
                     $brochureUrl = $brochurePath
-                        ? (file_exists(public_path($brochurePath))
-                            ? asset($brochurePath)
-                            : Illuminate\Support\Facades\Storage::disk(config('cms.media.disk'))->url($brochurePath))
+                        ? route('stored.brochure', ['path' => preg_replace('#^(?:public/)?brochures/#', '', $brochurePath)])
                         : null;
                 @endphp
                 <tr>

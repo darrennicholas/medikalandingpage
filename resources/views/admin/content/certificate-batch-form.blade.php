@@ -50,8 +50,8 @@
             <div class="admin-certificate-entry__body" data-certificate-entry-body>
                 <div class="admin-certificate-entry__languages" role="tablist" aria-label="Bahasa sertifikat">
                     <button class="is-active" type="button" data-batch-language="id">Bahasa Indonesia <span>*</span></button>
-                    <button type="button" data-batch-language="en">English</button>
-                    <button type="button" data-batch-language="zh">中文</button>
+                    <button type="button" data-batch-language="en">Bahasa Inggris</button>
+                    <button type="button" data-batch-language="zh">Mandarin</button>
                 </div>
                 <div class="admin-certificate-entry__upload">
                     <label class="admin-field">
@@ -70,12 +70,12 @@
                     <label class="admin-field"><span>Keterangan</span><textarea data-certificate-field="translations[id][description]" maxlength="300" placeholder="Keterangan singkat (opsional)"></textarea></label>
                 </div>
                 <div class="admin-certificate-entry__language-panel is-hidden" data-batch-language-panel="en">
-                    <label class="admin-field"><span>Certificate / Award Title</span><input type="text" data-certificate-field="translations[en][title]" maxlength="150" placeholder="Enter title"></label>
-                    <label class="admin-field"><span>Description</span><textarea data-certificate-field="translations[en][description]" maxlength="300" placeholder="Short description (optional)"></textarea></label>
+                    <label class="admin-field"><span>Judul Sertifikat / Penghargaan</span><input type="text" data-certificate-field="translations[en][title]" maxlength="150" placeholder="Masukkan judul"></label>
+                    <label class="admin-field"><span>Keterangan</span><textarea data-certificate-field="translations[en][description]" maxlength="300" placeholder="Keterangan singkat (opsional)"></textarea></label>
                 </div>
                 <div class="admin-certificate-entry__language-panel is-hidden" data-batch-language-panel="zh">
-                    <label class="admin-field"><span>证书 / 奖项名称</span><input type="text" data-certificate-field="translations[zh][title]" maxlength="150" placeholder="输入标题"></label>
-                    <label class="admin-field"><span>说明</span><textarea data-certificate-field="translations[zh][description]" maxlength="300" placeholder="简短说明"></textarea></label>
+                    <label class="admin-field"><span>Judul Sertifikat / Penghargaan</span><input type="text" data-certificate-field="translations[zh][title]" maxlength="150" placeholder="Masukkan judul"></label>
+                    <label class="admin-field"><span>Keterangan</span><textarea data-certificate-field="translations[zh][description]" maxlength="300" placeholder="Keterangan singkat (opsional)"></textarea></label>
                 </div>
                 <div class="admin-certificate-entry__fields">
                     <label class="admin-field"><span>Tahun Terbit</span><input type="number" data-certificate-field="issued_year" min="1900" max="{{ now()->year }}" placeholder="{{ now()->year }}"></label>

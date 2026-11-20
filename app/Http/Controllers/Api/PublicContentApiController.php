@@ -20,8 +20,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 
 class PublicContentApiController extends Controller
 {
@@ -271,11 +269,10 @@ class PublicContentApiController extends Controller
 
     private function fileUrl(string $path): string
     {
-        $normalizedPath = ltrim($path, '/');
+        $normalizedPath = trim(ltrim($path, '/'), '/');
+        $normalizedPath = preg_replace('#^(?:public/)?brochures/#', '', $normalizedPath) ?? $normalizedPath;
 
-        return File::exists(public_path($normalizedPath))
-            ? asset($normalizedPath)
-            : Storage::disk(config('cms.media.disk'))->url($normalizedPath);
+        return route('stored.brochure', ['path' => $normalizedPath]);
     }
 
     private function language(Request $request): string

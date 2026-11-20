@@ -29,7 +29,7 @@
             <section class="hero{{ $slides->count() > 1 ? ' hero--slider' : '' }}" id="beranda" aria-label="{{ app()->getLocale() === 'en' ? 'Highlights' : 'Sorotan' }}" data-hero-slider>
                 @foreach ($slides as $slideIndex => $slide)
                     <div class="hero__slide" data-hero-slide @if ($slideIndex !== 0) hidden @endif aria-hidden="{{ $slideIndex === 0 ? 'false' : 'true' }}">
-                        @if ($slide->public_image_url && str_starts_with($slide->public_media_type ?? '', 'video/'))<video class="hero__image hero__video" autoplay muted loop playsinline preload="metadata" aria-hidden="true"><source src="{{ $slide->public_image_url }}" type="{{ $slide->public_media_type }}"></video>@elseif ($slide->public_image_url)<img class="hero__image" src="{{ $slide->public_image_url }}" alt="{{ $slide->public_image_alt ?? '' }}" @if ($slideIndex > 0) loading="lazy" @endif>@endif
+                        @if ($slide->public_image_url && str_starts_with($slide->public_media_type ?? '', 'video/'))<video class="hero__image hero__video" autoplay muted loop playsinline preload="metadata" aria-hidden="true"><source src="{{ $slide->public_image_url }}" type="{{ $slide->public_media_type }}"></video>@elseif ($slide->public_image_url)<x-public-image class="hero__image" :src="$slide->public_image_url" :alt="$slide->public_image_alt ?? ''" :loading="$slideIndex > 0 ? 'lazy' : 'eager'" sizes="100vw"/>@endif
                         <div class="container hero__content">
                             @if ($slide->public_title)<h1>{{ $slide->public_title }}</h1>@endif
                             @if ($slide->public_subtitle)<p>{{ $slide->public_subtitle }}</p>@endif
@@ -71,7 +71,7 @@
                                 </div>
                             @endif
                         </div>
-                        @if ($coverage['image_url'])<figure class="coverage__map"><img src="{{ $coverage['image_url'] }}" alt="{{ $coverage['image_alt'] ?? '' }}" loading="lazy" width="1300" height="591"></figure>@endif
+                        @if ($coverage['image_url'])<figure class="coverage__map"><x-public-image :src="$coverage['image_url']" :alt="$coverage['image_alt'] ?? ''" sizes="(max-width: 700px) 100vw, 50vw" width="1300" height="591"/></figure>@endif
                     </div>
                 </div>
             </section>
@@ -109,7 +109,7 @@
                         <div class="brand-carousel__viewport">
                             <div class="brand-carousel__track" id="brand-track">
                                 @foreach ($brands as $brand)
-                                    @if ($brand->public_logo_url)<div class="brand-carousel__slide brand-carousel__slide--{{ \Illuminate\Support\Str::slug($brand->name) }}"><img src="{{ $brand->public_logo_url }}" alt="{{ $brand->public_logo_alt ?: $brand->name }}" loading="lazy"></div>@endif
+                                    @if ($brand->public_logo_url)<div class="brand-carousel__slide brand-carousel__slide--{{ \Illuminate\Support\Str::slug($brand->name) }}"><x-public-image :src="$brand->public_logo_url" :alt="$brand->public_logo_alt ?: $brand->name" sizes="180px"/></div>@endif
                                 @endforeach
                             </div>
                         </div>

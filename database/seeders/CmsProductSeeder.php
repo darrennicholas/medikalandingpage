@@ -111,16 +111,20 @@ class CmsProductSeeder extends Seeder
         $mimeType = $imageInfo['mime'] ?? 'application/octet-stream';
         $fileName = basename($assetPath);
 
-        return Media::query()->updateOrCreate(
-            ['path' => $assetPath],
-            [
-                'file_name' => $fileName,
-                'original_name' => $fileName,
-                'mime_type' => $mimeType,
-                'size_bytes' => File::exists($fullPath) ? File::size($fullPath) : 0,
-                'width' => $imageInfo[0] ?? null,
-                'height' => $imageInfo[1] ?? null,
-            ],
-        );
+        $media = Media::withTrashed()->firstOrNew(['path' => $assetPath]);
+        $media->fill([
+            'file_name' => $fileName,
+            'original_name' => $fileName,
+            'mime_type' => $mimeType,
+            'size_bytes' => File::exists($fullPath) ? File::size($fullPath) : 0,
+            'width' => $imageInfo[0] ?? null,
+            'height' => $imageInfo[1] ?? null,
+        ]);
+        if ($media->trashed()) {
+            $media->restore();
+        }
+        $media->save();
+
+        return $media;
     }
 }

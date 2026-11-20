@@ -1570,7 +1570,7 @@ body a.public-back-button.publication-listing__back:hover, body a.public-back-bu
 @media (max-width: 576px) { .certificate-card { min-height: 310px; } .certificate-card > a { height: 145px; flex-basis: 145px; } .certificate-card img { max-height: 145px; } }
 
 /* Desktop certificate slider: three readable cards stay in view while browsing. */
-.certificates > .container { max-width: 1220px; }
+.certificates > .container { width: calc(100% - 20px); max-width: 1050px; }
 .certificate-carousel__viewport { overflow: hidden; }
 .certificate-carousel__track { will-change: transform; }
 .certificate-carousel__controls {
@@ -1592,16 +1592,16 @@ body a.public-back-button.publication-listing__back:hover, body a.public-back-bu
     }
     .certificates .certificate-carousel__track > .certificate-card {
         flex: 0 0 calc((100% - 44px) / 3);
-        min-height: 360px;
+        min-height: 310px;
         height: auto;
         margin: 0;
-        padding: 18px;
+        padding: 16px;
     }
     .certificates .certificate-carousel__track > .certificate-card > a {
-        height: 160px;
-        flex-basis: 160px;
+        height: 145px;
+        flex-basis: 145px;
     }
-    .certificates .certificate-carousel__track > .certificate-card img { max-height: 160px; }
+    .certificates .certificate-carousel__track > .certificate-card img { max-height: 145px; }
 }
 
 /* Calm page-to-page fades shared by the public company profile routes. */
@@ -1665,6 +1665,8 @@ html.public-page-transition body {
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
 }
+
+.certificates .certificate-grid .certificate-card { justify-content: center; }
 
 .certificate-grid .certificate-card > a {
     display: flex;

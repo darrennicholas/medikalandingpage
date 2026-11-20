@@ -21,7 +21,6 @@
         </section>
 
         <main class="admin-login-card">
-            <a class="admin-login-back" href="{{ route('home') }}"><span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>Kembali ke website</a>
             <div class="admin-login-heading">
                 <h1>Masuk ke Admin Panel</h1>
                 <p>Kelola konten landing page company profile.</p>

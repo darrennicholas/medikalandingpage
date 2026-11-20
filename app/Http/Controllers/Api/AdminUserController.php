@@ -9,6 +9,7 @@ use App\Services\ActivityLogger;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -57,21 +58,26 @@ class AdminUserController extends Controller
             'role_id' => ['required', 'integer', Rule::exists('roles', 'id')->whereIn('name', ['superadmin', 'admin'])], 'status' => ['required', 'in:active,inactive'],
         ]);
         $actor = $request->user();
-        $role = Role::query()->findOrFail($validated['role_id']);
 
-        if ($actor->is($user) && ($validated['status'] !== 'active' || $role->name !== 'superadmin')) {
-            return response()->json(['success' => false, 'data' => null, 'message' => 'Superadmin tidak dapat menonaktifkan atau menurunkan role akunnya sendiri.'], 422);
-        }
+        return DB::transaction(function () use ($validated, $actor, $user, $activityLogger): JsonResponse {
+            Role::query()->where('name', 'superadmin')->lockForUpdate()->firstOrFail();
+            $user->refresh();
+            $role = Role::query()->findOrFail($validated['role_id']);
 
-        if ($user->hasRole('superadmin') && $user->status === 'active' && ($validated['status'] !== 'active' || $role->name !== 'superadmin') && $this->activeSuperadminCount() <= 1) {
-            return response()->json(['success' => false, 'data' => null, 'message' => 'Sistem harus selalu memiliki minimal satu Superadmin aktif.'], 422);
-        }
+            if ($actor->is($user) && ($validated['status'] !== 'active' || $role->name !== 'superadmin')) {
+                return response()->json(['success' => false, 'data' => null, 'message' => 'Superadmin tidak dapat menonaktifkan atau menurunkan role akunnya sendiri.'], 422);
+            }
 
-        $oldValues = $user->only(['name', 'email', 'role_id', 'status']);
-        $user->fill([...$validated, 'email' => strtolower($validated['email'])])->save();
-        $activityLogger->log($actor, 'update', User::class, $user->id, $oldValues, $user->only(['name', 'email', 'role_id', 'status']));
+            if ($user->hasRole('superadmin') && $user->status === 'active' && ($validated['status'] !== 'active' || $role->name !== 'superadmin') && $this->activeSuperadminCount() <= 1) {
+                return response()->json(['success' => false, 'data' => null, 'message' => 'Sistem harus selalu memiliki minimal satu Superadmin aktif.'], 422);
+            }
 
-        return response()->json(['success' => true, 'data' => $user->load('role'), 'message' => 'User berhasil diperbarui.']);
+            $oldValues = $user->only(['name', 'email', 'role_id', 'status']);
+            $user->fill([...$validated, 'email' => strtolower($validated['email'])])->save();
+            $activityLogger->log($actor, 'update', User::class, $user->id, $oldValues, $user->only(['name', 'email', 'role_id', 'status']));
+
+            return response()->json(['success' => true, 'data' => $user->load('role'), 'message' => 'User berhasil diperbarui.']);
+        });
     }
 
     public function destroy(Request $request, User $user, ActivityLogger $activityLogger): JsonResponse
@@ -80,15 +86,20 @@ class AdminUserController extends Controller
             return response()->json(['success' => false, 'data' => null, 'message' => 'Anda tidak dapat menghapus akun sendiri.'], 422);
         }
 
-        if ($user->hasRole('superadmin') && $user->status === 'active' && $this->activeSuperadminCount() <= 1) {
-            return response()->json(['success' => false, 'data' => null, 'message' => 'Sistem harus selalu memiliki minimal satu Superadmin aktif.'], 422);
-        }
+        return DB::transaction(function () use ($request, $user, $activityLogger): JsonResponse {
+            Role::query()->where('name', 'superadmin')->lockForUpdate()->firstOrFail();
+            $user->refresh();
 
-        $oldValues = $user->only(['name', 'email', 'role_id', 'status']);
-        $user->delete();
-        $activityLogger->log($request->user(), 'delete', User::class, $user->id, $oldValues);
+            if ($user->hasRole('superadmin') && $user->status === 'active' && $this->activeSuperadminCount() <= 1) {
+                return response()->json(['success' => false, 'data' => null, 'message' => 'Sistem harus selalu memiliki minimal satu Superadmin aktif.'], 422);
+            }
 
-        return response()->json(['success' => true, 'data' => null, 'message' => 'User berhasil dihapus.']);
+            $oldValues = $user->only(['name', 'email', 'role_id', 'status']);
+            $user->delete();
+            $activityLogger->log($request->user(), 'delete', User::class, $user->id, $oldValues);
+
+            return response()->json(['success' => true, 'data' => null, 'message' => 'User berhasil dihapus.']);
+        });
     }
 
     public function resetPassword(Request $request, User $user, ActivityLogger $activityLogger): JsonResponse

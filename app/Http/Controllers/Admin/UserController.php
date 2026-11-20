@@ -9,6 +9,7 @@ use App\Services\ActivityLogger;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -121,28 +122,33 @@ class UserController extends Controller
             'status' => ['required', 'in:active,inactive'],
         ]);
         $actor = $request->user();
-        $newRole = Role::query()->findOrFail($validated['role_id']);
 
-        if ($actor->is($user) && ($validated['status'] !== 'active' || $newRole->name !== 'superadmin')) {
-            return back()->withErrors(['role_id' => 'Superadmin tidak dapat menonaktifkan atau menurunkan role akunnya sendiri.'])->withInput();
-        }
+        return DB::transaction(function () use ($validated, $actor, $user, $activityLogger): RedirectResponse {
+            Role::query()->where('name', 'superadmin')->lockForUpdate()->firstOrFail();
+            $user->refresh();
+            $newRole = Role::query()->findOrFail($validated['role_id']);
 
-        if ($user->hasRole('superadmin') && $user->status === 'active' && ($validated['status'] !== 'active' || $newRole->name !== 'superadmin')) {
-            $activeSuperadmins = User::query()
-                ->whereHas('role', fn (Builder $query): Builder => $query->where('name', 'superadmin'))
-                ->where('status', 'active')
-                ->count();
-
-            if ($activeSuperadmins <= 1) {
-                return back()->withErrors(['role_id' => 'Sistem harus selalu memiliki minimal satu Superadmin aktif.'])->withInput();
+            if ($actor->is($user) && ($validated['status'] !== 'active' || $newRole->name !== 'superadmin')) {
+                return back()->withErrors(['role_id' => 'Superadmin tidak dapat menonaktifkan atau menurunkan role akunnya sendiri.'])->withInput();
             }
-        }
 
-        $oldValues = $user->only(['name', 'email', 'role_id', 'status']);
-        $user->fill($validated)->save();
-        $activityLogger->log($actor, 'update', User::class, $user->id, $oldValues, $user->only(['name', 'email', 'role_id', 'status']));
+            if ($user->hasRole('superadmin') && $user->status === 'active' && ($validated['status'] !== 'active' || $newRole->name !== 'superadmin')) {
+                $activeSuperadmins = User::query()
+                    ->whereHas('role', fn (Builder $query): Builder => $query->where('name', 'superadmin'))
+                    ->where('status', 'active')
+                    ->count();
 
-        return redirect()->route('admin.users.index')->with('status', 'Akun berhasil diperbarui.');
+                if ($activeSuperadmins <= 1) {
+                    return back()->withErrors(['role_id' => 'Sistem harus selalu memiliki minimal satu Superadmin aktif.'])->withInput();
+                }
+            }
+
+            $oldValues = $user->only(['name', 'email', 'role_id', 'status']);
+            $user->fill($validated)->save();
+            $activityLogger->log($actor, 'update', User::class, $user->id, $oldValues, $user->only(['name', 'email', 'role_id', 'status']));
+
+            return redirect()->route('admin.users.index')->with('status', 'Akun berhasil diperbarui.');
+        });
     }
 
     public function destroy(Request $request, User $user, ActivityLogger $activityLogger): RedirectResponse
@@ -151,22 +157,27 @@ class UserController extends Controller
             return back()->withErrors(['user' => 'Anda tidak dapat menghapus akun sendiri.']);
         }
 
-        if ($user->hasRole('superadmin') && $user->status === 'active') {
-            $activeSuperadmins = User::query()
-                ->whereHas('role', fn (Builder $query): Builder => $query->where('name', 'superadmin'))
-                ->where('status', 'active')
-                ->count();
+        return DB::transaction(function () use ($request, $user, $activityLogger): RedirectResponse {
+            Role::query()->where('name', 'superadmin')->lockForUpdate()->firstOrFail();
+            $user->refresh();
 
-            if ($activeSuperadmins <= 1) {
-                return back()->withErrors(['user' => 'Sistem harus selalu memiliki minimal satu Superadmin aktif.']);
+            if ($user->hasRole('superadmin') && $user->status === 'active') {
+                $activeSuperadmins = User::query()
+                    ->whereHas('role', fn (Builder $query): Builder => $query->where('name', 'superadmin'))
+                    ->where('status', 'active')
+                    ->count();
+
+                if ($activeSuperadmins <= 1) {
+                    return back()->withErrors(['user' => 'Sistem harus selalu memiliki minimal satu Superadmin aktif.']);
+                }
             }
-        }
 
-        $oldValues = $user->only(['name', 'email', 'role_id', 'status']);
-        $user->delete();
-        $activityLogger->log($request->user(), 'delete', User::class, $user->id, $oldValues);
+            $oldValues = $user->only(['name', 'email', 'role_id', 'status']);
+            $user->delete();
+            $activityLogger->log($request->user(), 'delete', User::class, $user->id, $oldValues);
 
-        return redirect()->route('admin.users.index')->with('status', 'Akun berhasil dihapus.');
+            return redirect()->route('admin.users.index')->with('status', 'Akun berhasil dihapus.');
+        });
     }
 
     public function resetPassword(Request $request, User $user, ActivityLogger $activityLogger): RedirectResponse

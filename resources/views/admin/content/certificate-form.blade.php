@@ -11,15 +11,15 @@
             @include('admin.partials.record-version', ['record' => $record])
             @csrf
             <div class="admin-panel__header"><div><h2>{{ $isEditing ? 'Perbarui sertifikat' : 'Data sertifikat baru' }}</h2><p>Isi dokumen, judul, tahun, dan status publikasi.</p></div><a class="admin-button admin-button--back" href="{{ route('admin.content.index', 'certificates') }}"><span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>Kembali ke daftar</a></div>
-            <div class="admin-editor__language" role="tablist" aria-label="Bahasa sertifikat"><button type="button" class="is-active" data-language-tab="id">Bahasa Indonesia <b>*</b></button><button type="button" data-language-tab="en">English</button><button type="button" data-language-tab="zh">中文</button></div>
+            <div class="admin-editor__language" role="tablist" aria-label="Bahasa sertifikat"><button type="button" class="is-active" data-language-tab="id">Bahasa Indonesia <b>*</b></button><button type="button" data-language-tab="en">Bahasa Inggris</button><button type="button" data-language-tab="zh">Mandarin</button></div>
             <section class="admin-certificate-upload">
                 <label class="admin-field"><span>Gambar / Dokumen Sertifikat <b>*</b></span><select name="media_id" data-media-preview-select required><option value="" data-image-url="">Pilih dari Media Library</option>@foreach ($mediaOptions as $media)<option value="{{ $media->id }}" data-image-url="{{ $media->admin_preview_url }}" @selected((string) old('media_id', $record->media_id) === (string) $media->id)>{{ $media->original_name }}</option>@endforeach</select><span class="admin-certificate-upload__preview" data-media-preview>@if ($mediaUrl)<img src="{{ $mediaUrl }}" alt="{{ $record->media?->alt_text_id ?: 'Pratinjau sertifikat' }}" loading="lazy"><span>{{ $record->media?->original_name }}</span>@else<span class="material-symbols-rounded" aria-hidden="true">description</span><span>Pilih dokumen sertifikat</span>@endif</span></label>
             </section>
-            @foreach (['id' => 'Bahasa Indonesia', 'en' => 'English', 'zh' => '中文'] as $language => $label)
+            @foreach (['id' => 'Bahasa Indonesia', 'en' => 'Bahasa Inggris', 'zh' => 'Mandarin'] as $language => $label)
                 @php($translation = $translations->get($language))
                 <div class="admin-language-panel {{ $language !== 'id' ? 'is-hidden' : '' }} admin-certificate-language" data-language-panel="{{ $language }}">
-                    <label class="admin-field"><span>{{ $language === 'id' ? 'Judul Sertifikat / Penghargaan' : 'Certificate / Award Title' }} @if ($language === 'id')<b>*</b>@endif</span><input type="text" name="translations[{{ $language }}][title]" value="{{ old("translations.$language.title", $translation?->title) }}" maxlength="150" @required($language === 'id')></label>
-                    <label class="admin-field"><span>{{ $language === 'id' ? 'Keterangan' : 'Description' }}</span><textarea name="translations[{{ $language }}][description]" maxlength="300">{{ old("translations.$language.description", $translation?->description) }}</textarea></label>
+                    <label class="admin-field"><span>Judul Sertifikat / Penghargaan @if ($language === 'id')<b>*</b>@endif</span><input type="text" name="translations[{{ $language }}][title]" value="{{ old("translations.$language.title", $translation?->title) }}" maxlength="150" @required($language === 'id')></label>
+                    <label class="admin-field"><span>Keterangan</span><textarea name="translations[{{ $language }}][description]" maxlength="300">{{ old("translations.$language.description", $translation?->description) }}</textarea></label>
                 </div>
             @endforeach
             <div class="admin-certificate-fields">

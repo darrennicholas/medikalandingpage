@@ -48,7 +48,7 @@
                     </div>
                     <div class="about-intro__content">
                         @if (!empty($aboutBlock['image_url']))
-                            <img class="about-intro__image" src="{{ $aboutBlock['image_url'] }}" alt="{{ $aboutBlock['image_alt'] ?: $aboutBlock['title'] }}" loading="lazy">
+                            <x-public-image class="about-intro__image" :src="$aboutBlock['image_url']" :alt="$aboutBlock['image_alt'] ?: $aboutBlock['title']" sizes="(max-width: 700px) 100vw, 50vw"/>
                         @endif
                         @if (!empty($aboutBlock['body']))
                             <div class="about-intro__copy">{!! $aboutBlock['body'] !!}</div>
@@ -118,7 +118,7 @@
                                         <article class="certificate-card">
                                             <h3>{{ $certificateTranslation?->title }}</h3>
                                             @if ($certificate->issued_year)<span>{{ $certificate->issued_year }}</span>@endif
-                                            <a href="{{ $certificate->public_image_url }}" data-public-gallery="certificates" data-gallery-caption="{{ $certificateTranslation?->title }}" aria-label="{{ $language === 'en' ? 'Enlarge certificate' : 'Perbesar sertifikat' }}"><img src="{{ $certificate->public_image_url }}" alt="{{ $certificate->public_image_alt ?: $certificateTranslation?->title }}" loading="lazy"></a>
+                                            <a href="{{ $certificate->public_image_url }}" data-public-gallery="certificates" data-gallery-caption="{{ $certificateTranslation?->title }}" aria-label="{{ $language === 'en' ? 'Enlarge certificate' : 'Perbesar sertifikat' }}"><x-public-image :src="$certificate->public_image_url" :alt="$certificate->public_image_alt ?: $certificateTranslation?->title" sizes="(max-width: 640px) 100vw, 33vw"/></a>
                                             @if ($certificateTranslation?->description)<p>{{ $certificateTranslation->description }}</p>@endif
                                         </article>
                                     @endif

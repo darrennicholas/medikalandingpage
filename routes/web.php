@@ -11,7 +11,9 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicPageController;
+use App\Http\Controllers\PublicStoredAssetController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Middleware\CachePublicApiResponses;
 use App\Http\Middleware\LocalizeChinesePublicPage;
 use App\Http\Middleware\SetPublicLanguage;
 use Illuminate\Support\Facades\Route;
@@ -20,7 +22,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/login', [AuthController::class, 'create'])->name('login');
     Route::post('/login', [AuthController::class, 'store'])->middleware('throttle:5,1')->name('login.store');
 
-    Route::middleware(['auth', 'cms.password', 'cms.role:superadmin,admin', 'cms.permission'])->group(function (): void {
+    Route::middleware(['auth', 'cms.password', 'cms.role:superadmin,admin', 'cms.permission', 'cms.public-api-cache'])->group(function (): void {
         Route::post('/logout', [AuthController::class, 'destroy'])->withoutMiddleware('cms.password')->name('logout');
         Route::get('/password', [AuthController::class, 'editPassword'])->name('password.edit');
         Route::put('/password', [AuthController::class, 'updatePassword'])->name('password.update');
@@ -55,10 +57,12 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
 Route::get('/sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 Route::get('/media/{media}/file', [MediaController::class, 'show'])->whereNumber('media')->name('media.stream');
+Route::get('/images/{path}', [PublicStoredAssetController::class, 'image'])->where('path', '.*')->name('stored.image');
+Route::get('/brochures/{path}', [PublicStoredAssetController::class, 'brochure'])->where('path', '.*')->name('stored.brochure');
 
 Route::prefix('{locale}')
     ->where(['locale' => 'id|en|zh'])
-    ->middleware([SetPublicLanguage::class, LocalizeChinesePublicPage::class])
+    ->middleware([SetPublicLanguage::class, LocalizeChinesePublicPage::class, CachePublicApiResponses::class])
     ->name('localized.')
     ->group(function (): void {
         Route::get('/', [PublicPageController::class, 'home'])->name('home');

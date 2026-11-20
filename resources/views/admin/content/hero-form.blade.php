@@ -18,15 +18,15 @@
         <div class="admin-editor__main">
             <section class="admin-panel admin-editor__panel">
                 <div class="admin-panel__header"><div><p class="admin-eyebrow">Hero / Banner</p><h2>Informasi Banner</h2></div><span class="admin-status admin-status--{{ $hasPendingDraft ? 'draft' : ($record->status ?? 'draft') }}" data-editor-status-label>{{ $hasPendingDraft ? 'Draft perubahan' : ucfirst($record->status ?? 'draft') }}</span></div>
-                <div class="admin-editor__language" role="tablist" aria-label="Bahasa banner"><button type="button" class="is-active" data-language-tab="id">Indonesia <span>*</span></button><button type="button" data-language-tab="en">English</button><button type="button" data-language-tab="zh">中文</button></div>
+                <div class="admin-editor__language" role="tablist" aria-label="Bahasa banner"><button type="button" class="is-active" data-language-tab="id">Bahasa Indonesia <span>*</span></button><button type="button" data-language-tab="en">Bahasa Inggris</button><button type="button" data-language-tab="zh">Mandarin</button></div>
 
-                @foreach (['id' => 'Bahasa Indonesia', 'en' => 'English', 'zh' => '中文'] as $language => $languageLabel)
+                @foreach (['id' => 'Bahasa Indonesia', 'en' => 'Bahasa Inggris', 'zh' => 'Mandarin'] as $language => $languageLabel)
                     @php($translation = match ($language) { 'id' => $translationId, 'en' => $translationEn, default => $translationZh })
                     <div class="admin-language-panel {{ $language !== 'id' ? 'is-hidden' : '' }}" data-language-panel="{{ $language }}">
                         <div class="admin-editor__fields">
-                            <label class="admin-field"><span>{{ $language === 'id' ? 'Judul Banner' : 'Banner Title' }} <b>*</b></span><input type="text" name="translations[{{ $language }}][title]" value="{{ $translation?->title }}" maxlength="120" data-preview-field="title"><small>Maksimal 120 karakter.</small></label>
-                            <label class="admin-field"><span>{{ $language === 'id' ? 'Subjudul / Deskripsi Singkat' : 'Subtitle / Short Description' }}</span><textarea name="translations[{{ $language }}][subtitle]" maxlength="250" rows="3" data-preview-field="subtitle">{{ $translation?->subtitle }}</textarea><small>Maksimal 250 karakter.</small></label>
-                            <label class="admin-field"><span>{{ $language === 'id' ? 'Label Tombol CTA' : 'CTA Button Label' }}</span><input type="text" name="translations[{{ $language }}][cta_label]" value="{{ $translation?->cta_label }}" maxlength="40" data-preview-field="cta_label"></label>
+                            <label class="admin-field"><span>Judul Banner <b>*</b></span><input type="text" name="translations[{{ $language }}][title]" value="{{ $translation?->title }}" maxlength="120" data-preview-field="title"><small>Maksimal 120 karakter.</small></label>
+                            <label class="admin-field"><span>Subjudul / Deskripsi Singkat</span><textarea name="translations[{{ $language }}][subtitle]" maxlength="250" rows="3" data-preview-field="subtitle">{{ $translation?->subtitle }}</textarea><small>Maksimal 250 karakter.</small></label>
+                            <label class="admin-field"><span>Label Tombol CTA</span><input type="text" name="translations[{{ $language }}][cta_label]" value="{{ $translation?->cta_label }}" maxlength="40" data-preview-field="cta_label"></label>
                         </div>
                     </div>
                 @endforeach

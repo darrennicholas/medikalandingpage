@@ -28,14 +28,14 @@
                     @if ($item->public_excerpt)<p>{{ $item->public_excerpt }}</p>@endif
                 </header>
                 @if ($item->public_cover_url)
-                    <img class="public-detail__cover" src="{{ $item->public_cover_url }}" alt="{{ $item->public_cover_alt ?: $item->public_title }}">
+                    <x-public-image class="public-detail__cover" :src="$item->public_cover_url" :alt="$item->public_cover_alt ?: $item->public_title" sizes="(max-width: 700px) 100vw, 80vw"/>
                 @endif
                 <div class="public-detail__content">{!! $item->public_body !!}</div>
                 @if (!empty($item->public_gallery))
                     <div class="public-detail__gallery" aria-label="{{ $language === 'en' ? 'Photo gallery' : 'Galeri foto' }}">
                         @foreach ($item->public_gallery as $image)
                             <figure>
-                                <a href="{{ $image['url'] }}" data-public-gallery="documentation" data-gallery-caption="{{ $image['caption'] }}" aria-label="{{ $language === 'en' ? 'Enlarge image' : 'Perbesar gambar' }}"><img src="{{ $image['url'] }}" alt="{{ $image['alt'] ?: $image['caption'] ?: $item->public_title }}" loading="lazy"></a>
+                                <a href="{{ $image['url'] }}" data-public-gallery="documentation" data-gallery-caption="{{ $image['caption'] }}" aria-label="{{ $language === 'en' ? 'Enlarge image' : 'Perbesar gambar' }}"><x-public-image :src="$image['url']" :alt="$image['alt'] ?: $image['caption'] ?: $item->public_title" sizes="(max-width: 700px) 100vw, 50vw"/></a>
                                 @if ($image['caption'])<figcaption>{{ $image['caption'] }}</figcaption>@endif
                             </figure>
                         @endforeach
@@ -58,7 +58,7 @@
                 <div class="product-detail__overview">
                     @if ($product->public_image_url)
                         <figure class="product-detail__image-wrap">
-                            <img class="product-detail__image" src="{{ $product->public_image_url }}" alt="{{ $product->public_image_alt ?: $translation?->name }}">
+                            <x-public-image class="product-detail__image" :src="$product->public_image_url" :alt="$product->public_image_alt ?: $translation?->name" sizes="(max-width: 700px) 100vw, 50vw"/>
                         </figure>
                     @endif
                     <div class="product-detail__summary">

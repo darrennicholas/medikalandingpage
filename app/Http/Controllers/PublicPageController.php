@@ -25,7 +25,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 
 class PublicPageController extends Controller
 {
@@ -675,8 +674,9 @@ class PublicPageController extends Controller
             return null;
         }
 
-        $path = ltrim($path, '/');
+        $path = trim(ltrim($path, '/'), '/');
+        $path = preg_replace('#^(?:public/)?brochures/#', '', $path) ?? $path;
 
-        return file_exists(public_path($path)) ? asset($path) : Storage::disk(config('cms.media.disk'))->url($path);
+        return route('stored.brochure', ['path' => $path]);
     }
 }

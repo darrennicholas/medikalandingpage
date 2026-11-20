@@ -19,9 +19,6 @@
 /database/*.sqlite
 /database/*.sqlite-*
 /public/storage
-/public/images/media/
-/storage/app/public/*
-!/storage/app/public/.gitignore
 /storage/*.key
 /storage/pail
 

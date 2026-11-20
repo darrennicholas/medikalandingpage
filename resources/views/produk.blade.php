@@ -209,16 +209,16 @@
                                         @endphp
                                         <article class="product-card" data-category="{{ $category['id'] }}" data-subcategory="{{ $product['subcategory'] }}">
                                             @if ($product['logo_bottom'])
-                                                <img class="product-card__watermark" src="{{ $product['logo_bottom'] }}" alt="" loading="lazy">
+                                                <x-public-image class="product-card__watermark" :src="$product['logo_bottom']" alt="" sizes="60px"/>
                                             @endif
                                             <div class="product-card__image-wrap">
                                                 @if ($product['image'])
-                                                    @if (!empty($product['slug']))<a class="product-card__image-preview" href="{{ route('localized.products.show', ['locale' => app()->getLocale(), 'slug' => $product['slug']]) }}" aria-label="{{ app()->getLocale() === 'en' ? 'View details of ' : 'Lihat detail ' }}{{ $product['name'] }}">@endif<img class="product-card__image{{ $isDoaSevenProductImage ? ' product-card__image--doa-seven-right' : '' }}{{ $isAlignedDoaProductImage ? ' product-card__image--doa-aligned' : '' }}{{ $isCompactProductImage ? ' product-card__image--compact' : '' }}{{ $isCompactProductImageLarger ? ' product-card__image--compact-larger' : '' }}{{ $compactProductImageSizeClass }}" src="{{ $product['image'] }}" alt="{{ $product['image_alt'] ?: $product['name'] }}" loading="lazy">@if (!empty($product['slug']))</a>@endif
+                                                    @if (!empty($product['slug']))<a class="product-card__image-preview" href="{{ route('localized.products.show', ['locale' => app()->getLocale(), 'slug' => $product['slug']]) }}" aria-label="{{ app()->getLocale() === 'en' ? 'View details of ' : 'Lihat detail ' }}{{ $product['name'] }}">@endif<x-public-image class="product-card__image{{ $isDoaSevenProductImage ? ' product-card__image--doa-seven-right' : '' }}{{ $isAlignedDoaProductImage ? ' product-card__image--doa-aligned' : '' }}{{ $isCompactProductImage ? ' product-card__image--compact' : '' }}{{ $isCompactProductImageLarger ? ' product-card__image--compact-larger' : '' }}{{ $compactProductImageSizeClass }}" :src="$product['image']" :alt="$product['image_alt'] ?: $product['name']" sizes="(max-width: 640px) 50vw, 25vw"/>@if (!empty($product['slug']))</a>@endif
                                                 @else
                                                     <span class="product-card__image-empty">{{ app()->getLocale() === 'en' ? 'Product image unavailable' : 'Gambar produk belum tersedia' }}</span>
                                                 @endif
                                                 @if ($product['logo_top'])
-                                                    <span class="product-card__logo"><img src="{{ $product['logo_top'] }}" alt="" loading="lazy"></span>
+                                                    <span class="product-card__logo"><x-public-image :src="$product['logo_top']" alt="" sizes="60px"/></span>
                                                 @endif
                                             </div>
                                             <div class="product-card__content">

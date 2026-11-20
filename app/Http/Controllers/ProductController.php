@@ -11,7 +11,6 @@ use App\Models\SeoMeta;
 use App\Models\SocialLink;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -175,8 +174,9 @@ class ProductController extends Controller
             return '';
         }
 
-        $normalizedPath = ltrim($path, '/');
+        $normalizedPath = trim(ltrim($path, '/'), '/');
+        $normalizedPath = preg_replace('#^(?:public/)?brochures/#', '', $normalizedPath) ?? $normalizedPath;
 
-        return file_exists(public_path($normalizedPath)) ? asset($normalizedPath) : Storage::disk(config('cms.media.disk'))->url($normalizedPath);
+        return route('stored.brochure', ['path' => $normalizedPath]);
     }
 }

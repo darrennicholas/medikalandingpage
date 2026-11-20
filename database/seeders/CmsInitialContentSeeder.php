@@ -313,16 +313,22 @@ class CmsInitialContentSeeder extends Seeder
 
         $fileName = basename($path);
 
-        return Media::query()->firstOrCreate(
-            ['path' => $path],
-            [
-                'file_name' => $fileName,
-                'original_name' => $fileName,
-                'mime_type' => $image['mime'],
-                'size_bytes' => File::size($fullPath),
-                'width' => $image[0],
-                'height' => $image[1],
-            ],
-        );
+        $media = Media::withTrashed()->firstOrNew(['path' => $path]);
+        $media->fill([
+            'file_name' => $fileName,
+            'original_name' => $fileName,
+            'mime_type' => $image['mime'],
+            'size_bytes' => File::size($fullPath),
+            'width' => $image[0],
+            'height' => $image[1],
+            'alt_text_id' => $altId,
+            'alt_text_en' => $altEn,
+        ]);
+        if ($media->trashed()) {
+            $media->restore();
+        }
+        $media->save();
+
+        return $media;
     }
 }

@@ -31,9 +31,8 @@
                 </div>
             </div>
         </section>
-        <section class="careers-openings" id="lowongan" aria-labelledby="careers-openings-title">
+        <section class="careers-openings" id="lowongan" aria-label="{{ $language === 'en' ? 'Open positions' : 'Daftar lowongan' }}">
             <div class="container">
-                <div class="careers-openings__heading"><div><h2 id="careers-openings-title">{{ $language === 'en' ? 'Explore open positions' : 'Temukan peluang karir' }}</h2><span class="careers-openings__rule" aria-hidden="true"></span><p>{{ $language === 'en' ? 'Discover opportunities to make an impact with our team.' : 'Temukan kesempatan untuk berkarya dan bertumbuh bersama tim kami.' }}</p></div></div>
                 <div class="careers-grid">
                     @forelse ($jobs as $job)
                         @php($jobTranslation = $job->public_translation ?? $job->translations->firstWhere('lang', $language) ?? $job->translations->firstWhere('lang', 'id'))

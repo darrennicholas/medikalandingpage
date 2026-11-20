@@ -1,6 +1,6 @@
 <a href="{{ $itemUrl }}" class="public-documentation__activity-link" target="_blank" rel="noopener noreferrer">
     @if ($item->public_cover_url)
-        <img class="public-documentation__cover" src="{{ $item->public_cover_url }}" alt="{{ $item->public_cover_alt ?: $item->public_title }}" loading="lazy">
+        <x-public-image class="public-documentation__cover" :src="$item->public_cover_url" :alt="$item->public_cover_alt ?: $item->public_title" sizes="(max-width: 640px) 100vw, 33vw"/>
     @else
         <div class="public-documentation__cover-placeholder" aria-hidden="true">{{ $kindLabel }}</div>
     @endif

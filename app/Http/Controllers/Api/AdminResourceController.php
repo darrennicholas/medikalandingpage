@@ -32,7 +32,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -202,7 +201,6 @@ class AdminResourceController extends Controller
             return $record;
         });
         $activityLogger->log($request->user(), $existing ? 'update' : ($payload['status'] === 'published' ? 'publish' : 'create'), $record::class, $record->getKey(), $oldValues, $this->activitySnapshot($record->fresh()));
-        $this->clearPublicCache();
 
         return response()->json(['success' => true, 'data' => $this->loadTranslations($record), 'message' => 'Data berhasil disimpan.'], 201);
     }
@@ -268,7 +266,6 @@ class AdminResourceController extends Controller
             ? ($payload['status'] === 'published' ? 'publish' : ($record->wasRecentlyCreated ? 'create' : 'update'))
             : ($record->wasRecentlyCreated ? 'create' : 'update');
         $activityLogger->log($request->user(), $action, $record::class, $record->getKey(), $oldValues, $this->activitySnapshot($record->fresh()));
-        $this->clearPublicCache();
 
         return response()->json(['success' => true, 'data' => $this->loadTranslations($record->fresh()), 'message' => 'Data berhasil diperbarui.']);
     }
@@ -313,7 +310,6 @@ class AdminResourceController extends Controller
 
         $record->delete();
         $activityLogger->log($request->user(), 'delete', $record::class, $record->getKey(), $oldValues);
-        $this->clearPublicCache();
 
         return response()->json(['success' => true, 'data' => null, 'message' => 'Data berhasil dihapus.']);
     }
@@ -336,7 +332,6 @@ class AdminResourceController extends Controller
         });
 
         $activityLogger->log($request->user(), $validated['status'] === 'published' ? 'publish' : 'update', $record::class, $record->getKey(), $oldValues, ['status' => $validated['status']]);
-        $this->clearPublicCache();
 
         return response()->json(['success' => true, 'data' => $record, 'message' => 'Status berhasil diperbarui.']);
     }
@@ -363,7 +358,6 @@ class AdminResourceController extends Controller
         });
 
         $activityLogger->log($request->user(), 'reorder', $modelClass, null, ['ids' => $previousIds], ['ids' => $validated['ids']]);
-        $this->clearPublicCache();
 
         return response()->json(['success' => true, 'data' => null, 'message' => 'Urutan berhasil disimpan.']);
     }
@@ -401,7 +395,6 @@ class AdminResourceController extends Controller
             return $previousIds;
         });
         $activityLogger->log($request->user(), 'reorder', ProductCategory::class, $category->id, ['featured_product_ids' => $previousIds], ['featured_product_ids' => $validated['product_ids']]);
-        $this->clearPublicCache();
 
         return response()->json(['success' => true, 'data' => $category->fresh()->featuredProducts()->with('translations')->get(), 'message' => 'Produk unggulan berhasil disimpan.']);
     }
@@ -625,7 +618,7 @@ class AdminResourceController extends Controller
             $translationFields = $this->publicationTranslationFields($resource, $record, $idValues);
             $missingFields = [];
 
-            foreach (config('cms.content.supported_languages') as $language) {
+            foreach (['id'] as $language) {
                 $languageTranslation = $translations[$language] ?? [];
                 foreach ($translationFields as $field) {
                     $value = array_key_exists($field, $languageTranslation)
@@ -639,7 +632,7 @@ class AdminResourceController extends Controller
             }
 
             if ($missingFields !== []) {
-                throw ValidationException::withMessages(array_fill_keys($missingFields, 'Terjemahan wajib diisi manual sebelum konten dapat dipublikasikan.'));
+                throw ValidationException::withMessages(array_fill_keys($missingFields, 'Konten Bahasa Indonesia wajib diisi sebelum publikasi.'));
             }
 
             if (in_array($resource, ['hero-slides', 'brands', 'certificates', 'products', 'documentations'], true)) {
@@ -906,11 +899,11 @@ class AdminResourceController extends Controller
                 $idTranslation?->only(array_keys($this->translationRules($resource, $record))) ?? [],
             );
 
-            foreach (config('cms.content.supported_languages') as $language) {
+            foreach (['id'] as $language) {
                 $translation = $record->translations()->where('lang', $language)->first();
-                abort_if($translation === null, 422, 'Terjemahan Indonesia, English, dan Mandarin wajib diisi manual sebelum publikasi.');
+                abort_if($translation === null, 422, 'Konten Bahasa Indonesia wajib diisi sebelum publikasi.');
                 foreach ($translationFields as $field) {
-                    abort_if(blank($translation->{$field}), 422, 'Lengkapi seluruh isian wajib Indonesia, English, dan Mandarin sebelum publikasi.');
+                    abort_if(blank($translation->{$field}), 422, 'Lengkapi seluruh isian wajib Bahasa Indonesia sebelum publikasi.');
                 }
             }
         }
@@ -973,11 +966,23 @@ class AdminResourceController extends Controller
         }
 
         $previousPath = $record->getAttribute('brochure_path');
-        $path = $request->file('brochure')->store('brochures', config('cms.media.disk'));
+        $productName = $record->translations()->where('lang', 'id')->value('name')
+            ?: $record->translations()->orderBy('lang')->value('name');
+        $baseName = Str::slug($productName ?: 'produk-'.$record->getKey()) ?: 'produk-'.$record->getKey();
+        $disk = Storage::disk('public');
+        $suffix = 1;
+
+        do {
+            $fileName = $baseName.($suffix > 1 ? '-'.$suffix : '').'.pdf';
+            $path = 'brochures/cms/'.$fileName;
+            $suffix++;
+        } while ($disk->exists($path) || Product::query()->where('brochure_path', $path)->where('id', '<>', $record->getKey())->exists());
+
+        abort_if($request->file('brochure')->storeAs('brochures/cms', $fileName, 'public') === false, 500, 'Brosur PDF gagal disimpan ke Media Library.');
         $record->forceFill(['brochure_path' => $path])->save();
 
-        if ($previousPath && ! str_contains($previousPath, '://')) {
-            Storage::disk(config('cms.media.disk'))->delete($previousPath);
+        if ($previousPath && $previousPath !== $path && ! str_contains($previousPath, '://')) {
+            Storage::disk('public')->delete($previousPath);
         }
     }
 
@@ -1031,13 +1036,6 @@ class AdminResourceController extends Controller
         }
 
         return $slug;
-    }
-
-    private function clearPublicCache(): void
-    {
-        foreach (['home', 'about', 'products', 'documentation', 'careers', 'contact', 'footer', 'seo', 'sitemap'] as $key) {
-            Cache::forget('cms.public.'.$key);
-        }
     }
 
     private function loadTranslations(Model $record): Model

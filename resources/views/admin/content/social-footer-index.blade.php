@@ -10,7 +10,7 @@
 <section class="admin-feature-stats" aria-label="Ringkasan sosial media">
     <article class="admin-summary-card"><span>Total Akun Sosial</span><strong>{{ $socialTotal }}</strong><small>Kanal tersimpan di CMS</small><span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">share</span></article>
     <article class="admin-summary-card admin-summary-card--success"><span>Tampil di Footer</span><strong>{{ $socialActive }}</strong><small>Akun dengan status published</small><span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">visibility</span></article>
-    <article class="admin-summary-card"><span>Bahasa Footer</span><strong>3</strong><small>Indonesia, English, dan Mandarin</small><span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">translate</span></article>
+    <article class="admin-summary-card"><span>Bahasa Footer</span><strong>3</strong><small>Indonesia, Inggris, dan Mandarin</small><span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">translate</span></article>
 </section>
 
 <section class="admin-panel admin-social-footer-panel">
@@ -29,8 +29,8 @@
                 <label><input type="hidden" name="footer_show_email" value="0"><input type="checkbox" name="footer_show_email" value="1" @checked(old('footer_show_email', $footerBlock->footer_show_email ?? true))><span><strong>Email</strong><small>Tampilkan alamat email di footer</small></span></label>
             </div>
         </fieldset>
-        <div class="admin-language-tabs" role="tablist"><button type="button" class="is-active" data-language-tab="id">Bahasa Indonesia</button><button type="button" data-language-tab="en">English</button><button type="button" data-language-tab="zh">中文</button></div>
-        @foreach (['id' => 'Ringkasan perusahaan', 'en' => 'Company summary', 'zh' => '公司简介'] as $language => $label)
+        <div class="admin-language-tabs" role="tablist"><button type="button" class="is-active" data-language-tab="id">Bahasa Indonesia</button><button type="button" data-language-tab="en">Bahasa Inggris</button><button type="button" data-language-tab="zh">Mandarin</button></div>
+        @foreach (['id' => 'Ringkasan perusahaan', 'en' => 'Ringkasan perusahaan', 'zh' => 'Ringkasan perusahaan'] as $language => $label)
             @php
                 $translation = $footerTranslations->get($language);
                 $defaultCopyright = '© '.now()->year.' PT Interskala Medika Indonesia | Member of Interskala Group';
@@ -38,7 +38,7 @@
             @endphp
             <div class="admin-language-panel admin-footer-language-panel {{ $language !== 'id' ? 'is-hidden' : '' }}" data-language-panel="{{ $language }}">
                 <label class="admin-field"><span>{{ $label }} <small>(maks. 300 karakter)</small></span><textarea name="translations[{{ $language }}][body]" maxlength="300">{{ old("translations.$language.body", $translation?->body) }}</textarea></label>
-                <label class="admin-field"><span>{{ $language === 'id' ? 'Teks Hak Cipta' : 'Copyright text' }} <small>(maks. 150 karakter)</small></span><input name="translations[{{ $language }}][copyright_text]" maxlength="150" value="{{ old("translations.$language.copyright_text", $copyrightText) }}"></label>
+                <label class="admin-field"><span>Teks Hak Cipta <small>(maks. 150 karakter)</small></span><input name="translations[{{ $language }}][copyright_text]" maxlength="150" value="{{ old("translations.$language.copyright_text", $copyrightText) }}"></label>
             </div>
         @endforeach
         <div class="admin-form__error" data-form-errors hidden></div>

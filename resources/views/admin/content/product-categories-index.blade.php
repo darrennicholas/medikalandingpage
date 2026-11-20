@@ -76,7 +76,6 @@
                         <th>Aksi</th>
                         <th>Urutan</th>
                         <th>Nama Kategori</th>
-                        <th>Slug</th>
                         <th>Jumlah Produk</th>
                         <th>Status</th>
                         <th>Diperbarui</th>
@@ -117,16 +116,12 @@
                                 <strong>{{ $translationId?->name ?: 'Tanpa nama' }}</strong>
                                 @if ($translationEn?->name)<span>{{ $translationEn->name }}</span>@endif
                             </td>
-                            <td class="admin-category-slug">
-                                <span>ID: {{ $translationId?->slug ?: '—' }}</span>
-                                @if ($translationEn?->slug)<span>EN: {{ $translationEn->slug }}</span>@endif
-                            </td>
                             <td><span class="admin-category-product-count"><span class="material-symbols-rounded" aria-hidden="true">inventory_2</span>{{ $record->products_count }}</span></td>
                             <td><span class="admin-status admin-status--{{ $statusClass }}"><i></i>{{ $statusLabel }}</span></td>
                             <td class="admin-category-date">{{ $record->updated_at?->format('d M Y, H:i') ?? '—' }}</td>
                         </tr>
                     @empty
-                        <tr><td class="admin-empty" colspan="7">Belum ada kategori yang sesuai dengan filter.</td></tr>
+                        <tr><td class="admin-empty" colspan="6">Belum ada kategori yang sesuai dengan filter.</td></tr>
                     @endforelse
                 </tbody>
             </table>

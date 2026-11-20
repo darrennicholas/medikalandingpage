@@ -49,7 +49,7 @@
             <div><h2>Kelengkapan Bahasa</h2></div>
             <span class="admin-language-card__percent">{{ $translationPercent }}% ID &amp; EN</span>
         </div>
-        <div class="admin-language-card__summary"><strong>{{ number_format($translationCompleted) }}</strong><span>dari {{ number_format($totalIndonesianContent) }} konten memiliki terjemahan Inggris</span></div>
+        <div class="admin-language-card__summary"><strong>{{ number_format($translationCompleted) }}</strong><span>dari {{ number_format($totalIndonesianContent) }} konten memiliki terjemahan Bahasa Inggris</span></div>
         <div class="admin-progress" role="progressbar" aria-label="Kelengkapan terjemahan Inggris" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ $translationPercent }}"><span style="width: {{ $translationPercent }}%"></span></div>
         @if ($missingEnglishItems->isNotEmpty())
             <div class="admin-translation-gaps">

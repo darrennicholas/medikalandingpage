@@ -9,7 +9,7 @@ use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\PublicContentApiController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('v1')->group(function (): void {
+Route::prefix('v1')->middleware('cms.public-api-cache')->group(function (): void {
     Route::prefix('public')->name('api.public.')->group(function (): void {
         Route::get('/home', [PublicContentApiController::class, 'home'])->name('home');
         Route::get('/about', [PublicContentApiController::class, 'about'])->name('about');

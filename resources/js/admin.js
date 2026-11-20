@@ -158,7 +158,9 @@ const responseMessage = async (response) => {
     const result = await response.json().catch(() => ({}));
     if (!response.ok || result.success === false) {
         const validationMessages = Object.values(result.errors || {}).flat().join('\n');
-        throw new Error(validationMessages || result.message || 'Permintaan tidak dapat diproses.');
+        const error = new Error(validationMessages || result.message || 'Permintaan tidak dapat diproses.');
+        error.usages = result.data?.usages;
+        throw error;
     }
 
     return result;
@@ -555,8 +557,16 @@ document.querySelectorAll('[data-confirm]').forEach((form) => {
 
 document.querySelectorAll('[data-language-tab]').forEach((tab) => {
     tab.addEventListener('click', () => {
-        document.querySelectorAll('[data-language-tab]').forEach((item) => item.classList.toggle('is-active', item === tab));
-        document.querySelectorAll('[data-language-panel]').forEach((panel) => panel.classList.toggle('is-hidden', panel.dataset.languagePanel !== tab.dataset.languageTab));
+        const scopedGroup = tab.closest('[data-language-scope]');
+        const scope = scopedGroup || tab.closest('form') || document;
+        const belongsToGroup = (element) => element.closest('[data-language-scope]') === scopedGroup;
+
+        scope.querySelectorAll('[data-language-tab]').forEach((item) => {
+            if (belongsToGroup(item)) item.classList.toggle('is-active', item === tab);
+        });
+        scope.querySelectorAll('[data-language-panel]').forEach((panel) => {
+            if (belongsToGroup(panel)) panel.classList.toggle('is-hidden', panel.dataset.languagePanel !== tab.dataset.languageTab);
+        });
     });
 });
 
@@ -1447,7 +1457,9 @@ document.querySelectorAll('[data-media-delete]').forEach((button) => {
             await showSweetAlert({ icon: 'success', title: 'Media dihapus', text: result.message || 'Media berhasil dihapus.' });
             card.remove();
         } catch (error) {
-            await showSweetAlert({ icon: 'error', title: 'Media gagal dihapus', text: error.message });
+            const usages = Array.isArray(error.usages) ? error.usages : [];
+            const message = usages.length ? `${error.message}\n\nDigunakan pada:\n${usages.map((usage) => `• ${usage}`).join('\n')}` : error.message;
+            await showSweetAlert({ icon: 'error', title: 'Media gagal dihapus', text: message });
         }
     });
 });

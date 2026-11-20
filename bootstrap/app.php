@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\AddSecurityHeaders;
+use App\Http\Middleware\CachePublicApiResponses;
 use App\Http\Middleware\EnsureCmsPermission;
 use App\Http\Middleware\EnsureCmsRole;
 use App\Http\Middleware\EnsurePasswordChanged;
@@ -19,8 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(AddSecurityHeaders::class);
         $middleware->redirectGuestsTo(fn (Request $request): string => route('admin.login', absolute: false));
         $middleware->alias([
+            'cms.public-api-cache' => CachePublicApiResponses::class,
             'cms.role' => EnsureCmsRole::class,
             'cms.permission' => EnsureCmsPermission::class,
             'cms.password' => EnsurePasswordChanged::class,

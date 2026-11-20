@@ -37,7 +37,7 @@
                     <select name="{{ $fieldName }}" data-media-preview-select @required($field['required'])><option value="" data-image-url="">Pilih media...</option>@foreach ($mediaOptions as $media)<option value="{{ $media->id }}" data-image-url="{{ $media->admin_preview_url }}" @selected((string) old($fieldName, $fieldValue) === (string) $media->id)>{{ $media->original_name }} ({{ number_format($media->size_bytes / 1024, 0) }} KB)</option>@endforeach</select>
                     <span class="admin-media-preview {{ in_array($fieldName, ['logo_top_media_id', 'logo_bottom_media_id'], true) ? 'admin-media-preview--product-logo' : '' }}" data-media-preview>@if ($selectedMediaUrl)<img src="{{ $selectedMediaUrl }}" alt="{{ $selectedMedia?->alt_text_id ?: $selectedMedia?->original_name }}" loading="lazy"><span>{{ $selectedMedia?->original_name }}</span>@else<span>Pilih media untuk melihat pratinjau</span>@endif</span>
                 @elseif ($field['type'] === 'file')
-                    <input type="file" name="{{ $fieldName }}" accept="application/pdf" @required($field['required'])>@if ($record->brochure_path)@php $brochurePath = ltrim($record->brochure_path, '/'); $brochureUrl = file_exists(public_path($brochurePath)) ? asset($brochurePath) : Illuminate\Support\Facades\Storage::disk(config('cms.media.disk'))->url($brochurePath); @endphp<a class="admin-current-pdf" href="{{ $brochureUrl }}" target="_blank" rel="noopener noreferrer">Buka brosur PDF tersimpan</a>@endif
+                    <input type="file" name="{{ $fieldName }}" accept="application/pdf" @required($field['required'])>@if ($record->brochure_path)@php $brochurePath = preg_replace('#^(?:public/)?brochures/#', '', ltrim($record->brochure_path, '/')); $brochureUrl = route('stored.brochure', ['path' => $brochurePath]); @endphp<a class="admin-current-pdf" href="{{ $brochureUrl }}" target="_blank" rel="noopener noreferrer">Buka brosur PDF tersimpan</a>@endif
                 @elseif ($field['type'] === 'gallery')
                     <div class="admin-gallery-picker" data-gallery-picker>
                         @foreach ($mediaOptions->sortBy(fn ($item) => $record->exists ? ($record->gallery->firstWhere('id', $item->id)?->pivot?->display_order ?? PHP_INT_MAX) : PHP_INT_MAX) as $media)
@@ -58,9 +58,10 @@
                         @endforeach
                         <dialog class="admin-gallery-caption-dialog" data-gallery-caption-dialog aria-labelledby="gallery-caption-title">
                             <h2 id="gallery-caption-title">Keterangan foto</h2>
-                            <label>Keterangan Bahasa Indonesia<input type="text" data-gallery-dialog-caption="id" maxlength="200"></label>
-                            <label>Keterangan English<input type="text" data-gallery-dialog-caption="en" maxlength="200"></label>
-                            <label>Keterangan 中文<input type="text" data-gallery-dialog-caption="zh" maxlength="200"></label>
+                            <div class="admin-language-tabs" data-language-scope role="tablist" aria-label="Bahasa keterangan foto"><button class="is-active" type="button" data-language-tab="id">Bahasa Indonesia</button><button type="button" data-language-tab="en">Bahasa Inggris</button><button type="button" data-language-tab="zh">Mandarin</button></div>
+                            <div class="admin-language-panel" data-language-panel="id"><label>Keterangan Bahasa Indonesia<input type="text" data-gallery-dialog-caption="id" maxlength="200"></label></div>
+                            <div class="admin-language-panel is-hidden" data-language-panel="en"><label>Keterangan Bahasa Inggris<input type="text" data-gallery-dialog-caption="en" maxlength="200"></label></div>
+                            <div class="admin-language-panel is-hidden" data-language-panel="zh"><label>Keterangan Mandarin<input type="text" data-gallery-dialog-caption="zh" maxlength="200"></label></div>
                             <div class="admin-gallery-caption-dialog__actions"><button class="admin-button" type="button" data-gallery-caption-cancel>Batal</button><button class="admin-button admin-button--primary" type="button" data-gallery-caption-save>Simpan keterangan</button></div>
                         </dialog>
                     </div>
@@ -72,8 +73,8 @@
         @endforeach
 
         @if ($definitions['id'] !== [] || $definitions['en'] !== [] || $definitions['zh'] !== [])
-            <div class="admin-language-tabs" role="tablist"><button type="button" class="is-active" data-language-tab="id">Bahasa Indonesia <b>*</b></button><button type="button" data-language-tab="en">English</button><button type="button" data-language-tab="zh">中文</button></div>
-            @foreach (['id' => 'Bahasa Indonesia', 'en' => 'English', 'zh' => '中文'] as $language => $label)
+            <div class="admin-language-tabs" role="tablist"><button type="button" class="is-active" data-language-tab="id">Bahasa Indonesia <b>*</b></button><button type="button" data-language-tab="en">Bahasa Inggris</button><button type="button" data-language-tab="zh">Mandarin</button></div>
+            @foreach (['id' => 'Bahasa Indonesia', 'en' => 'Bahasa Inggris', 'zh' => 'Mandarin'] as $language => $label)
                 <div class="admin-language-panel {{ $language !== 'id' ? 'is-hidden' : '' }}" data-language-panel="{{ $language }}">
                     <h3>{{ $label }}</h3>
                     @foreach ($definitions[$language] as $field)

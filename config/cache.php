@@ -53,6 +53,12 @@ return [
             'lock_path' => storage_path('framework/cache/locks'),
         ],
 
+        'public' => [
+            'driver' => env('PUBLIC_CACHE_DRIVER', 'file'),
+            'path' => storage_path('framework/cache/public'),
+            'lock_path' => storage_path('framework/cache/public-locks'),
+        ],
+
         'storage' => [
             'driver' => 'storage',
             'disk' => env('CACHE_STORAGE_DISK'),
