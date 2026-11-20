@@ -82,8 +82,15 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
         if (catalogLink) {
             const url = new URL(catalogLink.href);
             const ids = getSelectedCategoryIds().filter((id) => /^\d+$/.test(id));
-            if (!isAllProducts && ids.length) url.searchParams.set('category', ids.join(','));
-            else url.searchParams.delete('category');
+            const isNewCategory = categorySelect.value === 'new-products';
+            if (isNewCategory) {
+                url.searchParams.set('new', '1');
+                url.searchParams.delete('category');
+            } else {
+                url.searchParams.delete('new');
+                if (!isAllProducts && ids.length) url.searchParams.set('category', ids.join(','));
+                else url.searchParams.delete('category');
+            }
             if (selectedProductFilter) url.searchParams.set('subcategory', selectedProductFilter);
             else url.searchParams.delete('subcategory');
             catalogLink.href = url.toString();
@@ -319,8 +326,14 @@ if (document.querySelector('.product-catalog__layout')?.dataset.catalogMode === 
         button.addEventListener('click', () => {
             const url = new URL(window.location.href);
             const category = button.dataset.categoryIds || button.dataset.categoryFilter;
-            if (category && category !== 'all') url.searchParams.set('category', category);
-            else url.searchParams.delete('category');
+            if (button.dataset.categoryFilter === 'new-products') {
+                url.searchParams.set('new', '1');
+                url.searchParams.delete('category');
+            } else {
+                url.searchParams.delete('new');
+                if (category && category !== 'all') url.searchParams.set('category', category);
+                else url.searchParams.delete('category');
+            }
             if (button.dataset.productFilter) url.searchParams.set('subcategory', button.dataset.productFilter);
             else url.searchParams.delete('subcategory');
             url.searchParams.delete('page');

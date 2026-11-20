@@ -16,19 +16,22 @@
             @php
                 $fieldName = $field['name'];
                 $fieldValue = data_get($record, $fieldName);
+                if ($resource === 'products' && $fieldName === 'new_status') { $fieldValue = $record->new_until && $record->new_until->gte(today()) ? 'new' : 'not_new'; }
                 if (! $record->exists && in_array($fieldName, ['event_date', 'posted_at'], true)) { $fieldValue = now()->toDateString(); }
-                if (in_array($fieldName, ['event_date', 'posted_at', 'closing_date'], true) && $fieldValue instanceof \DateTimeInterface) { $fieldValue = $fieldValue->format('Y-m-d'); }
+                if (in_array($fieldName, ['event_date', 'posted_at', 'closing_date', 'new_until'], true) && $fieldValue instanceof \DateTimeInterface) { $fieldValue = $fieldValue->format('Y-m-d'); }
                 if ($fieldName === 'parameters' && is_array($fieldValue)) { $fieldValue = implode(', ', $fieldValue); }
                 if (preg_match('/^translations\[([^\]]+)\]\[([^\]]+)\]$/', $fieldName, $matches)) { $fieldValue = $translations->get($matches[1])?->{$matches[2]}; }
             @endphp
             @if ($field['type'] === 'hidden')
                 <input type="hidden" name="{{ $fieldName }}" value="{{ old($fieldName, $field['value'] ?? $fieldValue) }}">
             @else
-            <label class="admin-field"><span>{{ $field['label'] }} @if ($field['required'] || ($resource === 'documentations' && $fieldName === 'cover_media_id'))<b>*</b>@endif</span>
-                @if ($field['type'] === 'textarea')
+            <label class="admin-field" @if ($resource === 'products' && $fieldName === 'new_until') data-product-new-until-field @if (! $record->new_until || $record->new_until->lt(today())) hidden @endif @endif><span>{{ $field['label'] }} @if ($field['required'] || ($resource === 'documentations' && $fieldName === 'cover_media_id'))<b>*</b>@endif</span>
+                @if ($field['type'] === 'date')
+                    <input type="date" name="{{ $fieldName }}" value="{{ old($fieldName, $fieldValue) }}" @if ($resource === 'products') data-product-new-until @endif><small>Wajib diisi jika status produk New. Tanda New otomatis berhenti setelah tanggal ini.</small>
+                @elseif ($field['type'] === 'textarea')
                     <textarea name="{{ $fieldName }}" maxlength="{{ $field['maxlength'] ?? 3000 }}" @required($field['required'])>{{ old($fieldName, $fieldValue) }}</textarea>
                 @elseif ($field['type'] === 'select')
-                    <select name="{{ $fieldName }}" @required($field['required'])><option value="">Pilih...</option>@foreach ($field['options'] ?? [] as $value => $label)<option value="{{ $value }}" @selected((string) old($fieldName, $fieldValue) === (string) $value)>{{ $label }}</option>@endforeach</select>
+                    <select name="{{ $fieldName }}" @required($field['required']) @if ($resource === 'products' && $fieldName === 'new_status') data-product-new-status @endif><option value="">Pilih...</option>@foreach ($field['options'] ?? [] as $value => $label)<option value="{{ $value }}" @selected((string) old($fieldName, $fieldValue) === (string) $value)>{{ $label }}</option>@endforeach</select>
                 @elseif ($field['type'] === 'media')
                     @php
                         $selectedMedia = $mediaOptions->firstWhere('id', (int) old($fieldName, $fieldValue));

@@ -46,6 +46,9 @@ class CachePublicApiResponses
 
         try {
             $response = $next($request);
+            if ($isPublicCacheableGet && ($response->exception ?? null) instanceof PDOException) {
+                throw $response->exception;
+            }
         } catch (PDOException $exception) {
             try {
                 $stale = $staleKey === null ? null : Cache::store('public')->get($staleKey);

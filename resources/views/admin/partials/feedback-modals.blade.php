@@ -5,6 +5,19 @@
     </div>
 </div>
 
+<dialog class="admin-link-dialog" data-rich-link-dialog aria-labelledby="admin-link-dialog-title" aria-describedby="admin-link-dialog-description">
+    <form data-rich-link-form>
+        <div class="admin-link-dialog__heading">
+            <span class="admin-link-dialog__icon material-symbols-rounded" aria-hidden="true">link</span>
+            <div><h2 id="admin-link-dialog-title">Tambahkan tautan</h2><p id="admin-link-dialog-description">Hubungkan teks ke halaman yang ingin dituju.</p></div>
+        </div>
+        <label class="admin-link-dialog__field"><span>Teks tautan</span><input name="label" type="text" maxlength="500" placeholder="Contoh: Baca selengkapnya" required></label>
+        <label class="admin-link-dialog__field"><span>URL tujuan</span><input name="url" type="text" maxlength="2048" placeholder="https://contoh.com" required aria-describedby="admin-link-dialog-hint"><small id="admin-link-dialog-hint">Gunakan tautan HTTPS atau path halaman, misalnya /id/kontak.</small></label>
+        <p class="admin-link-dialog__error" data-rich-link-error role="alert" hidden></p>
+        <div class="admin-link-dialog__actions"><button class="admin-button admin-link-dialog__remove" type="button" data-rich-link-remove hidden>Hapus tautan</button><button class="admin-button" type="button" data-rich-link-cancel>Batal</button><button class="admin-button admin-button--primary" type="submit">Simpan tautan</button></div>
+    </form>
+</dialog>
+
 <div class="admin-sweet-alert" data-sweet-alert hidden>
     <section class="admin-sweet-alert__dialog" role="alertdialog" aria-modal="true" aria-labelledby="admin-sweet-alert-title" aria-describedby="admin-sweet-alert-message">
         <span class="admin-sweet-alert__icon" aria-hidden="true">

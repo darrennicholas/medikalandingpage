@@ -1617,6 +1617,22 @@
     }
 }
 
+.product-card .product-card__new { position: absolute; top: 12px; left: 12px; z-index: 11; display: inline-flex; margin: 0; padding: 5px 10px; border-radius: 5px; background: #dceaff; color: #1745bd; font-size: 11px; font-weight: 800; letter-spacing: .04em; line-height: 1.2; }
+.brochure-request { min-height: 100vh; display: grid; place-items: center; padding: 32px 16px; background: #f3f6fc; }
+.brochure-request__card { width: min(100%, 540px); padding: clamp(24px, 5vw, 40px); border: 1px solid #dce5f3; border-radius: 16px; background: #fff; color: #213452; }
+.brochure-request__back { color: #315bd5; font-weight: 700; text-decoration: none; }
+.brochure-request h1 { margin: 24px 0 8px; font-size: clamp(24px, 4vw, 30px); line-height: 1.2; }
+.brochure-request p { color: #596b85; line-height: 1.6; }
+.brochure-request form { display: grid; gap: 15px; margin-top: 24px; }
+.brochure-request label { display: grid; gap: 7px; font-weight: 700; font-size: 14px; }
+.brochure-request label:not(.brochure-request__consent) > span { color: #b42335; }
+.brochure-request input:not([type='checkbox']) { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #cbd8ea; border-radius: 8px; font: inherit; font-weight: 400; }
+.brochure-request input:focus-visible, .brochure-request button:focus-visible { outline: 2px solid #315bd5; outline-offset: 2px; }
+.brochure-request .brochure-request__consent { display: flex; align-items: flex-start; gap: 10px; font-weight: 400; line-height: 1.5; }
+.brochure-request__consent input { margin-top: 4px; }
+.brochure-request button { min-height: 46px; padding: 10px 18px; border: 0; border-radius: 8px; background: #315bd5; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.brochure-request__error { padding: 12px; border-radius: 8px; background: #fff1f2; color: #a52236; }
+
 @media (max-width: 400px) {
     .product-grid {
         grid-template-columns: minmax(0, 1fr);

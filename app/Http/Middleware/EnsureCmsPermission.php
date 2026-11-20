@@ -116,6 +116,10 @@ class EnsureCmsPermission
             $module = 'products_catalog';
         }
 
+        if ($routeName === 'admin.brochure-leads.index') {
+            $module = 'products_catalog';
+        }
+
         if ($module === null) {
             return [null, 'view'];
         }

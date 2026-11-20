@@ -66,7 +66,7 @@ class AdminResourceController extends Controller
         'company-summary' => ['established_year' => 'required|integer|digits:4|min:1900', 'partner_count' => 'required|integer|min:0', 'province_count' => 'required|integer|min:0|max:38'],
         'certificates' => ['media_id' => 'nullable|integer|exists:media,id', 'issued_year' => 'nullable|integer|digits:4', 'display_order' => 'nullable|integer|min:1'],
         'product-categories' => ['display_order' => 'nullable|integer|min:1'],
-        'products' => ['category_id' => 'required|integer|exists:product_categories,id', 'media_id' => 'nullable|integer|exists:media,id', 'display_order' => 'nullable|integer|min:1', 'buy_url' => 'nullable|url:https|max:500', 'parameters' => 'nullable|array', 'subcategory' => 'nullable|string|max:100', 'logo_top_media_id' => 'nullable|integer|exists:media,id', 'logo_bottom_media_id' => 'nullable|integer|exists:media,id'],
+        'products' => ['category_id' => 'required|integer|exists:product_categories,id', 'media_id' => 'nullable|integer|exists:media,id', 'display_order' => 'nullable|integer|min:1', 'buy_url' => 'nullable|url:https|max:500', 'parameters' => 'nullable|array', 'subcategory' => 'nullable|string|max:100', 'new_until' => 'nullable|date_format:Y-m-d', 'logo_top_media_id' => 'nullable|integer|exists:media,id', 'logo_bottom_media_id' => 'nullable|integer|exists:media,id'],
         'documentations' => ['type' => 'required|in:article,activity', 'cover_media_id' => 'nullable|integer|exists:media,id', 'event_date' => 'required|date', 'gallery' => 'nullable|array|max:30', 'gallery.*.media_id' => 'required|integer|distinct|exists:media,id', 'gallery.*.caption_id' => 'nullable|string|max:200', 'gallery.*.caption_en' => 'nullable|string|max:200', 'gallery.*.caption_zh' => 'nullable|string|max:200'],
         'job-openings' => ['employment_type' => 'required|string|max:50', 'location' => 'required|string|max:150', 'posted_at' => 'required|date', 'closing_date' => 'nullable|date|after_or_equal:posted_at', 'apply_url' => 'required|url:https|max:500'],
         'contact-info' => ['phone' => ['required', 'regex:/^[0-9+()\- .]{6,20}$/'], 'email' => 'required|email|max:150', 'maps_url' => 'nullable|url:https|max:500', 'latitude' => 'nullable|numeric|between:-90,90', 'longitude' => 'nullable|numeric|between:-180,180'],
@@ -295,7 +295,7 @@ class AdminResourceController extends Controller
         $record = $this->findRecord($resource, $id);
 
         if ($record instanceof ProductCategory && $record->products()->whereNull('deleted_at')->exists()) {
-            return response()->json(['success' => false, 'message' => 'Kategori masih memiliki produk. Pindahkan atau hapus produk terlebih dahulu.'], 422);
+            return response()->json(['success' => false, 'message' => 'Kategori masih memiliki produk. Pindahkan atau hapus produk terlebih dahulu.'], 409);
         }
 
         if ($record instanceof MissionItem && MissionItem::query()->count() <= 1) {
@@ -377,7 +377,10 @@ class AdminResourceController extends Controller
             ]);
         }
 
-        $validated = $request->validate(['product_ids' => ['present', 'array', 'max:6'], 'product_ids.*' => ['required', 'integer', 'distinct', 'exists:products,id']]);
+        $validated = $request->validate(['product_ids' => ['present', 'array'], 'product_ids.*' => ['required', 'integer', 'distinct', 'exists:products,id']]);
+        if (count($validated['product_ids']) > 6) {
+            return response()->json(['success' => false, 'message' => 'Maksimal 6 produk unggulan per kategori.'], 409);
+        }
         $products = Product::query()->whereIn('id', $validated['product_ids'])->where('category_id', $category->id)->where('status', 'published')->get();
 
         if ($products->count() !== count($validated['product_ids'])) {
@@ -434,7 +437,7 @@ class AdminResourceController extends Controller
         $query = $modelClass::query();
 
         if ($resource === 'content-blocks') {
-            $query->where('block_key', $id);
+            ctype_digit($id) ? $query->whereKey((int) $id) : $query->where('block_key', $id);
         } elseif ($resource === 'seo-metas') {
             $query->where('page_key', $id)->where('lang', request()->query('lang', 'id'));
         } elseif ($resource === 'company-summary' || $resource === 'contact-info') {
@@ -553,6 +556,8 @@ class AdminResourceController extends Controller
         if ($resource === 'products') {
             $rules['category_id'] = ['nullable', 'integer', Rule::exists('product_categories', 'id')->where('status', 'published')->whereNull('deleted_at')];
             $rules['brochure'] = 'nullable|file|mimetypes:application/pdf';
+            $rules['new_status'] = 'sometimes|in:new,not_new';
+            $rules['new_until'] = 'nullable|required_if:new_status,new|date_format:Y-m-d|after_or_equal:today';
         }
 
         if ($resource === 'job-openings' && $record?->source === 'oneis') {
@@ -560,6 +565,9 @@ class AdminResourceController extends Controller
         }
 
         $validated = $request->validate($rules);
+        if ($resource === 'products' && ($validated['new_status'] ?? null) === 'not_new') {
+            $validated['new_until'] = null;
+        }
         if ($resource === 'hero-slides' && filled($validated['media_id'] ?? null)) {
             $isSupportedBannerMedia = DB::table('media')
                 ->where('id', $validated['media_id'])
@@ -610,7 +618,8 @@ class AdminResourceController extends Controller
         }
 
         if (in_array($status, ['published', 'open'], true)) {
-            $existingIdTranslation = $record?->exists ? $record->translations()->where('lang', 'id')->first() : null;
+            $existingIdTranslation = $record?->exists && isset(self::TRANSLATIONS[$resource]) ? $record->translations()->where('lang', 'id')->first() : null;
+            $idTranslation = $translations['id'] ?? [];
             $idValues = array_replace(
                 $existingIdTranslation?->only(array_keys($this->translationRules($resource, $record))) ?? [],
                 $translations['id'] ?? [],
@@ -623,7 +632,7 @@ class AdminResourceController extends Controller
                 foreach ($translationFields as $field) {
                     $value = array_key_exists($field, $languageTranslation)
                         ? $languageTranslation[$field]
-                        : $record?->translations()->where('lang', $language)->value($field);
+                        : $existingIdTranslation?->{$field};
 
                     if (blank($value)) {
                         $missingFields[] = 'translations.'.$language.'.'.$field;

@@ -1263,6 +1263,22 @@ body.admin-body { font-size: 15px; }
 .admin-gallery-item__order button { min-width: 0; min-height: 26px; padding: 3px 6px; border: 1px solid #dfe6f2; border-radius: 6px; background: #f8faff; color: #52617a; font-size: 10px; cursor: pointer; }
 .admin-gallery-caption-dialog { box-sizing: border-box; width: min(440px, calc(100vw - 32px)); max-width: none; padding: 20px; border: 1px solid #dce4f0; border-radius: 14px; color: #263750; box-shadow: 0 20px 70px rgb(22 37 62 / 24%); }
 .admin-gallery-caption-dialog::backdrop { background: rgb(22 37 62 / 48%); backdrop-filter: blur(2px); }
+.admin-link-dialog { box-sizing: border-box; width: min(480px, calc(100vw - 32px)); max-width: none; padding: 24px; border: 1px solid #dce4f0; border-radius: 14px; background: #fff; color: #263750; box-shadow: 0 20px 70px rgb(22 37 62 / 24%); }
+.admin-link-dialog::backdrop { background: rgb(22 37 62 / 48%); }
+.admin-link-dialog__heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; }
+.admin-link-dialog__icon { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; border-radius: 10px; background: #edf2ff; color: #315bd5; font-size: 21px; }
+.admin-link-dialog h2 { margin: 0 0 4px; color: inherit; font-size: 17px; line-height: 1.3; }
+.admin-link-dialog__heading p { margin: 0; color: #63738d; font-size: 12px; line-height: 1.5; }
+.admin-link-dialog__field { display: grid; gap: 6px; margin-top: 15px; font-size: 12px; font-weight: 700; }
+.admin-link-dialog__field input { box-sizing: border-box; width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid #cbd9e8; border-radius: 8px; background: #fff; color: #263750; font: inherit; font-weight: 400; }
+.admin-link-dialog__field input:focus-visible { outline: 2px solid #315bd5; outline-offset: 2px; }
+.admin-link-dialog__field small { color: #63738d; font-size: 11px; font-weight: 400; line-height: 1.5; }
+.admin-link-dialog__error { margin: 12px 0 0; color: #b42335; font-size: 12px; }
+.admin-link-dialog__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+.admin-link-dialog__remove { margin-right: auto; color: #b42335; }
+.admin-body[data-admin-theme='dark'] .admin-link-dialog { border-color: #35445b; background: #172338; color: #e5ebf5; }
+.admin-body[data-admin-theme='dark'] .admin-link-dialog__heading p, .admin-body[data-admin-theme='dark'] .admin-link-dialog__field small { color: #b7c5da; }
+.admin-body[data-admin-theme='dark'] .admin-link-dialog__field input { border-color: #536784; background: #111c2d; color: #e5ebf5; }
 .admin-gallery-caption-dialog h2 { margin: 0 0 16px; font-size: 17px; }
 .admin-gallery-caption-dialog .admin-language-tabs { margin-bottom: 12px; }
 .admin-gallery-caption-dialog .admin-language-tabs button { min-height: 36px; padding-inline: 9px; font-size: 10px; }
@@ -1807,7 +1823,7 @@ body.admin-body { font-size: 15px; }
 .admin-product-filters__search input { padding-left: 37px; }
 .admin-product-filters > .admin-button { min-height: 42px; padding: 8px 13px; font-size: 13px; }
 .admin-product-table-wrap { overflow-x: auto; border: 1px solid #e8edf5; border-radius: 13px; }
-.admin-product-table { min-width: 1120px; }
+.admin-product-table { min-width: 1300px; }
 .admin-product-table th { padding: 13px 12px; background: #f1f4ff; color: #718099; font-size: 11px; white-space: nowrap; }
 .admin-product-table td { padding: 12px; color: #37465d; font-size: 13px; vertical-align: middle; }
 .admin-product-actions { display: flex; align-items: center; gap: 5px; }
@@ -1827,7 +1843,6 @@ body.admin-body { font-size: 15px; }
 .admin-product-not-featured { color: #9ba5b4; }
 .admin-product-order { display: inline-grid; min-width: 30px; height: 30px; place-items: center; border-radius: 50%; background: #f0f3f8; color: #526179; font-weight: 700; }
 .admin-product-date { min-width: 132px; white-space: nowrap; }
-.admin-product-brochures .admin-product-table { min-width: 1300px; }
 .admin-product-brochure { min-width: 260px; max-width: 390px; }
 .admin-product-brochure > a { display: inline-flex; align-items: center; gap: 6px; color: var(--admin-primary); font-weight: 700; text-decoration: none; }
 .admin-product-brochure > a:hover { text-decoration: underline; }

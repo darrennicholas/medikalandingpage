@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\FeaturedProductsController;
 use App\Http\Controllers\Admin\MediaLibraryController;
 use App\Http\Controllers\Admin\PermissionMatrixController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\BrochureLeadController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicPageController;
@@ -28,6 +29,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::put('/password', [AuthController::class, 'updatePassword'])->name('password.update');
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/featured-products', [FeaturedProductsController::class, 'index'])->name('featured.index');
+        Route::get('/brochure-leads', [BrochureLeadController::class, 'index'])->name('brochure-leads.index');
         Route::post('/preview/{resource}', [PublicPageController::class, 'previewUnsaved'])->where('resource', 'products|documentations|job-openings|hero-slides|brands|mission-items|product-categories|certificates')->name('content.preview-unsaved');
         Route::get('/preview/{resource}/{id}', [PublicPageController::class, 'preview'])->where('resource', 'products|product-categories|documentations|job-openings|hero-slides|content-blocks|brands|mission-items|certificates|social-links')->name('content.preview');
         Route::get('/content/{resource}', [ContentManagementController::class, 'index'])->where('resource', 'hero-slides|content-blocks|brands|mission-items|company-summary|certificates|product-categories|products|documentations|job-openings|contact-info|social-links|seo-metas')->name('content.index');
@@ -69,6 +71,8 @@ Route::prefix('{locale}')
         Route::get('/tentang', [PublicPageController::class, 'about'])->name('about');
         Route::get('/produk', [ProductController::class, 'index'])->name('products');
         Route::get('/produk/semua', [ProductController::class, 'catalog'])->name('products.all');
+        Route::get('/produk/{product}/brosur', [BrochureLeadController::class, 'create'])->whereNumber('product')->withoutMiddleware(CachePublicApiResponses::class)->name('brochure.request');
+        Route::post('/produk/{product}/brosur', [BrochureLeadController::class, 'store'])->whereNumber('product')->middleware('throttle:10,1')->withoutMiddleware(CachePublicApiResponses::class)->name('brochure.submit');
         Route::get('/produk/{slug}', [PublicPageController::class, 'productDetail'])->name('products.show');
         Route::get('/artikel', [PublicPageController::class, 'articles'])->name('articles');
         Route::get('/berita', [PublicPageController::class, 'news'])->name('news');

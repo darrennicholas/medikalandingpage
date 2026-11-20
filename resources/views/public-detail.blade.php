@@ -64,10 +64,11 @@
                     <div class="product-detail__summary">
                         <span class="public-detail__category">{{ $language === 'en' ? 'Product' : 'Produk' }}</span>
                         <h1>{{ $translation?->name }}</h1>
+                        @if ($product->new_until && $product->new_until->gte(today()))<span class="product-card__new">NEW</span>@endif
                         @if ($product->public_brochure_url)
                             <div class="product-detail__actions">
                                 <span class="product-detail__actions-label">{{ $language === 'en' ? 'Product document' : 'Dokumen produk' }}</span>
-                                <a class="product-detail__brochure" href="{{ $product->public_brochure_url }}" target="_blank" rel="noopener noreferrer"><span class="material-symbols-rounded" aria-hidden="true">picture_as_pdf</span>{{ $language === 'en' ? 'View brochure PDF' : 'Lihat brosur PDF' }}</a>
+                                <a class="product-detail__brochure" href="{{ route('localized.brochure.request', ['locale' => $language, 'product' => $product->id]) }}"><span class="material-symbols-rounded" aria-hidden="true">picture_as_pdf</span>{{ $language === 'en' ? 'View brochure PDF' : 'Lihat brosur PDF' }}</a>
                             </div>
                         @endif
                         @if ($translation?->description)

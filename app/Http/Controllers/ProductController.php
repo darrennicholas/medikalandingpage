@@ -32,6 +32,7 @@ class ProductController extends Controller
             $catalogPage = Product::query()->where('status', 'published')->whereHas('category', fn ($query) => $query->where('status', 'published'))
                 ->when($categoryIds !== [], fn ($query) => $query->whereIn('category_id', $categoryIds))
                 ->when(request()->filled('q'), fn ($query) => $query->whereHas('translations', fn ($translation) => $translation->where('name', 'like', '%'.request('q').'%')))
+                ->when(request()->boolean('new'), fn ($query) => $query->whereDate('new_until', '>=', today()))
                 ->when(request()->filled('subcategory'), function ($query): void {
                     $terms = array_filter(explode('|', (string) request('subcategory')));
                     $query->where(function ($match) use ($terms): void {
@@ -40,24 +41,34 @@ class ProductController extends Controller
                         }
                     });
                 })
-                ->with(['translations', 'media', 'topLogo', 'bottomLogo'])->orderBy('category_id')->orderBy('display_order')->orderBy('id')
+                ->with(['translations', 'media', 'topLogo', 'bottomLogo'])->orderByRaw('CASE WHEN new_until >= ? THEN 0 ELSE 1 END', [today()->toDateString()])->orderBy('category_id')->orderBy('display_order')->orderBy('id')
                 ->paginate((int) config('cms.products.catalog_per_page', 12))->withQueryString();
         }
+        $newProducts = $catalogMode
+            ? $catalogPage->getCollection()->filter(fn (Product $product): bool => $product->new_until !== null && $product->new_until->gte(today()))
+            : Product::query()->where('status', 'published')->whereDate('new_until', '>=', today())
+                ->whereHas('category', fn ($query) => $query->where('status', 'published'))
+                ->with(['translations', 'media', 'topLogo', 'bottomLogo'])->orderBy('new_until')->orderBy('display_order')
+                ->limit((int) config('cms.products.featured_per_category', 6))->get();
+        $newProductIds = $newProducts->modelKeys();
+
         $categories = ProductCategory::query()
             ->where('status', 'published')
             ->whereHas('products', fn ($query) => $query->where('status', 'published'))
             ->with(['translations', 'featuredProducts' => fn ($query) => $query->where('status', 'published')->whereColumn('products.category_id', 'category_featured_products.category_id')->with(['translations', 'media', 'topLogo', 'bottomLogo'])])
             ->orderBy('display_order')
             ->get()
-            ->map(function (ProductCategory $category) use ($catalogMode, $catalogPage): array {
+            ->map(function (ProductCategory $category) use ($catalogMode, $catalogPage, $newProductIds): array {
                 $products = $catalogMode
                     ? $catalogPage->getCollection()->where('category_id', $category->id)
-                    : $category->featuredProducts->take((int) config('cms.products.featured_per_category', 6));
+                    : $category->featuredProducts->sortBy(fn (Product $product): int => $product->new_until?->isPast() === false || $product->new_until?->isToday() ? 0 : 1)->take((int) config('cms.products.featured_per_category', 6));
 
                 if (! $catalogMode && $products->isEmpty()) {
                     $products = $category->products()->where('status', 'published')->with(['translations', 'media', 'topLogo', 'bottomLogo'])
-                        ->orderBy('display_order')->limit((int) config('cms.products.featured_per_category', 6))->get();
+                        ->orderByRaw('CASE WHEN new_until >= ? THEN 0 ELSE 1 END', [today()->toDateString()])->orderBy('display_order')->limit((int) config('cms.products.featured_per_category', 6))->get();
                 }
+
+                $products = $products->reject(fn (Product $product): bool => in_array($product->getKey(), $newProductIds, true));
 
                 return [
                     'id' => (string) $category->id,
@@ -67,6 +78,8 @@ class ProductController extends Controller
             })
             ->values()
             ->all();
+
+        $newProducts = $newProducts->map(fn (Product $product): array => $this->productCard($product))->all();
 
         $language = app()->getLocale();
         $seo = SeoMeta::query()->where('page_key', 'products')->where('lang', $language)->with('ogImage')->first();
@@ -78,6 +91,7 @@ class ProductController extends Controller
 
         return view('produk', [
             'categories' => $categories,
+            'newProducts' => $newProducts,
             'catalogMode' => $catalogMode,
             'catalogPage' => $catalogPage,
             'seo' => [
@@ -103,6 +117,9 @@ class ProductController extends Controller
     {
         return [
             'name' => $this->localizedValue($product->translations, 'name'),
+            'id' => $product->id,
+            'category_id' => (string) $product->category_id,
+            'is_new' => $product->new_until !== null && $product->new_until->gte(today()),
             'slug' => $this->localizedValue($product->translations, 'slug'),
             'subtitle' => $this->plainText($this->localizedValue($product->translations, 'description')),
             'parameter' => '',
@@ -116,7 +133,7 @@ class ProductController extends Controller
             'logo_top' => $this->mediaUrl($product->topLogo),
             'logo_bottom' => $this->mediaUrl($product->bottomLogo),
             'buy_url' => $product->buy_url,
-            'brochure_url' => $this->brochureUrl($product->brochure_path),
+            'brochure_url' => $product->brochure_path ? route('localized.brochure.request', ['locale' => app()->getLocale(), 'product' => $product->id]) : null,
             'subcategory' => $product->subcategory ?? '',
         ];
     }

@@ -2042,6 +2042,9 @@ a.public-documentation__card:focus-visible,
     overflow-wrap: anywhere;
 }
 
+.public-detail__content a { color: #2453cf; text-decoration: underline; overflow-wrap: anywhere; }
+.product-detail .product-card__new { display: inline-flex; padding: 4px 9px; border-radius: 5px; background: #dceaff; color: #1745bd; font-size: 11px; font-weight: 800; }
+
 .public-detail__content > :first-child {
     margin-top: 0;
 }

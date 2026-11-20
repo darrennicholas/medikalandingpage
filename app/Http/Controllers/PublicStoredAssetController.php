@@ -40,17 +40,18 @@ class PublicStoredAssetController extends Controller
         $disk = Storage::disk('public');
         abort_unless($disk->exists($storedPath), 404);
 
-        $product = Product::query()->with(['category', 'translations'])->whereIn('brochure_path', [$path, $storedPath, 'public/'.$storedPath])->first();
-        $isPublic = $product === null || ($product->status === 'published' && $product->category?->status === 'published');
+        $products = Product::query()->with(['category', 'translations'])->whereIn('brochure_path', [$path, $storedPath, 'public/'.$storedPath])->get();
+        $product = $products->first(fn (Product $item): bool => $item->status === 'published' && $item->category?->status === 'published' && $request->session()->get('brochure_grants.'.$item->id));
         $user = $request->user();
         $isCmsUser = $user?->status === 'active' && ! $user->must_change_password && $user->canAccessCms();
-        abort_unless($isPublic || $isCmsUser, 404);
-        abort_if(str_starts_with($path, 'cms/') && $product === null, 404);
+        abort_unless($product || $isCmsUser, 404);
+        $product ??= $products->first();
 
         $response = response()->file($disk->path($storedPath), [
             'X-Content-Type-Options' => 'nosniff',
-            'Cache-Control' => $isPublic ? 'public, max-age=86400' : 'private, no-store',
+            'Cache-Control' => 'private, no-store',
         ]);
+        $response->setPrivate();
         $productName = $product?->translations->firstWhere('lang', 'id')?->name;
         $fileName = $productName ? Str::slug($productName).'.pdf' : basename($path);
         $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_INLINE, $fileName);

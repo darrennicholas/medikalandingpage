@@ -219,7 +219,9 @@ class PublicContentApiController extends Controller
             'category' => $this->translated($product->category, $lang),
             'translation' => $this->localizedTranslation($product->translations, $lang),
             'image' => $this->mediaUrl($product->media),
-            'brochure_url' => $product->brochure_path ? $this->fileUrl($product->brochure_path) : null,
+            'brochure_url' => $product->brochure_path ? route('localized.brochure.request', ['locale' => $lang, 'product' => $product->id]) : null,
+            'is_new' => $product->new_until !== null && $product->new_until->gte(today()),
+            'new_until' => $product->new_until?->toDateString(),
         ];
     }
 

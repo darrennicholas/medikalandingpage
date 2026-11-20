@@ -1110,6 +1110,23 @@ document.querySelectorAll('[data-certificate-batch]').forEach((form) => {
 
 document.querySelectorAll('[data-admin-form]').forEach((form) => form.addEventListener('submit', (event) => submitContentForm(form, event)));
 
+document.querySelectorAll('.admin-cms-form[data-resource="products"]').forEach((form) => {
+    const status = form.querySelector('[data-product-new-status]');
+    const expiryField = form.querySelector('[data-product-new-until-field]');
+    const expiryDate = form.querySelector('[data-product-new-until]');
+    if (!status || !expiryField || !expiryDate) return;
+
+    const updateExpiryField = () => {
+        const isNew = status.value === 'new';
+        expiryField.hidden = !isNew;
+        expiryDate.required = isNew;
+        if (!isNew) expiryDate.value = '';
+    };
+
+    status.addEventListener('change', updateExpiryField);
+    updateExpiryField();
+});
+
 const appendMediaOption = (select, media) => {
     clearPendingMedia(select);
     const option = document.createElement('option');
@@ -1792,6 +1809,44 @@ document.querySelectorAll('.admin-cms-form').forEach((form) => {
         source.addEventListener('input', () => { if (!edited) slug.value = source.value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); });
     }
 });
+const richLinkDialog = document.querySelector('[data-rich-link-dialog]');
+const richLinkForm = richLinkDialog?.querySelector('[data-rich-link-form]');
+const richLinkLabel = richLinkForm?.elements.namedItem('label');
+const richLinkUrl = richLinkForm?.elements.namedItem('url');
+const richLinkError = richLinkDialog?.querySelector('[data-rich-link-error]');
+const richLinkRemove = richLinkDialog?.querySelector('[data-rich-link-remove]');
+let richLinkContext = null;
+
+richLinkDialog?.querySelector('[data-rich-link-cancel]')?.addEventListener('click', () => richLinkDialog.close());
+richLinkDialog?.addEventListener('close', () => { richLinkContext = null; });
+richLinkRemove?.addEventListener('click', () => {
+    if (!richLinkContext) return;
+    const { editor, range } = richLinkContext;
+    editor.formatText(range.index, range.length, 'link', false, Quill.sources.USER);
+    richLinkDialog.close();
+    editor.setSelection(range.index, range.length, Quill.sources.SILENT);
+});
+richLinkForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (!richLinkContext) return;
+    const url = richLinkUrl.value.trim();
+    const label = richLinkLabel.value.trim();
+    if (!label || !/^(https:\/\/[^\s/]+|\/(?!\/))/i.test(url) || /[\s\\]/.test(url)) {
+        richLinkError.textContent = 'Isi teks tautan dan gunakan URL HTTPS atau path halaman yang valid.';
+        richLinkError.hidden = false;
+        return;
+    }
+    const { editor, range } = richLinkContext;
+    if (range.length && editor.getText(range.index, range.length) === label) {
+        editor.formatText(range.index, range.length, 'link', url, Quill.sources.USER);
+    } else {
+        if (range.length) editor.deleteText(range.index, range.length, Quill.sources.USER);
+        editor.insertText(range.index, label, 'link', url, Quill.sources.USER);
+    }
+    richLinkDialog.close();
+    editor.setSelection(range.index + label.length, 0, Quill.sources.SILENT);
+});
+
 document.querySelectorAll('[data-rich-editor]').forEach((host) => {
     if (host.dataset.richInitialized === 'true') return;
 
@@ -1816,13 +1871,12 @@ document.querySelectorAll('[data-rich-editor]').forEach((host) => {
     });
     const toolbar = editor.getModule('toolbar');
     const linkButton = toolbar.container.querySelector('.ql-link');
-    linkButton?.setAttribute('aria-label', 'Teks bergaya tautan');
-    linkButton?.setAttribute('title', 'Teks bergaris bawah biru');
+    linkButton?.setAttribute('aria-label', 'Tambah atau ubah tautan');
+    linkButton?.setAttribute('title', 'Tambah atau ubah tautan');
     const syncLinkButtonState = () => {
         const range = editor.getSelection();
         const format = range ? editor.getFormat(range.index, range.length) : {};
-        const color = String(format.color || '').toLowerCase().replace(/\s/g, '');
-        const active = Boolean(format.link || (format.underline && ['#315bd5', 'rgb(49,91,213)'].includes(color)));
+        const active = Boolean(format.link);
 
         linkButton?.classList.toggle('ql-active', active);
         linkButton?.setAttribute('aria-pressed', String(active));
@@ -1835,22 +1889,21 @@ document.querySelectorAll('[data-rich-editor]').forEach((host) => {
             editor.setSelection(range.index, 0, Quill.sources.SILENT);
         }
 
-        const format = editor.getFormat(range.index, range.length);
-        const color = String(format.color || '').toLowerCase().replace(/\s/g, '');
-        const isLinkStyle = Boolean(format.underline && ['#315bd5', 'rgb(49,91,213)'].includes(color));
-        const enabled = !isLinkStyle;
-
-        if (range.length > 0) {
-            editor.formatText(range.index, range.length, {
-                underline: enabled,
-                color: enabled ? '#315bd5' : false,
-            }, Quill.sources.USER);
-            editor.setSelection(range.index, range.length, Quill.sources.SILENT);
-        } else {
-            editor.format('underline', enabled, Quill.sources.USER);
-            editor.format('color', enabled ? '#315bd5' : false, Quill.sources.USER);
+        if (!richLinkDialog || !richLinkForm) return;
+        const currentLink = editor.getFormat(range.index, range.length).link || '';
+        if (currentLink && range.length === 0) {
+            const leaf = editor.getLeaf(range.index)[0];
+            const anchor = leaf?.domNode?.parentElement?.closest('a');
+            const blot = anchor ? Quill.find(anchor) : null;
+            if (blot) range = { index: editor.getIndex(blot), length: blot.length() };
         }
-        syncLinkButtonState();
+        richLinkContext = { editor, range };
+        richLinkLabel.value = range.length ? editor.getText(range.index, range.length) : '';
+        richLinkUrl.value = currentLink;
+        richLinkRemove.hidden = !currentLink;
+        richLinkError.hidden = true;
+        richLinkDialog.showModal();
+        (richLinkLabel.value ? richLinkUrl : richLinkLabel).focus();
     });
     linkButton?.addEventListener('click', syncLinkButtonState);
     editor.on('selection-change', syncLinkButtonState);

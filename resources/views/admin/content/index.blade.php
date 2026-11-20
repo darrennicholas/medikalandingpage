@@ -1,6 +1,5 @@
 @extends('admin.layout')
 @php
-    $isBrochureFocus = $resource === 'products' && request()->query('section') === 'specifications-brochures';
     $hasMediaPreview = in_array($resource, ['products', 'certificates', 'documentations'], true);
     $contentBlockSections = [
         'home_coverage' => 'Jangkauan Kami',
@@ -11,14 +10,14 @@
     $isContentBlockFocus = $resource === 'content-blocks' && isset($contentBlockSections[$activeContentBlockSection]);
     $isHeroResource = $resource === 'hero-slides';
     $isProductResource = $resource === 'products';
-    $pageTitle = $isContentBlockFocus ? $contentBlockSections[$activeContentBlockSection] : ($isProductResource ? ($isBrochureFocus ? 'Spesifikasi & Brosur' : 'Daftar Produk') : $title);
+    $pageTitle = $isContentBlockFocus ? $contentBlockSections[$activeContentBlockSection] : $title;
 @endphp
-@section('title', $isBrochureFocus ? 'Spesifikasi & Brosur' : $pageTitle)
-@section('page-heading', $isBrochureFocus ? 'Spesifikasi & Brosur' : $pageTitle)
+@section('title', $pageTitle)
+@section('page-heading', $pageTitle)
 @section('breadcrumb', $isHeroResource ? 'Pengaturan Konten  /  Beranda  /  Hero / Banner' : 'CMS  /  Konten Landing Page  /  '.$pageTitle)
-@section('page-description', $isHeroResource ? 'Kelola slide utama pada halaman beranda' : '')
+@section('page-description', $isHeroResource ? 'Kelola slide utama pada halaman beranda' : ($isProductResource ? 'Kelola data, spesifikasi, dan brosur PDF produk dari satu daftar.' : ''))
 @section('page-actions')
-    <a class="admin-button admin-button--primary" href="{{ route('admin.content.create', array_merge(['resource' => $resource], $isContentBlockFocus || $isBrochureFocus ? ['section' => $activeContentBlockSection ?? 'specifications-brochures'] : [])) }}"><span class="material-symbols-rounded" aria-hidden="true">add</span>{{ $isProductResource ? 'Tambah Produk' : 'Tambah Data' }}</a>
+    <a class="admin-button admin-button--primary" href="{{ route('admin.content.create', array_merge(['resource' => $resource], $isContentBlockFocus ? ['section' => $activeContentBlockSection] : [])) }}"><span class="material-symbols-rounded" aria-hidden="true">add</span>{{ $isProductResource ? 'Tambah Produk' : 'Tambah Data' }}</a>
 @endsection
 @section('content')
 @if ($isHeroResource)
@@ -78,7 +77,7 @@
         $productPublished = $productStats['published'] ?? 0;
         $productDraft = $productStats['draft'] ?? 0;
     @endphp
-    <section class="admin-product-page {{ $isBrochureFocus ? 'admin-product-page--brochures' : '' }}">
+    <section class="admin-product-page">
         <div class="admin-product-stats" aria-label="Ringkasan produk">
             <article class="admin-summary-card"><span>Total Produk</span><strong>{{ $productTotal }}</strong><small>Semua produk katalog</small><span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">inventory_2</span></article>
             <article class="admin-summary-card admin-summary-card--success"><span>Published</span><strong>{{ $productPublished }}</strong><small>Tampil di website publik</small><span class="material-symbols-rounded admin-summary-card__icon" aria-hidden="true">check_circle</span></article>
@@ -87,18 +86,17 @@
 
         <section class="admin-panel admin-product-panel">
             <form class="admin-product-filters" method="GET" action="{{ route('admin.content.index', 'products') }}">
-                @if ($isBrochureFocus)<input type="hidden" name="section" value="specifications-brochures">@endif
                 <label>Kategori<select name="category"><option value="">Semua Kategori</option>@foreach ($productCategories ?? [] as $category)<option value="{{ $category->id }}" @selected((string) request('category') === (string) $category->id)>{{ $category->translations->firstWhere('lang', 'id')?->name ?? 'Kategori tanpa nama' }}</option>@endforeach</select></label>
                 <label>Status<select name="status"><option value="">Semua Status</option>@foreach (['published' => 'Published', 'draft' => 'Draft'] as $key => $label)<option value="{{ $key }}" @selected(request('status') === $key)>{{ $label }}</option>@endforeach</select></label>
-                @unless ($isBrochureFocus)<label>Unggulan<select name="featured"><option value="">Semua</option><option value="yes" @selected(request('featured') === 'yes')>Unggulan</option><option value="no" @selected(request('featured') === 'no')>Bukan unggulan</option></select></label>@endunless
+                <label>Unggulan<select name="featured"><option value="">Semua</option><option value="yes" @selected(request('featured') === 'yes')>Unggulan</option><option value="no" @selected(request('featured') === 'no')>Bukan unggulan</option></select></label>
                 <label class="admin-product-filters__search"><span class="material-symbols-rounded" aria-hidden="true">search</span><input type="search" name="q" value="{{ request('q') }}" placeholder="Cari nama produk atau slug…"></label>
                 <label>Baris<select name="per_page"><option value="10" @selected(request('per_page', 10) == 10)>10</option><option value="25" @selected(request('per_page') == 25)>25</option><option value="50" @selected(request('per_page') == 50)>50</option></select></label>
-                <div class="admin-filter-actions"><button class="admin-button admin-button--primary" type="submit">Cari</button><a class="admin-button" href="{{ route('admin.content.index', array_merge(['resource' => 'products'], $isBrochureFocus ? ['section' => 'specifications-brochures'] : [])) }}">Reset</a></div>
+                <div class="admin-filter-actions"><button class="admin-button admin-button--primary" type="submit">Cari</button><a class="admin-button" href="{{ route('admin.content.index', 'products') }}">Reset</a></div>
             </form>
 
             <div class="admin-table-wrap admin-product-table-wrap">
                 <table class="admin-table admin-product-table">
-                    <thead><tr><th>Aksi</th><th>Foto</th><th>Nama Produk</th><th>Kategori</th>@if ($isBrochureFocus)<th>Spesifikasi &amp; Brosur PDF</th>@else<th>Unggulan</th>@endif<th>Urutan</th><th>Status</th><th>Waktu</th></tr></thead>
+                    <thead><tr><th>Aksi</th><th>Foto</th><th>Nama Produk</th><th>Kategori</th><th>Unggulan</th><th>Spesifikasi &amp; Brosur PDF</th><th>Urutan</th><th>Status</th><th>Waktu</th></tr></thead>
                     <tbody>
                         @forelse ($records as $record)
                             @php
@@ -118,35 +116,24 @@
                             <tr>
                                 <td><div class="admin-product-actions"><a href="{{ route('admin.content.edit', ['resource' => 'products', 'id' => $record->id]) }}" aria-label="Ubah {{ $translation?->name }}" title="Ubah"><span class="material-symbols-rounded" aria-hidden="true">edit</span></a><a href="{{ route('admin.content.preview', ['resource' => 'products', 'id' => $record->id]) }}" target="_blank" rel="noopener" aria-label="Pratinjau {{ $translation?->name }}" title="Pratinjau"><span class="material-symbols-rounded" aria-hidden="true">open_in_new</span></a><button type="button" aria-label="{{ $record->status === 'published' ? 'Simpan sebagai Draft' : 'Publish' }} {{ $translation?->name }}" title="{{ $record->status === 'published' ? 'Simpan sebagai Draft' : 'Publish' }}" data-status-url="{{ url('/api/v1/admin/products/'.$record->id.'/status') }}" data-next-status="{{ $record->status === 'published' ? 'draft' : 'published' }}"><span class="material-symbols-rounded" aria-hidden="true">{{ $record->status === 'published' ? 'visibility_off' : 'visibility' }}</span></button><button type="button" class="is-danger" aria-label="Hapus {{ $translation?->name }}" title="Hapus" data-delete-url="{{ url('/api/v1/admin/products/'.$record->id) }}"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button></div></td>
                                 <td>@if ($imageUrl)<button class="admin-product-image" type="button" data-preview-url="{{ $imageUrl }}" aria-label="Lihat foto {{ $translation?->name }}"><img src="{{ $imageUrl }}" alt="{{ $record->media?->alt_text_id ?? $translation?->name ?? '' }}" loading="lazy"></button>@else<span class="admin-product-image admin-product-image--empty"><span class="material-symbols-rounded" aria-hidden="true">image</span></span>@endif</td>
-                                <td class="admin-product-name"><strong>{{ $translation?->name ?? 'Produk tanpa nama' }}</strong>@if ($isBrochureFocus)<small>{{ $translation?->description ?? $record->subcategory ?? '—' }}</small>@endif</td>
+                                <td class="admin-product-name"><strong>{{ $translation?->name ?? 'Produk tanpa nama' }}</strong><small>{{ $record->new_until && $record->new_until->gte(today()) ? 'New sampai '.$record->new_until->format('d/m/Y') : 'Tidak New' }}</small></td>
                                 <td>{{ $categoryTranslation?->name ?? 'Tanpa kategori' }}</td>
-                                @if ($isBrochureFocus)
-                                    <td class="admin-product-brochure">
-                                        @if ($brochureUrl)
-                                            <a href="{{ $brochureUrl }}" target="_blank" rel="noopener"><span class="material-symbols-rounded" aria-hidden="true">picture_as_pdf</span>Buka PDF</a>
-                                            <small>{{ $brochureName }}</small>
-                                        @else
-                                            <span class="admin-status">Belum ada PDF</span>
-                                        @endif
-                                        @if ($specificationText !== '')
-                                            <small class="admin-product-specification">{{ $specificationText }}</small>
-                                        @endif
-                                    </td>
-                                @else
-                                    <td>
-                                        @if ($isFeatured)
-                                            <span class="admin-product-featured"><span class="material-symbols-rounded" aria-hidden="true">star</span>Unggulan</span>
-                                        @else
-                                            <span class="admin-product-not-featured">—</span>
-                                        @endif
-                                    </td>
-                                @endif
+                                <td>@if ($isFeatured)<span class="admin-product-featured"><span class="material-symbols-rounded" aria-hidden="true">star</span>Unggulan</span>@else<span class="admin-product-not-featured">—</span>@endif</td>
+                                <td class="admin-product-brochure">
+                                    @if ($brochureUrl)
+                                        <a href="{{ $brochureUrl }}" target="_blank" rel="noopener"><span class="material-symbols-rounded" aria-hidden="true">picture_as_pdf</span>Buka PDF</a>
+                                        <small>{{ $brochureName }}</small>
+                                    @else
+                                        <span class="admin-status">Belum ada PDF</span>
+                                    @endif
+                                    @if ($specificationText !== '')<small class="admin-product-specification">{{ $specificationText }}</small>@endif
+                                </td>
                                 <td><span class="admin-product-order">{{ $record->display_order }}</span></td>
                                 <td><span class="admin-status admin-status--{{ $record->status }}">{{ ucfirst($record->status) }}</span></td>
                                 <td class="admin-product-date"><strong>{{ $record->created_at?->format('d M Y') ?? '—' }}</strong><small>Update {{ $record->updated_at?->format('d M Y H:i') ?? '—' }}</small></td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="admin-empty">Belum ada produk yang sesuai dengan filter.</td></tr>
+                            <tr><td colspan="9" class="admin-empty">Belum ada produk yang sesuai dengan filter.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -156,11 +143,10 @@
     </section>
 @else
     <section class="admin-panel">
-        <div class="admin-panel__header"><div><p class="admin-eyebrow">{{ $isBrochureFocus ? 'Katalog Produk' : ($isContentBlockFocus ? 'Konten Landing Page' : 'Manajemen Konten') }}</p><h2>{{ $isBrochureFocus ? 'Spesifikasi & Brosur PDF' : $pageTitle }}</h2></div></div>
+        <div class="admin-panel__header"><div><p class="admin-eyebrow">{{ $isContentBlockFocus ? 'Konten Landing Page' : 'Manajemen Konten' }}</p><h2>{{ $pageTitle }}</h2></div></div>
         @if ($isContentBlockFocus)<p class="admin-section-description">Kelola bagian {{ strtolower($pageTitle) }} pada halaman beranda.</p>@endif
-        @if ($isBrochureFocus)<p class="admin-section-description">Kelola file brosur PDF lokal yang terhubung ke setiap produk. Tautan di bawah membuka PDF di tab baru.</p>@endif
-        <form class="admin-filter" method="GET">@if ($isBrochureFocus || $isContentBlockFocus)<input type="hidden" name="section" value="{{ $isBrochureFocus ? 'specifications-brochures' : $activeContentBlockSection }}">@endif<input type="search" name="q" value="{{ request('q') }}" placeholder="Cari nama, judul, atau teks"><select name="status"><option value="">Semua status</option>@foreach (['draft' => 'Draft', 'published' => 'Published', 'open' => 'Open', 'closed' => 'Closed'] as $key => $label)<option value="{{ $key }}" @selected(request('status') === $key)>{{ $label }}</option>@endforeach</select><select name="per_page"><option value="10" @selected(request('per_page', 10) == 10)>10 baris</option><option value="25" @selected(request('per_page') == 25)>25 baris</option><option value="50" @selected(request('per_page') == 50)>50 baris</option></select><div class="admin-filter-actions"><button class="admin-button admin-button--primary" type="submit">Cari</button><a class="admin-button" href="{{ route('admin.content.index', array_merge(['resource' => $resource], ($isBrochureFocus || $isContentBlockFocus) ? ['section' => $isBrochureFocus ? 'specifications-brochures' : $activeContentBlockSection] : [])) }}">Reset</a></div></form>
-        <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Aksi</th><th>{{ $isBrochureFocus ? 'Produk' : 'Konten' }}</th>@if ($hasMediaPreview)<th>Gambar</th>@endif @if ($isBrochureFocus)<th>Brosur PDF</th>@endif<th>Status</th><th>Urutan / Info</th></tr></thead><tbody>
+        <form class="admin-filter" method="GET">@if ($isContentBlockFocus)<input type="hidden" name="section" value="{{ $activeContentBlockSection }}">@endif<input type="search" name="q" value="{{ request('q') }}" placeholder="Cari nama, judul, atau teks"><select name="status"><option value="">Semua status</option>@foreach (['draft' => 'Draft', 'published' => 'Published', 'open' => 'Open', 'closed' => 'Closed'] as $key => $label)<option value="{{ $key }}" @selected(request('status') === $key)>{{ $label }}</option>@endforeach</select><select name="per_page"><option value="10" @selected(request('per_page', 10) == 10)>10 baris</option><option value="25" @selected(request('per_page') == 25)>25 baris</option><option value="50" @selected(request('per_page') == 50)>50 baris</option></select><div class="admin-filter-actions"><button class="admin-button admin-button--primary" type="submit">Cari</button><a class="admin-button" href="{{ route('admin.content.index', array_merge(['resource' => $resource], $isContentBlockFocus ? ['section' => $activeContentBlockSection] : [])) }}">Reset</a></div></form>
+        <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Aksi</th><th>Konten</th>@if ($hasMediaPreview)<th>Gambar</th>@endif<th>Status</th><th>Urutan / Info</th></tr></thead><tbody>
             @forelse ($records as $record)
                 @php
                     $translation = method_exists($record, 'translations') ? ($record->translations->firstWhere('lang', 'id') ?? $record->translations->first()) : null;
@@ -192,15 +178,14 @@
                     </td>
                     <td><strong>{{ $recordTitle }}</strong><small>{{ $recordSubtitle }}</small></td>
                     @if ($hasMediaPreview)<td>@if ($imageUrl)<button class="admin-content-thumb" type="button" data-preview-url="{{ $imageUrl }}" aria-label="Lihat gambar {{ $recordTitle }}"><img src="{{ $imageUrl }}" alt="{{ $imageMedia?->alt_text_id ?: $recordTitle }}" loading="lazy"></button>@else<span class="admin-content-thumb admin-content-thumb--empty">Belum ada gambar</span>@endif</td>@endif
-                    @if ($isBrochureFocus)<td>@if ($brochureUrl)<a href="{{ $brochureUrl }}" target="_blank" rel="noopener">Buka PDF</a><small>{{ basename($record->brochure_path) }}</small>@else<span class="admin-status">Belum diunggah</span>@endif</td>@endif
                     <td>@if ($statusValue)<span class="admin-status admin-status--{{ $statusValue }}">{{ ucfirst($statusValue) }}</span>@else<span class="admin-status">Data tunggal</span>@endif</td>
                     <td>{{ $record->display_order ?? $record->event_date?->format('d M Y') ?? $record->posted_at?->format('d M Y') ?? '—' }}</td>
                 </tr>
             @empty
-                <tr><td colspan="{{ 4 + (int) $hasMediaPreview + (int) $isBrochureFocus }}" class="admin-empty">Belum ada data {{ $isBrochureFocus ? 'produk' : strtolower($pageTitle) }}.</td></tr>
+                <tr><td colspan="{{ 4 + (int) $hasMediaPreview }}" class="admin-empty">Belum ada data {{ strtolower($pageTitle) }}.</td></tr>
             @endforelse
         </tbody></table></div>
-        @include('admin.partials.pagination', ['paginator' => $records, 'label' => $isBrochureFocus ? 'produk' : 'konten'])
+        @include('admin.partials.pagination', ['paginator' => $records, 'label' => 'konten'])
     </section>
 @endif
 @endsection

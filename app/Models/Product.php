@@ -16,13 +16,13 @@ class Product extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'category_id', 'media_id', 'brochure_path', 'buy_url', 'parameters', 'subcategory',
+        'category_id', 'media_id', 'brochure_path', 'buy_url', 'parameters', 'subcategory', 'new_until',
         'logo_top_media_id', 'logo_bottom_media_id', 'display_order', 'status', 'created_by', 'updated_by',
     ];
 
     protected function casts(): array
     {
-        return ['display_order' => 'integer', 'parameters' => 'array'];
+        return ['display_order' => 'integer', 'parameters' => 'array', 'new_until' => 'date'];
     }
 
     public function category(): BelongsTo

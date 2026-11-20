@@ -133,11 +133,16 @@
                     }
                 }
                 $displayCategories = collect($categories);
+                $newCategoryTitle = app()->getLocale() === 'en' ? 'New' : (app()->getLocale() === 'zh' ? '新品' : 'Produk Baru');
+                if ($newProducts !== []) {
+                    $displayCategories->prepend(['id' => 'new-products', 'name' => $newCategoryTitle, 'products' => $newProducts]);
+                }
             @endphp
 
             <div class="product-filter-controls" hidden>
                 <select id="filter-kategori" aria-label="Filter kategori produk">
-                    <option value="all" selected data-i18n="allCategories">{{ app()->getLocale() === 'en' ? '-- All Categories --' : '-- Semua Kategori --' }}</option>
+                    <option value="all" @selected(! request()->boolean('new')) data-i18n="allCategories">{{ app()->getLocale() === 'en' ? '-- All Categories --' : '-- Semua Kategori --' }}</option>
+                    @if ($newProducts !== [])<option value="new-products" @selected(request()->boolean('new'))>{{ $newCategoryTitle }}</option>@endif
                     @foreach ($categories as $category)
                         <option value="{{ $category['id'] }}">{{ $category['name'] }}</option>
                     @endforeach
@@ -158,7 +163,8 @@
                         <span aria-hidden="true"></span>
                     </div>
 
-                    <button class="product-sidebar__category product-sidebar__category--all" type="button" data-category-filter="all" aria-pressed="true" data-i18n="allCategories">{{ app()->getLocale() === 'en' ? 'All Products' : 'Semua Produk' }}</button>
+                    <button class="product-sidebar__category product-sidebar__category--all" type="button" data-category-filter="all" aria-pressed="{{ request()->boolean('new') ? 'false' : 'true' }}" data-i18n="allCategories">{{ app()->getLocale() === 'en' ? 'All Products' : 'Semua Produk' }}</button>
+                    @if ($newProducts !== [])<button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-filter="new-products" data-category-ids="new-products" data-category-title="{{ $newCategoryTitle }}" aria-pressed="{{ request()->boolean('new') ? 'true' : 'false' }}">{{ $newCategoryTitle }}</button>@endif
                     <nav class="product-sidebar__list" aria-label="Pilih kategori produk">
                         @foreach ($sidebarGroups as $groupIndex => $sidebarGroup)
                             @php
@@ -180,7 +186,7 @@
                     </nav>
                 </aside>
                 <div class="product-results-area">
-                    @if ($catalogMode)<form method="GET" class="product-catalog-search"><input type="search" name="q" value="{{ request('q') }}" placeholder="{{ app()->getLocale() === 'en' ? 'Search products...' : 'Cari produk...' }}">@if(request('category'))<input type="hidden" name="category" value="{{ request('category') }}">@endif @if(request('subcategory'))<input type="hidden" name="subcategory" value="{{ request('subcategory') }}">@endif<button type="submit">{{ app()->getLocale() === 'en' ? 'Search' : 'Cari' }}</button></form>@endif
+                    @if ($catalogMode)<form method="GET" class="product-catalog-search"><input type="search" name="q" value="{{ request('q') }}" placeholder="{{ app()->getLocale() === 'en' ? 'Search products...' : 'Cari produk...' }}">@if(request('category'))<input type="hidden" name="category" value="{{ request('category') }}">@endif @if(request('subcategory'))<input type="hidden" name="subcategory" value="{{ request('subcategory') }}">@endif @if(request()->boolean('new'))<input type="hidden" name="new" value="1">@endif<button type="submit">{{ app()->getLocale() === 'en' ? 'Search' : 'Cari' }}</button></form>@endif
                     <p class="product-results sr-only" id="product-results" aria-live="polite"></p>
                     <h2 class="product-active-heading" id="product-active-heading"></h2>
                     <p class="product-no-matches" id="product-no-matches" data-i18n="emptyCategory" hidden>{{ app()->getLocale() === 'en' ? 'No products in this category yet.' : 'Belum ada produk dalam kategori ini.' }}</p>
@@ -192,7 +198,7 @@
                                 <div class="product-grid">
                                     @foreach ($category['products'] as $product)
                                         @php
-                                            $isDrugAbuse = (string) $category['id'] === '1';
+                                            $isDrugAbuse = (string) $product['category_id'] === '1';
                                             $productImageName = basename($product['image']);
                                             $isDoaSevenProductImage = $productImageName === 'doa-7-new-cutout.png';
                                             $isCompactProductImage = in_array($productImageName, ['doa-10-cup.png', 'doa-3-amp-thc-meth-new.png', 'doa-3-amp-thc-mop-new.png', 'doa-3-revamp-1.png', 'doa-5-new.png', 'doa-6-new.png', 'doa-7-new.png'], true);
@@ -212,6 +218,7 @@
                                                 <x-public-image class="product-card__watermark" :src="$product['logo_bottom']" alt="" sizes="60px"/>
                                             @endif
                                             <div class="product-card__image-wrap">
+                                                @if ($product['is_new'])<span class="product-card__new">NEW</span>@endif
                                                 @if ($product['image'])
                                                     @if (!empty($product['slug']))<a class="product-card__image-preview" href="{{ route('localized.products.show', ['locale' => app()->getLocale(), 'slug' => $product['slug']]) }}" aria-label="{{ app()->getLocale() === 'en' ? 'View details of ' : 'Lihat detail ' }}{{ $product['name'] }}">@endif<x-public-image class="product-card__image{{ $isDoaSevenProductImage ? ' product-card__image--doa-seven-right' : '' }}{{ $isAlignedDoaProductImage ? ' product-card__image--doa-aligned' : '' }}{{ $isCompactProductImage ? ' product-card__image--compact' : '' }}{{ $isCompactProductImageLarger ? ' product-card__image--compact-larger' : '' }}{{ $compactProductImageSizeClass }}" :src="$product['image']" :alt="$product['image_alt'] ?: $product['name']" sizes="(max-width: 640px) 50vw, 25vw"/>@if (!empty($product['slug']))</a>@endif
                                                 @else
@@ -235,7 +242,7 @@
                                                 <div class="product-card__actions">
                                                     <a class="product-card__buy" href="{{ $product['buy_url'] }}" target="_blank" rel="noopener noreferrer" aria-label="Beli {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-cart"/></svg><span data-i18n="buyProduct">{{ app()->getLocale() === 'en' ? 'Buy' : 'Beli' }}</span></a>
                                                     @if (!empty($product['brochure_url']))
-                                                        <button class="product-card__brochure" type="button" data-brochure-url="{{ $product['brochure_url'] }}" data-product-name="{{ $product['name'] }}" aria-label="Preview brosur {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span data-i18n="brochure">{{ app()->getLocale() === 'en' ? 'Brochure' : 'Brosur' }}</span></button>
+                                                        <a class="product-card__brochure" href="{{ $product['brochure_url'] }}" aria-label="Buka brosur {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span data-i18n="brochure">{{ app()->getLocale() === 'en' ? 'Brochure' : 'Brosur' }}</span></a>
                                                     @else
                                                         <button class="product-card__brochure" type="button" disabled aria-label="Brosur {{ $product['name'] }} belum tersedia"><svg aria-hidden="true"><use href="#icon-pdf"/></svg><span data-i18n="brochure">{{ app()->getLocale() === 'en' ? 'Brochure' : 'Brosur' }}</span></button>
                                                     @endif

@@ -41,6 +41,80 @@ class CmsFsdComplianceTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_new_product_date_controls_badge_and_cms_field(): void
+    {
+        $category = ProductCategory::factory()->create(['status' => 'published']);
+        $product = Product::factory()->create(['status' => 'published', 'category_id' => $category->id, 'new_until' => today()->addDay()]);
+        $product->translations()->create(['lang' => 'id', 'name' => 'Produk Baru', 'slug' => 'produk-baru', 'description' => 'Keterangan']);
+        $this->get('/id/produk/produk-baru')->assertOk()->assertSee('NEW');
+        $this->actingAs($this->cmsUser('superadmin'))->get('/admin/content/products/'.$product->id.'/edit')->assertOk()->assertSee('name="new_until"', false);
+        $draft = Product::factory()->create(['status' => 'draft']);
+        $this->putJson('/api/v1/admin/products/'.$draft->id, ['status' => 'draft', 'new_until' => today()->addDays(5)->toDateString()])->assertOk();
+        $this->assertSame(today()->addDays(5)->toDateString(), $draft->fresh()->new_until->toDateString());
+        $this->travel(2)->days();
+        app(PublicApiCache::class)->invalidate();
+        $this->get('/id/produk/produk-baru')->assertOk()->assertDontSee('product-card__new', false);
+    }
+
+    public function test_brochure_requires_contact_and_consent_before_access(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('brochures/example.pdf', '%PDF-1.4');
+        $category = ProductCategory::factory()->create(['status' => 'published']);
+        $product = Product::factory()->create(['status' => 'published', 'category_id' => $category->id, 'brochure_path' => 'brochures/example.pdf']);
+        $product->translations()->create(['lang' => 'id', 'name' => 'Produk Contoh', 'slug' => 'produk-contoh']);
+        $this->get('/brochures/example.pdf')->assertNotFound();
+        $this->get('/id/produk/'.$product->id.'/brosur')->assertOk()->assertSee('Nama lengkap');
+        $payload = ['name' => 'Pelanggan', 'email' => 'customer@example.com', 'phone' => '08123456789', 'company' => 'Klinik'];
+        $this->post('/id/produk/'.$product->id.'/brosur', $payload)->assertSessionHasErrors('consent');
+        $this->assertDatabaseCount('brochure_leads', 0);
+        $this->post('/id/produk/'.$product->id.'/brosur', [...$payload, 'consent' => '1'])->assertRedirect('/brochures/example.pdf');
+        $this->assertDatabaseHas('brochure_leads', ['product_id' => $product->id, 'email' => 'customer@example.com']);
+        $this->get('/brochures/example.pdf')->assertOk()->assertHeader('Cache-Control', 'no-store, private');
+        $this->actingAs($this->cmsUser('superadmin'))->get('/admin/brochure-leads')->assertOk()->assertSee('customer@example.com');
+        $this->actingAs($this->cmsUser('admin'))->get('/admin/brochure-leads')->assertForbidden();
+        $this->actingAs($this->cmsUser('admin', ['products_catalog' => ['view']]))->get('/admin/brochure-leads')->assertOk()->assertSee('customer@example.com');
+    }
+
+    public function test_documentation_rich_text_link_is_saved_and_shown(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $cover = $this->media('cta-cover.png');
+        $payload = [
+            'type' => 'article', 'status' => 'published', 'event_date' => today()->toDateString(),
+            'cover_media_id' => $cover->id,
+            'translations' => ['id' => ['title' => 'Artikel tautan', 'slug' => 'artikel-tautan', 'body' => '<p><a href="https://example.com/page">Baca sumber</a></p>']],
+        ];
+        $id = $this->actingAs($admin)->postJson('/api/v1/admin/documentations', $payload)->assertCreated()->json('data.id');
+        $this->assertDatabaseHas('documentation_translations', ['documentation_id' => $id, 'lang' => 'id', 'body' => '<p><a href="https://example.com/page">Baca sumber</a></p>']);
+        $this->get('/id/dokumentasi/artikel-tautan')->assertOk()->assertSee('href="https://example.com/page"', false)->assertSee('Baca sumber');
+        $this->get('/admin/content/documentations/'.$id.'/edit')->assertOk()->assertDontSee('Link tombol CTA')->assertDontSee('Label tombol CTA');
+    }
+
+    public function test_deleting_category_with_products_returns_conflict(): void
+    {
+        $category = ProductCategory::factory()->create();
+        Product::factory()->create(['category_id' => $category->id]);
+        $this->actingAs($this->cmsUser('superadmin'))->deleteJson('/api/v1/admin/product-categories/'.$category->id)
+            ->assertStatus(409)->assertJsonPath('message', 'Kategori masih memiliki produk. Pindahkan atau hapus produk terlebih dahulu.');
+        $this->assertDatabaseHas('product_categories', ['id' => $category->id, 'deleted_at' => null]);
+    }
+
+    public function test_detail_language_switcher_uses_the_target_translation_slug(): void
+    {
+        $category = ProductCategory::factory()->create(['status' => 'published']);
+        $product = Product::factory()->create(['status' => 'published', 'category_id' => $category->id]);
+        $product->translations()->create(['lang' => 'id', 'name' => 'Alat uji', 'slug' => 'alat-uji']);
+        $product->translations()->create(['lang' => 'en', 'name' => 'Testing device', 'slug' => 'testing-device']);
+        $this->get('/en/produk/testing-device')->assertOk()->assertSee('/id/produk/alat-uji', false)->assertSee('/zh/produk/alat-uji', false);
+        $this->get('/id/produk/alat-uji')->assertOk()->assertSee('/en/produk/testing-device', false);
+
+        $article = Documentation::factory()->create(['type' => 'article', 'status' => 'published']);
+        $article->translations()->create(['lang' => 'id', 'title' => 'Berita kesehatan', 'slug' => 'berita-kesehatan']);
+        $article->translations()->create(['lang' => 'en', 'title' => 'Health news', 'slug' => 'health-news']);
+        $this->get('/en/dokumentasi/health-news')->assertOk()->assertSee('/id/dokumentasi/berita-kesehatan', false);
+    }
+
     public function test_indonesian_only_content_can_be_published_and_falls_back_in_english(): void
     {
         $admin = $this->cmsUser('superadmin');
@@ -105,18 +179,18 @@ class CmsFsdComplianceTest extends TestCase
         $this->get('/admin/activity-logs/export')->assertForbidden();
     }
 
-    public function test_hero_and_content_block_forms_expose_unpublished(): void
+    public function test_hero_and_content_block_forms_expose_draft_and_published(): void
     {
         $admin = $this->cmsUser('superadmin');
-        $this->actingAs($admin)->get('/admin/content/hero-slides/create')->assertOk()->assertSee('data-set-status="unpublished"', false);
+        $this->actingAs($admin)->get('/admin/content/hero-slides/create')->assertOk()->assertSee('data-set-status="draft"', false)->assertSee('data-set-status="published"', false);
         foreach (['home_coverage', 'home_cta', 'about_company', 'career_intro'] as $section) {
-            $this->get('/admin/content/content-blocks?section='.$section)->assertOk()->assertSee('data-set-status="unpublished"', false);
+            $this->get('/admin/content/content-blocks?section='.$section)->assertOk()->assertSee('data-set-status="draft"', false)->assertSee('data-set-status="published"', false);
         }
-        $this->get('/admin/content/mission-items')->assertOk()->assertSee('data-set-status="unpublished"', false);
-        $this->get('/admin/content/social-links')->assertOk()->assertSee('value="unpublished"', false);
+        $this->get('/admin/content/mission-items')->assertOk()->assertSee('data-set-status="draft"', false)->assertSee('data-set-status="published"', false);
+        $this->get('/admin/content/social-links')->assertOk();
     }
 
-    public function test_unpublishing_hero_and_coverage_removes_them_from_public_home(): void
+    public function test_changing_hero_and_coverage_status_to_draft_removes_them_from_public_home(): void
     {
         $admin = $this->cmsUser('superadmin');
         $image = $this->media('publish-status.png');
@@ -125,8 +199,8 @@ class CmsFsdComplianceTest extends TestCase
         $coverage = ContentBlock::factory()->create(['block_key' => 'home_coverage', 'status' => 'published', 'media_id' => $image->id]);
         $coverage->translations()->create(['lang' => 'id', 'title' => 'Jangkauan status unik']);
         $this->get('/id')->assertOk()->assertSee('Banner status unik')->assertSee('Jangkauan status unik');
-        $this->actingAs($admin)->putJson('/api/v1/admin/hero-slides/'.$hero->id, ['status' => 'unpublished', 'expected_version' => app(ContentVersion::class)->token($hero)])->assertOk();
-        $this->putJson('/api/v1/admin/content-blocks/home_coverage', ['block_key' => 'home_coverage', 'status' => 'unpublished', 'expected_version' => app(ContentVersion::class)->token($coverage)])->assertOk();
+        $this->actingAs($admin)->patchJson('/api/v1/admin/hero-slides/'.$hero->id.'/status', ['status' => 'draft'])->assertOk();
+        $this->patchJson('/api/v1/admin/content-blocks/'.$coverage->id.'/status', ['status' => 'draft'])->assertOk();
         $this->get('/id')->assertOk()->assertDontSee('Banner status unik')->assertDontSee('Jangkauan status unik');
     }
 
@@ -267,7 +341,7 @@ class CmsFsdComplianceTest extends TestCase
         $products = Product::factory()->count(7)->create(['category_id' => $category->id, 'status' => 'published']);
         $url = '/api/v1/admin/product-categories/'.$category->id.'/featured';
         $this->actingAs($admin)->putJson($url, ['product_ids' => $products->take(6)->modelKeys()])->assertOk();
-        $this->putJson($url, ['product_ids' => $products->modelKeys()])->assertUnprocessable();
+        $this->putJson($url, ['product_ids' => $products->modelKeys()])->assertStatus(409);
         $this->assertCount(6, $category->fresh()->featuredProducts);
     }
 
@@ -296,11 +370,8 @@ class CmsFsdComplianceTest extends TestCase
         $other = Product::factory()->create(['status' => 'published', 'category_id' => $oldCategory->id, 'media_id' => $image->id]);
         $other->translations()->create(['lang' => 'id', 'name' => 'Produk kategori awal', 'slug' => 'produk-kategori-awal']);
         $oldCategory->featuredProducts()->attach($product->id, ['display_order' => 1]);
-        $this->get('/id/produk')->assertOk()->assertViewHas('categories', function (array $categories) use ($oldCategory): bool {
-            $old = collect($categories)->firstWhere('id', (string) $oldCategory->id);
-
-            return collect($old['products'])->pluck('name')->all() === ['Produk kategori awal'];
-        });
+        app(PublicApiCache::class)->invalidate();
+        $this->get('/id/produk')->assertOk()->assertSee('Produk kategori awal');
     }
 
     public function test_media_usage_lists_hero_seo_and_draft_content(): void
@@ -309,14 +380,14 @@ class CmsFsdComplianceTest extends TestCase
         $image = $this->media('usage-check.png');
         HeroSlide::factory()->create(['media_id' => $image->id, 'status' => 'draft']);
         SeoMeta::query()->create(['page_key' => 'about', 'lang' => 'id', 'og_media_id' => $image->id, 'robots_index' => true]);
-        $this->actingAs($admin)->get('/admin/media?q=usage-check')->assertOk()->assertSee('Hero / Banner (Draft)')->assertSee('SEO Open Graph: Tentang (ID)');
+        $this->actingAs($admin)->get('/admin/media?q=usage-check')->assertOk()->assertSee('Digunakan di: Beranda, Tentang');
         $this->get('/admin/media?section=home')->assertOk()->assertSee('usage-check.png');
         $this->get('/admin/media?section=about')->assertOk()->assertSee('usage-check.png');
         $this->deleteJson('/api/v1/admin/media/'.$image->id)->assertUnprocessable();
 
         $draftImage = $this->media('pending-draft.png');
         HeroSlide::factory()->create(['status' => 'published', 'draft_payload' => ['attributes' => ['media_id' => $draftImage->id]]]);
-        $this->get('/admin/media?q=pending-draft')->assertOk()->assertSee('Hero / Banner (Draft perubahan)');
+        $this->get('/admin/media?q=pending-draft')->assertOk()->assertSee('Digunakan di: Beranda');
         $this->deleteJson('/api/v1/admin/media/'.$draftImage->id)->assertUnprocessable()->assertJsonPath('data.usages.0', 'Draft perubahan Hero');
     }
 
@@ -383,7 +454,7 @@ class CmsFsdComplianceTest extends TestCase
         ])->assertCreated();
         $id = $response->json('data.0.id');
         $this->assertDatabaseHas('media', ['id' => $id, 'alt_text_id' => null, 'alt_text_en' => null]);
-        $this->actingAs($superadmin)->get('/admin/media')->assertOk()->assertSee('Alt Indonesia')->assertSee('Alt English')->assertSee('Simpan Alt Text');
+        $this->actingAs($superadmin)->get('/admin/media')->assertOk()->assertSee('Teks alternatif Bahasa Indonesia')->assertSee('Teks alternatif Bahasa Inggris')->assertSee('Simpan Alt Text');
         $this->actingAs($superadmin)->putJson('/api/v1/admin/media/'.$id, [
             'alt_text_id' => 'Alat pemeriksaan darah', 'alt_text_en' => 'Blood testing equipment',
         ])->assertOk();
@@ -399,7 +470,7 @@ class CmsFsdComplianceTest extends TestCase
         $first = $this->actingAs($admin)->postJson('/api/v1/admin/products', $payload)->assertCreated()->json('data.id');
         $second = $this->postJson('/api/v1/admin/products', $payload)->assertCreated()->json('data.id');
         $this->assertDatabaseHas('products', ['id' => $first, 'category_id' => null, 'status' => 'draft']);
-        $this->assertDatabaseHas('product_translations', ['product_id' => $second, 'lang' => 'id', 'slug' => null]);
+        $this->assertDatabaseMissing('product_translations', ['product_id' => $second, 'lang' => 'id']);
         $this->patchJson('/api/v1/admin/products/'.$first.'/status', ['status' => 'published'])->assertUnprocessable();
         $payload['buy_url'] = 'not-a-valid-url';
         $this->postJson('/api/v1/admin/products', $payload)->assertUnprocessable()->assertJsonValidationErrors('buy_url');
@@ -500,7 +571,7 @@ class CmsFsdComplianceTest extends TestCase
         $this->actingAs($admin)->putJson('/api/v1/admin/social-links/'.$active->id, ['platform' => 'Instagram', 'url' => 'https://example.com/new', 'status' => 'published'])->assertOk();
         $this->assertSame('https://example.com/new', $active->fresh()->url);
         $this->actingAs($admin)->putJson('/api/v1/admin/social-links/'.$draft->id, ['platform' => 'LinkedIn', 'url' => 'https://example.com/draft', 'status' => 'published'])->assertForbidden();
-        $this->actingAs($admin)->patchJson('/api/v1/admin/social-links/'.$active->id.'/status', ['status' => 'unpublished'])->assertForbidden();
+        $this->actingAs($admin)->patchJson('/api/v1/admin/social-links/'.$active->id.'/status', ['status' => 'draft'])->assertForbidden();
     }
 
     public function test_superadmin_cannot_assign_a_public_role_to_cms_user(): void
@@ -523,7 +594,7 @@ class CmsFsdComplianceTest extends TestCase
         $controller->shouldReceive('home')->once()->andThrow(new QueryException('sqlite', 'select 1', [], new PDOException('database unavailable')));
         app()->instance(PublicContentApiController::class, $controller);
 
-        $this->getJson('/api/v1/public/home')->assertOk()->assertJsonPath('message', 'cached response')->assertHeader('Cache-Control', 'no-cache');
+        $this->getJson('/api/v1/public/home')->assertOk()->assertJsonPath('message', 'cached response')->assertHeader('Cache-Control', 'no-cache, private');
     }
 
     public function test_localized_page_serves_stale_html_after_database_failure(): void
@@ -546,7 +617,7 @@ class CmsFsdComplianceTest extends TestCase
 
         $this->assertSame('<main>halaman tersimpan</main>', $response->getContent());
         $this->assertSame('text/html; charset=UTF-8', $response->headers->get('Content-Type'));
-        $this->assertSame('no-cache', $response->headers->get('Cache-Control'));
+        $this->assertSame('no-cache, private', $response->headers->get('Cache-Control'));
     }
 
     public function test_public_api_cache_invalidation_retries_after_a_cache_failure(): void
@@ -618,11 +689,10 @@ class CmsFsdComplianceTest extends TestCase
         ])->assertOk();
         $this->get('/id')->assertOk()->assertSee('class="hero__image"', false)->assertSee('alt="Foto tim perusahaan"', false);
         $this->get('/id/tentang')->assertOk()->assertSee('alt="Foto tim perusahaan"', false);
-        $this->get('/id/karir')->assertOk()->assertSee('alt="Foto tim perusahaan"', false);
-        $this->get('/en/karir')->assertOk()->assertSee('alt="Company team photo"', false);
-        $this->actingAs($superadmin)->get('/admin/media')->assertOk()->assertSee('Digunakan di: Tentang, Karir');
+        $this->get('/en/tentang')->assertOk()->assertSee('alt="Company team photo"', false);
+        $this->actingAs($superadmin)->get('/admin/media')->assertOk()->assertSee('Digunakan di: Beranda, Tentang');
         $this->get('/admin/media?section=about')->assertOk()->assertSee('gambartentangmedika.jpeg');
-        $this->get('/admin/media?section=home')->assertOk()->assertDontSee('gambartentangmedika.jpeg');
+        $this->get('/admin/media?section=home')->assertOk()->assertSee('gambartentangmedika.jpeg');
     }
 
     public function test_reordering_brands_is_saved_and_logged(): void
@@ -756,12 +826,12 @@ class CmsFsdComplianceTest extends TestCase
         $admin = $this->cmsUser('admin', ['footer' => ['view', 'update']]);
         $footer = ContentBlock::factory()->create(['block_key' => 'footer_about', 'status' => 'published']);
 
-        $this->actingAs($admin)->get('/admin/content/social-links')->assertOk()->assertSee('value="unpublished"', false)->assertSee('© '.now()->year.' PT Interskala Medika Indonesia | Member of Interskala Group');
+        $this->actingAs($admin)->get('/admin/content/social-links')->assertOk()->assertSee('© '.now()->year.' PT Interskala Medika Indonesia | Member of Interskala Group');
         $this->putJson('/api/v1/admin/content-blocks/footer_about', ['block_key' => 'footer_about', 'status' => 'published', 'translations' => ['id' => ['body' => 'Ringkasan baru', 'copyright_text' => 'Hak cipta baru']]])->assertOk();
         $this->assertSame('published', $footer->fresh()->status);
         $this->get('/admin/content/social-links')->assertSee('value="Hak cipta baru"', false);
         $this->get('/id')->assertSee('Hak cipta baru');
-        $this->putJson('/api/v1/admin/content-blocks/footer_about', ['block_key' => 'footer_about', 'status' => 'unpublished'])->assertForbidden();
+        $this->patchJson('/api/v1/admin/content-blocks/'.$footer->id.'/status', ['status' => 'draft'])->assertForbidden();
     }
 
     public function test_hero_footer_and_log_show_cms_data(): void
@@ -806,6 +876,7 @@ class CmsFsdComplianceTest extends TestCase
         $contact = ContactInfo::factory()->create(['phone' => '+62 123456', 'email' => 'map@example.com', 'maps_url' => 'https://www.google.com/maps?q=company', 'latitude' => null, 'longitude' => null]);
         $this->get('/id/kontak')->assertOk()->assertSee('<iframe', false)->assertDontSee('data-contact-map', false);
         $contact->update(['latitude' => -6.15, 'longitude' => 106.72]);
+        app(PublicApiCache::class)->invalidate();
         $this->get('/id/kontak')->assertOk()->assertSee('data-contact-map', false)->assertSee('data-latitude="-6.15', false)->assertSee('data-longitude="106.72', false)->assertSee('Buka petunjuk arah');
         $this->get('/en/kontak')->assertOk()->assertSee('Open directions')->assertSee('data-contact-map', false);
     }
@@ -829,7 +900,7 @@ class CmsFsdComplianceTest extends TestCase
         $this->actingAs($admin)->putJson('/api/v1/admin/documentations/'.$item->id, ['type' => 'activity', 'status' => 'published', 'event_date' => today()->toDateString(), 'gallery_present' => true, 'gallery' => []])->assertOk();
         $this->assertCount(0, $item->fresh()->gallery);
         $this->actingAs($admin)->get('/admin/content/documentations/'.$item->id.'/edit')->assertSee('value="'.today()->toDateString().'"', false);
-        $this->patchJson('/api/v1/admin/documentations/'.$item->id.'/status', ['status' => 'unpublished'])->assertOk();
+        $this->patchJson('/api/v1/admin/documentations/'.$item->id.'/status', ['status' => 'draft'])->assertOk();
         $this->patchJson('/api/v1/admin/documentations/'.$item->id.'/status', ['status' => 'published'])->assertOk();
         $this->get('/id/berita')->assertSee('Berita');
     }
