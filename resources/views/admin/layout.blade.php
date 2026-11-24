@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @include('partials.favicon')
     <meta name="robots" content="noindex,nofollow">
     <meta name="theme-color" content="#f4f7fc">
     <title>@yield('title', 'CMS Admin') | Interskala Medika</title>

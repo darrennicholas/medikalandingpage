@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @include('partials.favicon')
     <meta name="robots" content="noindex, nofollow">
     <title>{{ $language === 'en' ? 'Request brochure' : 'Permintaan brosur' }} | IMI Medika</title>
     @vite(['resources/css/app.css', 'resources/css/products.css'])

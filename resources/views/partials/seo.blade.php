@@ -1,3 +1,4 @@
+@include('partials.favicon')
 <title>{{ $seo['title'] ?? 'PT Interskala Medika Indonesia' }}</title>
 <meta name="description" content="{{ $seo['description'] ?? '' }}">
 <meta name="robots" content="{{ ($seo['robots_index'] ?? true) ? 'index,follow' : 'noindex,nofollow' }}">

@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @include('partials.favicon')
     <meta name="description" content="Berita Hospital Expo 2026 IMI Medika.">
     <title>Berita Hospital Expo 2026 - Interskala Medika Indonesia</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">

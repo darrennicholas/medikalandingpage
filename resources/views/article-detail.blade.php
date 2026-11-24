@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @include('partials.favicon')
     <meta name="description" content="Detail artikel IMI Medika.">
     <title>Detail Artikel - Interskala Medika Indonesia</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">

@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @include('partials.favicon')
     <meta name="robots" content="noindex,nofollow">
     <meta name="theme-color" content="#10213f">
     <title>Login CMS | Interskala Medika</title>
