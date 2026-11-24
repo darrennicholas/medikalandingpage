@@ -35,6 +35,8 @@
 /_ide_helper.php
 
 # Local editor and operating system files
+/AGENTS.md
+/CLAUDE.md
 /.codex/
 /.aws/
 /.cursor/
