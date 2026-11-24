@@ -61,6 +61,7 @@ class MediaController extends Controller
             ['products', 'logo_top_media_id'],
             ['products', 'logo_bottom_media_id'],
             ['documentations', 'cover_media_id'],
+            ['social_links', 'preview_media_id'],
         ] as [$table, $column]) {
             if (DB::table($table)->where($column, $media->id)->where('status', 'published')->whereNull('deleted_at')->exists()) {
                 return true;

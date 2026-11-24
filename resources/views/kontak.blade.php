@@ -100,9 +100,9 @@
                     <div class="contact-social__links">
                         @foreach ($socialLinks as $socialLink)
                             @php $icon = strtolower($socialLink->platform); @endphp
-                            <a href="{{ $socialLink->url }}" target="_blank" rel="noopener noreferrer" aria-label="{{ $socialLink->platform }}">
+                            <x-social-link-preview :profile-url="$socialLink->url" :platform="$socialLink->platform" :media="$socialLink->previewMedia" link-class="contact-social__trigger">
                                 <svg aria-hidden="true"><use href="#icon-{{ in_array($icon, ['instagram', 'linkedin', 'tiktok'], true) ? $icon : 'globe' }}"/></svg>
-                            </a>
+                            </x-social-link-preview>
                         @endforeach
                     </div>
                 </section>

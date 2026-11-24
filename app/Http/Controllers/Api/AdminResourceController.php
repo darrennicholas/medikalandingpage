@@ -57,7 +57,7 @@ class AdminResourceController extends Controller
         'seo-metas' => SeoMeta::class,
     ];
 
-    /** @var array<string, array<string, string|list<string>>> */
+    /** @var array<string, array<string, mixed>> */
     private const RULES = [
         'hero-slides' => ['media_id' => 'nullable|integer|exists:media,id', 'cta_url' => ['nullable', 'string', 'max:500', 'regex:/^(https:\/\/|\/(?!\/))/i'], 'display_order' => 'nullable|integer|min:1'],
         'content-blocks' => ['block_key' => 'required|string|max:50', 'media_id' => 'nullable|integer|exists:media,id', 'cta_url' => ['nullable', 'string', 'max:500', 'regex:/^(https:\/\/|\/(?!\/))/i']],
@@ -70,7 +70,12 @@ class AdminResourceController extends Controller
         'documentations' => ['type' => 'required|in:article,activity', 'cover_media_id' => 'nullable|integer|exists:media,id', 'event_date' => 'required|date', 'gallery' => 'nullable|array|max:30', 'gallery.*.media_id' => 'required|integer|distinct|exists:media,id', 'gallery.*.caption_id' => 'nullable|string|max:200', 'gallery.*.caption_en' => 'nullable|string|max:200', 'gallery.*.caption_zh' => 'nullable|string|max:200'],
         'job-openings' => ['employment_type' => 'required|string|max:50', 'location' => 'required|string|max:150', 'posted_at' => 'required|date', 'closing_date' => 'nullable|date|after_or_equal:posted_at', 'apply_url' => 'required|url:https|max:500'],
         'contact-info' => ['phone' => ['required', 'regex:/^[0-9+()\- .]{6,20}$/'], 'email' => 'required|email|max:150', 'maps_url' => 'nullable|url:https|max:500', 'latitude' => 'nullable|numeric|between:-90,90', 'longitude' => 'nullable|numeric|between:-180,180'],
-        'social-links' => ['platform' => 'required|string|max:30', 'url' => 'required|url:https|max:500', 'display_order' => 'nullable|integer|min:1'],
+        'social-links' => [
+            'platform' => 'required|string|max:30',
+            'url' => 'required|url:https|max:500',
+            'preview_media_id' => 'nullable|integer',
+            'display_order' => 'nullable|integer|min:1',
+        ],
         'seo-metas' => ['page_key' => 'required|in:home,about,products,documentation,careers,contact', 'lang' => 'required|in:id,en,zh', 'meta_title' => 'nullable|string|max:70', 'meta_description' => 'nullable|string|max:160', 'canonical_url' => 'nullable|url:https|max:500', 'og_media_id' => 'nullable|integer|exists:media,id', 'robots_index' => 'required|boolean'],
     ];
 
@@ -551,6 +556,14 @@ class AdminResourceController extends Controller
             foreach (config('cms.content.supported_languages') as $language) {
                 $rules['translations.'.$language.'.name'] = ['nullable', 'string', 'max:80', Rule::unique('product_category_translations', 'name')->where('lang', $language)->ignore($record?->getKey(), 'product_category_id')];
             }
+        }
+
+        if ($resource === 'social-links') {
+            $rules['preview_media_id'] = [
+                'nullable',
+                'integer',
+                Rule::exists('media', 'id')->whereNull('deleted_at')->whereIn('mime_type', ['image/jpeg', 'image/png', 'image/webp']),
+            ];
         }
 
         if ($resource === 'products') {

@@ -106,7 +106,7 @@ class ProductController extends Controller
                 'show_phone' => $footerSettings?->footer_show_phone ?? true,
                 'show_email' => $footerSettings?->footer_show_email ?? true,
                 'contact' => $contact ? ['phone' => $contact->phone, 'email' => $contact->email, 'address' => $contactTranslation?->address] : null,
-                'social_links' => SocialLink::query()->where('status', 'published')->orderBy('display_order')->get(),
+                'social_links' => SocialLink::query()->where('status', 'published')->with('previewMedia')->orderBy('display_order')->get(),
                 'copyright_text' => $footerTranslation?->copyright_text,
             ],
         ]);

@@ -574,6 +574,74 @@ class CmsFsdComplianceTest extends TestCase
         $this->actingAs($admin)->patchJson('/api/v1/admin/social-links/'.$active->id.'/status', ['status' => 'draft'])->assertForbidden();
     }
 
+    public function test_social_links_can_show_individual_selected_media_previews(): void
+    {
+        Storage::fake('public');
+        $superadmin = $this->cmsUser('superadmin');
+        $image = $this->media('instagram-preview.png');
+        Storage::disk('public')->put($image->path, 'image bytes');
+        $profileUrl = 'https://www.instagram.com/medikainterskala/';
+
+        $this->actingAs($superadmin)->get('/admin/content/social-links/create')
+            ->assertOk()
+            ->assertSee('Gambar pratinjau hover');
+        $this->postJson('/api/v1/admin/social-links', [
+            'platform' => 'Instagram',
+            'url' => $profileUrl,
+            'preview_media_id' => $image->id,
+            'status' => 'published',
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('social_links', ['platform' => 'Instagram', 'preview_media_id' => $image->id, 'status' => 'published']);
+        $linkedinImage = $this->media('linkedin-preview.png');
+        Storage::disk('public')->put($linkedinImage->path, 'image bytes');
+        $linkedinUrl = 'https://www.linkedin.com/company/interskala-medika/';
+        $this->postJson('/api/v1/admin/social-links', [
+            'platform' => 'LinkedIn',
+            'url' => $linkedinUrl,
+            'preview_media_id' => $linkedinImage->id,
+            'status' => 'published',
+        ])->assertCreated();
+
+        $tiktokImage = $this->media('tiktok-preview.png');
+        Storage::disk('public')->put($tiktokImage->path, 'image bytes');
+        $tiktokUrl = 'https://www.tiktok.com/@interskalamedika';
+        $this->postJson('/api/v1/admin/social-links', [
+            'platform' => 'TikTok',
+            'url' => $tiktokUrl,
+            'preview_media_id' => $tiktokImage->id,
+            'status' => 'published',
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('social_links', ['platform' => 'LinkedIn', 'preview_media_id' => $linkedinImage->id, 'status' => 'published']);
+        $this->assertDatabaseHas('social_links', ['platform' => 'TikTok', 'preview_media_id' => $tiktokImage->id, 'status' => 'published']);
+        $this->get('/admin/content/social-links')->assertOk()->assertSee('instagram-preview.png')->assertSee('linkedin-preview.png')->assertSee('tiktok-preview.png');
+        $this->get('/id/kontak')->assertOk()
+            ->assertSee('social-preview__popover', false)
+            ->assertSee('INTERSKALA MEDIKA INDONESIA (@medikainterskala) · Profil Instagram')
+            ->assertSee('INTERSKALA MEDIKA INDONESIA · Profil LinkedIn')
+            ->assertSee('INTERSKALA MEDIKA INDONESIA (@interskalamedika) · Profil TikTok')
+            ->assertSee('www.instagram.com')
+            ->assertSee('www.linkedin.com')
+            ->assertSee('www.tiktok.com')
+            ->assertSee(route('media.stream', ['media' => $image->id, 'variant' => 'thumbnail']), false)
+            ->assertSee(route('media.stream', ['media' => $linkedinImage->id, 'variant' => 'thumbnail']), false)
+            ->assertSee(route('media.stream', ['media' => $tiktokImage->id, 'variant' => 'thumbnail']), false)
+            ->assertSee($profileUrl, false);
+        $this->getJson('/api/v1/public/footer?lang=id')->assertOk()
+            ->assertJsonPath('data.social_links.0.preview_image_url', route('media.stream', ['media' => $image->id, 'variant' => 'thumbnail']));
+        $this->get(route('media.stream', ['media' => $image->id]))->assertOk();
+        $this->deleteJson('/api/v1/admin/media/'.$image->id)->assertUnprocessable()->assertJsonPath('data.usages.0', 'Pratinjau media sosial');
+
+        $video = $this->media('not-an-image.mp4', 'video/mp4');
+        $this->postJson('/api/v1/admin/social-links', [
+            'platform' => 'Instagram',
+            'url' => $profileUrl,
+            'preview_media_id' => $video->id,
+            'status' => 'draft',
+        ])->assertUnprocessable()->assertJsonValidationErrors('preview_media_id');
+    }
+
     public function test_superadmin_cannot_assign_a_public_role_to_cms_user(): void
     {
         $superadmin = $this->cmsUser('superadmin');

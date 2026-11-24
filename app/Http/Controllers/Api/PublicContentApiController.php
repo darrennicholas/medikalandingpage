@@ -173,7 +173,12 @@ class PublicContentApiController extends Controller
         return $this->success([
             'about' => $about,
             'contact' => $contact ? $this->translated($contact, $lang) + ['phone' => $contact->phone, 'email' => $contact->email] : null,
-            'social_links' => SocialLink::query()->where('status', 'published')->orderBy('display_order')->get(['platform', 'url']),
+            'social_links' => SocialLink::query()->where('status', 'published')->with('previewMedia')->orderBy('display_order')->get()
+                ->map(fn (SocialLink $socialLink): array => [
+                    'platform' => $socialLink->platform,
+                    'url' => $socialLink->url,
+                    'preview_image_url' => $socialLink->previewMedia ? route('media.stream', ['media' => $socialLink->previewMedia->id, 'variant' => 'thumbnail']) : null,
+                ]),
             'copyright_text' => data_get($about, 'translation.copyright_text'),
         ]);
     }

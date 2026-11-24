@@ -119,6 +119,7 @@ class AdminMediaController extends Controller
             'Logo atas produk' => ['products', 'logo_top_media_id'], 'Logo bawah produk' => ['products', 'logo_bottom_media_id'],
             'Dokumentasi cover' => ['documentations', 'cover_media_id'], 'Blok konten' => ['content_blocks', 'media_id'],
             'SEO Open Graph' => ['seo_metas', 'og_media_id'], 'Galeri dokumentasi' => ['documentation_media', 'media_id'],
+            'Pratinjau media sosial' => ['social_links', 'preview_media_id'],
         ];
         $usages = [];
 

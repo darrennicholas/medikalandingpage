@@ -1,3 +1,59 @@
+document.querySelectorAll('[data-social-preview]').forEach((preview) => {
+    const trigger = preview.querySelector('[data-social-trigger]');
+    const popover = preview.querySelector('[data-social-popover]');
+    if (!trigger || !popover) return;
+    let escapeDismissed = false;
+    let touchTapOpensPreview = false;
+
+    const setOpen = (isOpen) => {
+        popover.hidden = !isOpen;
+        trigger.setAttribute('aria-expanded', String(isOpen));
+    };
+
+    preview.addEventListener('pointerenter', (event) => {
+        if (event.pointerType === 'mouse' || event.pointerType === 'pen') {
+            escapeDismissed = false;
+            setOpen(true);
+        }
+    });
+    preview.addEventListener('pointerleave', (event) => {
+        if ((event.pointerType === 'mouse' || event.pointerType === 'pen') && !preview.contains(document.activeElement)) setOpen(false);
+    });
+    preview.addEventListener('focusin', () => {
+        if (!escapeDismissed) setOpen(true);
+    });
+    preview.addEventListener('focusout', (event) => {
+        if (!preview.contains(event.relatedTarget)) {
+            escapeDismissed = false;
+            setOpen(false);
+        }
+    });
+    document.addEventListener('pointerdown', (event) => {
+        if (!preview.contains(event.target)) {
+            escapeDismissed = false;
+            touchTapOpensPreview = false;
+            setOpen(false);
+        }
+    });
+    preview.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            escapeDismissed = true;
+            setOpen(false);
+            trigger.focus();
+        }
+    });
+    trigger.addEventListener('pointerdown', (event) => {
+        touchTapOpensPreview = event.pointerType === 'touch' && popover.hidden;
+    });
+    trigger.addEventListener('click', (event) => {
+        if (touchTapOpensPreview) {
+            event.preventDefault();
+            touchTapOpensPreview = false;
+            setOpen(true);
+        }
+    });
+});
+
 const siteHeader = document.querySelector('#site-header');
 const menuToggle = document.querySelector('#menu-toggle');
 const primaryNavigation = document.querySelector('#primary-navigation');

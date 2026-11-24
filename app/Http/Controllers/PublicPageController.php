@@ -223,7 +223,7 @@ class PublicPageController extends Controller
         }
         $record = $query->firstOrFail();
         $record->load(match ($resource) {
-            'brands' => ['logo'], 'mission-items' => ['translations'], 'product-categories' => ['translations', 'products.translations', 'products.media', 'products.topLogo', 'products.bottomLogo'], 'social-links' => [], default => ['translations', 'media']
+            'brands' => ['logo'], 'mission-items' => ['translations'], 'product-categories' => ['translations', 'products.translations', 'products.media', 'products.topLogo', 'products.bottomLogo'], 'social-links' => ['previewMedia'], default => ['translations', 'media']
         });
         $payload = $record->getAttribute('draft_payload');
         if (is_array($payload)) {
@@ -359,7 +359,7 @@ class PublicPageController extends Controller
 
         return view('kontak', [
             'contactInfo' => $contact,
-            'socialLinks' => SocialLink::query()->where('status', 'published')->orderBy('display_order')->get(),
+            'socialLinks' => SocialLink::query()->where('status', 'published')->with('previewMedia')->orderBy('display_order')->get(),
             'footer' => $this->footerData($language),
             'seo' => $this->seoData('contact', 'Hubungi Kami - Interskala Medika Indonesia', 'Informasi kontak PT Interskala Medika Indonesia.'),
         ]);
@@ -576,7 +576,7 @@ class PublicPageController extends Controller
             'show_phone' => $footerSettings?->footer_show_phone ?? true,
             'show_email' => $footerSettings?->footer_show_email ?? true,
             'contact' => $contact ? ['phone' => $contact->phone, 'email' => $contact->email, 'address' => $translation?->address] : null,
-            'social_links' => SocialLink::query()->where('status', 'published')->orderBy('display_order')->get(),
+            'social_links' => SocialLink::query()->where('status', 'published')->with('previewMedia')->orderBy('display_order')->get(),
             'copyright_text' => $about ? ($about['copyright_text'] ?? null) : null,
         ];
     }

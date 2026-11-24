@@ -1551,6 +1551,30 @@ section[id] {
 .site-footer__social-link svg { width: 22px; height: 22px; }
 .site-footer__social-link:has(span) { width: auto; padding: 10px 15px; border-radius: 22px; }
 
+.social-preview { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+.social-preview__trigger { position: relative; z-index: 1; }
+.social-preview[data-social-preview]::before { position: absolute; z-index: 19; inset-inline-start: 50%; inset-block-end: 100%; width: 44px; height: 12px; transform: translateX(-50%); content: ""; }
+.social-preview__popover { position: absolute; z-index: 20; inset-inline-start: 50%; inset-block-end: calc(100% + 12px); width: min(360px, calc(100vw - 32px)); transform: translateX(-50%); overflow: hidden; border-radius: 6px; background: #1c1c1c; box-shadow: 0 14px 34px rgb(8 16 32 / 28%); }
+.social-preview__popover[hidden] { display: none; }
+.social-preview__popover .social-preview__card { display: grid; grid-template-columns: min(42%, 150px) minmax(0, 1fr); overflow: hidden; color: #fff; text-decoration: none; }
+.social-preview__card > img { display: block; width: 100%; aspect-ratio: 1; align-self: center; object-fit: contain; object-position: center; background: #fff; }
+.social-preview__details { display: flex; min-width: 0; flex-direction: column; justify-content: center; gap: 6px; padding: 12px 14px; }
+.social-preview__details strong { color: #f5f5f5; font-size: .8rem; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; }
+.social-preview__details small { color: #a9a9a9; font-size: .72rem; font-weight: 500; line-height: 1.3; }
+.social-preview__card:hover .social-preview__details strong { color: #fff; }
+.social-preview__card:focus-visible, .social-preview__trigger:focus-visible { outline: 3px solid #7da8ff; outline-offset: 3px; }
+@media (max-width: 767px) {
+    .social-preview[data-social-preview]::before { inset-inline-start: 50%; inset-block-end: 100%; width: 44px; height: 12px; transform: translateX(-50%); }
+    .social-preview__popover { inset-inline-start: 50%; inset-block-end: calc(100% + 12px); width: min(300px, calc(100vw - 32px)); transform: translateX(-50%); }
+    .social-preview__popover .social-preview__card { grid-template-columns: min(42%, 112px) minmax(0, 1fr); }
+    .social-preview__details { gap: 4px; padding: 8px 10px; }
+    .social-preview__details strong { font-size: .72rem; line-height: 1.35; }
+    .social-preview__details small { font-size: .66rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .social-preview__popover { animation: social-preview-enter .16s ease-out both; }
+    @keyframes social-preview-enter { from { opacity: 0; translate: 0 5px; } to { opacity: 1; translate: 0 0; } }
+}
 /* Shared back navigation for public company profile pages. */
 body a.public-back-button, body a.public-back-button:visited { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 18px; border: 1px solid #183a78; border-radius: 9px; background: #183a78; color: #fff; font-size: .95rem; font-weight: 700; line-height: 1.4; text-decoration: none; transition: background-color .18s ease, box-shadow .18s ease; }
 body a.public-back-button:hover { border-color: #102c5c; background: #102c5c; color: #fff; }

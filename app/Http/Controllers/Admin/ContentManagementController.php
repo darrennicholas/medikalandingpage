@@ -282,7 +282,7 @@ class ContentManagementController extends Controller
         }
 
         if ($resource === 'social-links') {
-            $socialQuery = SocialLink::query();
+            $socialQuery = SocialLink::query()->with('previewMedia');
 
             if ($request->filled('status')) {
                 $socialQuery->where('status', $request->string('status')->toString());
@@ -295,8 +295,15 @@ class ContentManagementController extends Controller
             $footerBlock = ContentBlock::query()->with('translations')->firstOrNew(['block_key' => 'footer_about']);
             $footerBlock->loadMissing('translations');
 
+            $socialRecords = $socialQuery->orderBy('display_order')->paginate(in_array($request->integer('per_page'), [10, 25, 50], true) ? $request->integer('per_page') : 10)->withQueryString();
+            $socialRecords->getCollection()->each(function (SocialLink $socialLink): void {
+                if ($socialLink->previewMedia) {
+                    $socialLink->previewMedia->setAttribute('admin_preview_url', $this->mediaUrl($socialLink->previewMedia));
+                }
+            });
+
             return view('admin.content.social-footer-index', [
-                'records' => $socialQuery->orderBy('display_order')->paginate(in_array($request->integer('per_page'), [10, 25, 50], true) ? $request->integer('per_page') : 10)->withQueryString(),
+                'records' => $socialRecords,
                 'socialTotal' => SocialLink::query()->count(),
                 'socialActive' => SocialLink::query()->where('status', 'published')->count(),
                 'footerBlock' => $footerBlock,
@@ -726,7 +733,7 @@ class ContentManagementController extends Controller
             'documentations' => ['common' => [$select('type', 'Tipe', ['article' => 'Artikel', 'activity' => 'Foto Kegiatan']), $media('cover_media_id', 'Gambar Sampul'), $text('event_date', 'Tanggal', true), ['name' => 'gallery', 'label' => 'Galeri Media', 'type' => 'gallery', 'required' => false]], 'id' => [$text('translations[id][title]', 'Judul', true, 150), $text('translations[id][slug]', 'Slug', true, 150), $textarea('translations[id][excerpt]', 'Ringkasan', false, 250), $textarea('translations[id][body]', 'Isi Artikel', false, 20000)], 'en' => [$text('translations[en][title]', 'Judul', false, 150), $text('translations[en][slug]', 'Slug', false, 150), $textarea('translations[en][excerpt]', 'Ringkasan', false, 250), $textarea('translations[en][body]', 'Isi Artikel', false, 20000)]],
             'job-openings' => ['common' => [$text('employment_type', 'Tipe Kepegawaian', true, 50), $text('location', 'Lokasi', true, 150), $text('posted_at', 'Tanggal Posting', true), $text('closing_date', 'Tanggal Penutupan'), $text('apply_url', 'Link HRIS Lamaran', true, 500)], 'id' => [$textarea('translations[id][title]', 'Posisi', true, 150), $textarea('translations[id][description]', 'Deskripsi', true, 20000), $textarea('translations[id][requirements]', 'Persyaratan', true, 20000)], 'en' => [$textarea('translations[en][title]', 'Posisi', false, 150), $textarea('translations[en][description]', 'Deskripsi', false, 20000), $textarea('translations[en][requirements]', 'Persyaratan', false, 20000)]],
             'contact-info' => ['common' => [$text('phone', 'Nomor Telepon', true, 20), $text('email', 'Email', true, 150), $text('maps_url', 'Link Google Maps'), $text('latitude', 'Latitude'), $text('longitude', 'Longitude')], 'id' => [$textarea('translations[id][address]', 'Alamat', true, 300), $text('translations[id][office_hours]', 'Jam Operasional', false, 150)], 'en' => [$textarea('translations[en][address]', 'Alamat', false, 300), $text('translations[en][office_hours]', 'Jam Operasional', false, 150)]],
-            'social-links' => ['common' => [$select('platform', 'Platform', ['Instagram' => 'Instagram', 'LinkedIn' => 'LinkedIn', 'Facebook' => 'Facebook', 'YouTube' => 'YouTube', 'TikTok' => 'TikTok']), $text('url', 'URL', true, 500), $text('display_order', 'Urutan')], 'id' => [], 'en' => []],
+            'social-links' => ['common' => [$select('platform', 'Platform', ['Instagram' => 'Instagram', 'LinkedIn' => 'LinkedIn', 'Facebook' => 'Facebook', 'YouTube' => 'YouTube', 'TikTok' => 'TikTok']), $text('url', 'URL', true, 500), $media('preview_media_id', 'Gambar pratinjau hover'), $text('display_order', 'Urutan')], 'id' => [], 'en' => []],
             'seo-metas' => ['common' => [$select('page_key', 'Halaman', ['home' => 'Beranda', 'about' => 'Tentang', 'products' => 'Produk', 'documentation' => 'Dokumentasi', 'careers' => 'Karir', 'contact' => 'Kontak']), $select('lang', 'Bahasa', ['id' => 'Bahasa Indonesia', 'en' => 'Bahasa Inggris', 'zh' => 'Mandarin']), $text('meta_title', 'Judul Meta', false, 70), $textarea('meta_description', 'Deskripsi Meta', false, 160), $text('canonical_url', 'URL Kanonis'), $media('og_media_id', 'Gambar Open Graph'), $select('robots_index', 'Izinkan Diindeks', ['1' => 'Ya', '0' => 'Tidak'])], 'id' => [], 'en' => []],
             default => $empty,
         };
