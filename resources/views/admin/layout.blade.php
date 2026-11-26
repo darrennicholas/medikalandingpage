@@ -11,7 +11,7 @@
 </head>
 <body class="admin-body" data-admin-theme="light">
     @php
-        $currentResource = request()->routeIs('admin.subcategories.*') ? 'product-subcategories' : request()->route('resource');
+        $currentResource = request()->routeIs('admin.subcategories.*') ? 'product-subcategories' : (request()->routeIs('admin.featured.*') ? 'featured-products' : request()->route('resource'));
         $currentSection = request()->query('section');
         $homeBlockSections = ['home_coverage', 'home_cta'];
         $aboutBlockSections = ['about_company'];
@@ -37,7 +37,7 @@
             'company-summary' => ['about', 'about-stats'],
             'mission-items' => ['about', 'vision-mission'],
             'certificates' => ['about', 'certificates'],
-            'product-categories', 'product-subcategories', 'products' => ['products', 'products'],
+            'product-categories', 'product-subcategories', 'featured-products', 'products' => ['products', 'products'],
             'documentations' => ['documentation', 'content'],
             'job-openings' => ['careers', 'lowongan'],
             'contact-info' => ['contact', 'contact-details-title'],
@@ -101,7 +101,7 @@
                             @endif
                             <a class="admin-nav__link admin-nav__link--child {{ $currentResource === 'products' ? 'is-active' : '' }}" href="{{ route('admin.content.index', 'products') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">inventory_2</span><span class="admin-nav__label">Daftar Produk &amp; Brosur</span></a>
                             <a class="admin-nav__link admin-nav__link--child {{ request()->routeIs('admin.featured.*') ? 'is-active' : '' }}" href="{{ route('admin.featured.index') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">star</span><span class="admin-nav__label">Produk Unggulan</span></a>
-                            @if (auth()->user()->hasRole('superadmin') || auth()->user()->role?->hasPermission('products_catalog', 'view'))<a class="admin-nav__link admin-nav__link--child {{ request()->routeIs('admin.brochure-leads.index') ? 'is-active' : '' }}" href="{{ route('admin.brochure-leads.index') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">contact_page</span><span class="admin-nav__label">Brochure Request</span></a>@endif
+                            @if (auth()->user()->hasRole('superadmin') || auth()->user()->role?->hasPermission('products_catalog', 'view'))<a class="admin-nav__link admin-nav__link--child {{ request()->routeIs('admin.brochure-leads.index') ? 'is-active' : '' }}" href="{{ route('admin.brochure-leads.index') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">contact_page</span><span class="admin-nav__label">Permintaan Brosur</span></a>@endif
                         </div>
                     </div>
                     <a class="admin-nav__link {{ $currentResource === 'documentations' ? 'is-active' : '' }}" href="{{ route('admin.content.index', 'documentations') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">article</span><span class="admin-nav__label">Dokumentasi</span></a>
@@ -194,7 +194,7 @@
                 @if ($errors->any())<span data-admin-flash-error="{{ $errors->first() }}" hidden></span>
                     <div class="admin-alert admin-alert--error" role="alert"><span class="material-symbols-rounded" aria-hidden="true">error</span><span>{{ $errors->first() }}</span></div>
                 @endif
-                @if ($sectionPreview && (request()->routeIs('admin.content.index') || (request()->routeIs('admin.subcategories.index') && ! request()->hasAny(['edit', 'create', 'category_id']))))
+                @if ($sectionPreview && (request()->routeIs('admin.content.index', 'admin.featured.index') || (request()->routeIs('admin.subcategories.index') && ! request()->hasAny(['edit', 'create', 'category_id']))))
                     <details class="admin-section-preview" data-section-preview>
                         <summary><span class="material-symbols-rounded" aria-hidden="true">visibility</span> Lihat tampilan section di website</summary>
                         <p>Menampilkan halaman yang sudah terbit. Perubahan yang belum disimpan tidak ditampilkan.</p>

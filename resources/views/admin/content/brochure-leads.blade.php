@@ -1,7 +1,7 @@
 @extends('admin.layout')
-@section('title', 'Brochure Request')
-@section('page-heading', 'Brochure Request')
-@section('breadcrumb', 'Konten Landing Page / Produk / Brochure Request')
+@section('title', 'Permintaan Brosur')
+@section('page-heading', 'Permintaan Brosur')
+@section('breadcrumb', 'Konten Landing Page / Produk / Permintaan Brosur')
 @section('page-description', 'Kelola permintaan brosur dari pengunjung website.')
 @section('content')
         <section class="admin-panel" aria-labelledby="leads-heading">

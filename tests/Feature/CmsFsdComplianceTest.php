@@ -183,7 +183,7 @@ class CmsFsdComplianceTest extends TestCase
         $this->post('/id/produk/'.$product->id.'/brosur', [...$payload, 'consent' => '1'])->assertRedirect('/brochures/example.pdf');
         $this->assertDatabaseHas('brochure_leads', ['product_id' => $product->id, 'email' => 'customer@example.com']);
         $this->get('/brochures/example.pdf')->assertOk()->assertHeader('Cache-Control', 'no-store, private');
-        $this->actingAs($this->cmsUser('superadmin'))->get('/admin/brochure-requests')->assertOk()->assertSee('customer@example.com')->assertSee('Brochure Request')->assertDontSee('Dashboard Digmar');
+        $this->actingAs($this->cmsUser('superadmin'))->get('/admin/brochure-requests')->assertOk()->assertSee('customer@example.com')->assertSee('Permintaan Brosur')->assertDontSee('Dashboard Digmar');
         $this->get('/digmar/brochure-requests')->assertRedirect('/admin/brochure-requests');
         $this->actingAs($this->cmsUser('admin'))->get('/admin/brochure-requests')->assertForbidden();
         $this->actingAs($this->cmsUser('admin', ['products_catalog' => ['view']]))->get('/admin/brochure-requests')->assertOk()->assertSee('customer@example.com');
@@ -294,7 +294,7 @@ class CmsFsdComplianceTest extends TestCase
         $this->assertSame('Judul pertama', $block->translations()->where('lang', 'id')->value('title'));
     }
 
-    public function test_cms_exports_are_limited_to_superadmin_and_honor_filters(): void
+    public function test_cms_exports_follow_permissions_and_honor_filters(): void
     {
         $superadmin = $this->cmsUser('superadmin');
         $admin = $this->cmsUser('admin', ['users' => ['view'], 'activity_logs' => ['view']]);
@@ -303,7 +303,9 @@ class CmsFsdComplianceTest extends TestCase
         $this->assertStringContainsString('Ekspor Terpilih', $response->streamedContent());
         $this->assertStringNotContainsString($superadmin->email, $response->streamedContent());
         $this->get('/admin/activity-logs/export')->assertOk()->assertDownload();
-        $this->actingAs($admin)->get('/admin/users/export')->assertForbidden();
+        $this->actingAs($admin)->get('/admin/users/export')->assertOk();
+        $this->get('/admin/activity-logs/export')->assertOk();
+        $this->actingAs($this->cmsUser('admin'))->get('/admin/users/export')->assertForbidden();
         $this->get('/admin/activity-logs/export')->assertForbidden();
     }
 

@@ -28,7 +28,7 @@ class CmsPermissionsTest extends TestCase
         $admin = User::factory()->create(['role_id' => $role->id]);
 
         $this->actingAs($admin)->get('/admin/content/social-links')->assertOk();
-        $this->get('/admin/brochure-requests')->assertOk()->assertSee('Brochure Request')->assertDontSee('Dashboard Digmar');
+        $this->get('/admin/brochure-requests')->assertOk()->assertSee('Permintaan Brosur')->assertDontSee('Dashboard Digmar');
         $id = $this->postJson('/api/v1/admin/social-links', ['platform' => 'Instagram', 'url' => 'https://instagram.com/example', 'status' => 'published'])->assertCreated()->json('data.id');
         $this->putJson('/api/v1/admin/social-links/'.$id, ['platform' => 'Instagram', 'url' => 'https://instagram.com/updated', 'status' => 'published'])->assertOk();
         $this->patchJson('/api/v1/admin/social-links/'.$id.'/status', ['status' => 'draft'])->assertOk();
