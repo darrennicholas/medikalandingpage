@@ -61,7 +61,7 @@ class AdminMediaController extends Controller
                 foreach ($files as $index => $file) {
                     $mime = $file->getMimeType();
                     $record = in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)
-                        ? $this->storeOptimizedImage($file, $request, $index, $storedPaths, $thumbnailGenerator)
+                        ? $this->storeOriginalImage($file, $request, $index, $storedPaths, $thumbnailGenerator)
                         : $this->storeVideo($file, $request, $index, $mime, $storedPaths);
                     $record->setAttribute('admin_preview_url', $this->mediaUrl($record));
                     $records[] = $record;
@@ -146,13 +146,12 @@ class AdminMediaController extends Controller
     }
 
     /** @param list<string> $storedPaths */
-    private function storeOptimizedImage(UploadedFile $file, Request $request, int $index, array &$storedPaths, MediaThumbnailGenerator $thumbnailGenerator): Media
+    private function storeOriginalImage(UploadedFile $file, Request $request, int $index, array &$storedPaths, MediaThumbnailGenerator $thumbnailGenerator): Media
     {
         $contents = file_get_contents($file->getRealPath());
-        $source = @imagecreatefromstring($contents ?: '');
-        abort_if($source === false, 415, 'Isi file bukan gambar yang valid.');
-        $width = imagesx($source);
-        $height = imagesy($source);
+        $dimensions = @getimagesizefromstring($contents ?: '');
+        abort_if($dimensions === false || ! in_array($dimensions['mime'], ['image/jpeg', 'image/png', 'image/webp'], true), 415, 'Isi file bukan gambar yang valid.');
+        [$width, $height] = $dimensions;
         $disk = Storage::disk('public');
         $extension = match ($file->getMimeType()) {
             'image/png' => 'png', 'image/webp' => 'webp', default => 'jpg',
@@ -160,18 +159,16 @@ class AdminMediaController extends Controller
         $fileName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'-'.Str::uuid().'.'.$extension;
         $storagePath = 'images/'.$fileName;
         $path = $storagePath;
-        $optimized = $this->resizeAndEncode($source, $width, $height, 1600, $extension);
-        imagedestroy($source);
         $storedPaths[] = $storagePath;
-        abort_if(! $disk->put($storagePath, $optimized), 500, 'Gambar gagal disimpan ke Media Library. Periksa kapasitas dan izin storage.');
+        abort_if(! $disk->put($storagePath, $contents), 500, 'Gambar gagal disimpan ke Media Library. Periksa kapasitas dan izin storage.');
         $media = Media::query()->create([
             'file_name' => $fileName,
             'original_name' => mb_substr($file->getClientOriginalName(), 0, 255),
             'path' => $path,
             'mime_type' => $file->getMimeType(),
-            'size_bytes' => strlen($optimized),
-            'width' => max(1, (int) round($width * min(1, 1600 / max($width, $height)))),
-            'height' => max(1, (int) round($height * min(1, 1600 / max($width, $height)))),
+            'size_bytes' => strlen($contents),
+            'width' => $width,
+            'height' => $height,
             'alt_text_id' => $request->input('alt_text_id.'.$index),
             'alt_text_en' => $request->input('alt_text_en.'.$index),
             'alt_text_zh' => $request->input('alt_text_zh.'.$index),
@@ -218,32 +215,5 @@ class AdminMediaController extends Controller
     private function mediaUrl(Media $media): string
     {
         return route('media.stream', ['media' => $media->id]);
-    }
-
-    private function resizeAndEncode(\GdImage $source, int $width, int $height, int $maximumWidth, string $extension): string
-    {
-        $scale = min(1, $maximumWidth / max($width, $height));
-        $targetWidth = max(1, (int) round($width * $scale));
-        $targetHeight = max(1, (int) round($height * $scale));
-        $target = imagecreatetruecolor($targetWidth, $targetHeight);
-
-        if ($extension === 'png' || $extension === 'webp') {
-            imagealphablending($target, false);
-            imagesavealpha($target, true);
-            $transparent = imagecolorallocatealpha($target, 0, 0, 0, 127);
-            imagefill($target, 0, 0, $transparent);
-        }
-
-        imagecopyresampled($target, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
-        ob_start();
-        match ($extension) {
-            'png' => imagepng($target, null, 8),
-            'webp' => imagewebp($target, null, 82),
-            default => imagejpeg($target, null, 85),
-        };
-        $encoded = (string) ob_get_clean();
-        imagedestroy($target);
-
-        return $encoded;
     }
 }

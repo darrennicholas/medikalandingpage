@@ -552,9 +552,11 @@ class CmsFsdComplianceTest extends TestCase
         $chunk = 'iCCP'.$profile;
         file_put_contents($file->getRealPath(), substr($png, 0, 33).pack('N', strlen($profile)).$chunk.pack('N', crc32($chunk)).substr($png, 33));
 
+        $original = file_get_contents($file->getRealPath());
         $response = $this->actingAs($this->cmsUser('superadmin'))->postJson('/api/v1/admin/media', ['files' => [$file]])->assertCreated();
         $media = Media::findOrFail($response->json('data.0.id'));
         Storage::disk('public')->assertExists($media->path);
+        $this->assertSame($original, Storage::disk('public')->get($media->path));
         Storage::disk('public')->assertExists('images/thumbnails/'.basename($media->path));
     }
 
