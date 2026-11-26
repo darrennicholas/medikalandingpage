@@ -19,6 +19,7 @@
 /database/*.sqlite
 /database/*.sqlite-*
 /public/storage
+/storage/app/public/
 /storage/*.key
 /storage/pail
 
@@ -32,6 +33,7 @@
 /.phpunit.cache/
 /.phpunit.result.cache
 /.phpactor.json
+/.playwright-cli/
 /_ide_helper.php
 
 # Local editor and operating system files
