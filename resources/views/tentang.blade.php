@@ -40,7 +40,7 @@
         @endphp
 
         @if ($aboutBlock && (!empty($aboutBlock['title']) || !empty($aboutBlock['body']) || !empty($aboutBlock['image_url'])))
-            <section class="about-intro" aria-labelledby="about-intro-title">
+            <section id="about-intro" class="about-intro" aria-labelledby="about-intro-title">
                 <div class="container">
                     <div class="section-title">
                         <h2 id="about-intro-title">{{ $aboutBlock['title'] ?: (app()->getLocale() === 'en' ? 'About Us' : 'Tentang Kami') }}</h2>
@@ -59,7 +59,7 @@
         @endif
 
         @if (!empty($visionText) || $missions->isNotEmpty())
-            <section class="vision-mission" aria-labelledby="vision-mission-title">
+            <section id="vision-mission" class="vision-mission" aria-labelledby="vision-mission-title">
                 <div class="container">
                     <div class="section-title">
                         <h2 id="vision-mission-title">{{ $language === 'en' ? 'Vision & Mission' : 'Visi & Misi' }}</h2>
@@ -94,7 +94,7 @@
         @endif
 
         @if ($summary)
-            <section class="about-stats" aria-label="{{ $language === 'en' ? 'Company statistics' : 'Statistik perusahaan' }}">
+            <section id="about-stats" class="about-stats" aria-label="{{ $language === 'en' ? 'Company statistics' : 'Statistik perusahaan' }}">
                 <div class="container about-stats__grid">
                     @if ($yearsEstablished !== null)<div class="about-stats__card"><strong>{{ $yearsEstablished }}</strong><span>{{ $language === 'en' ? 'Years in business' : 'Tahun Pengalaman' }}</span></div>@endif
                     <div class="about-stats__card"><strong>{{ number_format($summary->partner_count) }}</strong><span>{{ $language === 'en' ? 'Partners' : 'Mitra' }}</span></div>
@@ -104,7 +104,7 @@
         @endif
 
         @if ($certificates->isNotEmpty())
-            <section class="certificates" aria-labelledby="certificates-title">
+            <section id="certificates" class="certificates" aria-labelledby="certificates-title">
                 <div class="container">
                     <div class="section-title">
                         <h2 id="certificates-title">{{ $language === 'en' ? 'Certificates & Awards' : 'Sertifikat & Penghargaan' }}</h2>

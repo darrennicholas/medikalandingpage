@@ -7,7 +7,7 @@
     @vite(['resources/css/app.css', 'resources/css/documentation.css', 'resources/js/app.js'])
 </head>
 <body>
-    <header class="site-header"><div class="site-header__inner">
+    <header class="site-header" id="site-header"><div class="site-header__inner">
         <a class="site-logo" href="{{ route('localized.home', ['locale' => $language]) }}"><img src="{{ asset('images/medika-logo.png') }}" alt="IMI Medika" width="120" height="72"></a>
         <button class="menu-toggle" id="menu-toggle" type="button" aria-controls="primary-navigation" aria-expanded="false" aria-label="Buka menu"><span></span><span></span><span></span></button>
         <nav class="primary-navigation" id="primary-navigation" aria-label="Navigasi utama">

@@ -29,8 +29,13 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::put('/password', [AuthController::class, 'updatePassword'])->name('password.update');
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/featured-products', [FeaturedProductsController::class, 'index'])->name('featured.index');
-        Route::get('/brochure-leads', [BrochureLeadController::class, 'index'])->name('brochure-leads.index');
-        Route::post('/preview/{resource}', [PublicPageController::class, 'previewUnsaved'])->where('resource', 'products|documentations|job-openings|hero-slides|brands|mission-items|product-categories|certificates')->name('content.preview-unsaved');
+        Route::get('/product-subcategories', [ContentManagementController::class, 'subcategories'])->name('subcategories.index');
+        Route::post('/product-subcategories', [ContentManagementController::class, 'storeSubcategory'])->name('subcategories.store');
+        Route::put('/product-subcategories/{id}', [ContentManagementController::class, 'updateSubcategory'])->whereNumber('id')->name('subcategories.update');
+        Route::delete('/product-subcategories/{id}', [ContentManagementController::class, 'destroySubcategory'])->whereNumber('id')->name('subcategories.destroy');
+        Route::get('/brochure-requests', [BrochureLeadController::class, 'index'])->name('brochure-leads.index');
+        Route::redirect('/brochure-leads', '/admin/brochure-requests')->name('brochure-leads.legacy');
+        Route::post('/preview/{resource}', [PublicPageController::class, 'previewUnsaved'])->where('resource', 'products|documentations|job-openings|hero-slides|brands|mission-items|product-categories|certificates|social-links')->name('content.preview-unsaved');
         Route::get('/preview/{resource}/{id}', [PublicPageController::class, 'preview'])->where('resource', 'products|product-categories|documentations|job-openings|hero-slides|content-blocks|brands|mission-items|certificates|social-links')->name('content.preview');
         Route::get('/content/{resource}', [ContentManagementController::class, 'index'])->where('resource', 'hero-slides|content-blocks|brands|mission-items|company-summary|certificates|product-categories|products|documentations|job-openings|contact-info|social-links|seo-metas')->name('content.index');
         Route::get('/content/{resource}/create', [ContentManagementController::class, 'create'])->where('resource', 'hero-slides|content-blocks|brands|mission-items|company-summary|certificates|product-categories|products|documentations|job-openings|contact-info|social-links|seo-metas')->name('content.create');
@@ -38,10 +43,10 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('/content/{resource}/{id}/edit', [ContentManagementController::class, 'edit'])->where('resource', 'hero-slides|content-blocks|brands|mission-items|company-summary|certificates|product-categories|products|documentations|job-openings|contact-info|social-links|seo-metas')->name('content.edit');
         Route::get('/media', [MediaLibraryController::class, 'index'])->name('media.index');
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs');
-        Route::get('/activity-logs/export', [ActivityLogController::class, 'export'])->middleware('cms.role:superadmin')->name('activity-logs.export');
+        Route::get('/activity-logs/export', [ActivityLogController::class, 'export'])->name('activity-logs.export');
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
-        Route::get('/users/export', [UserController::class, 'export'])->middleware('cms.role:superadmin')->name('users.export');
+        Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
@@ -49,12 +54,12 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
         Route::post('/users/{user}/unlock', [UserController::class, 'unlock'])->name('users.unlock');
 
-        Route::middleware('cms.role:superadmin')->group(function (): void {
-            Route::get('/permissions', [PermissionMatrixController::class, 'index'])->name('permissions.index');
-            Route::put('/permissions', [PermissionMatrixController::class, 'update'])->name('permissions.update');
-        });
+        Route::get('/permissions', [PermissionMatrixController::class, 'index'])->name('permissions.index');
+        Route::put('/permissions', [PermissionMatrixController::class, 'update'])->name('permissions.update');
     });
 });
+
+Route::redirect('/digmar/brochure-requests', '/admin/brochure-requests');
 
 Route::get('/sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');

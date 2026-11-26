@@ -17,6 +17,7 @@ use App\Models\HeroSlide;
 use App\Models\HeroSlideTranslation;
 use App\Models\JobOpening;
 use App\Models\JobOpeningTranslation;
+use App\Models\Media;
 use App\Models\MissionItem;
 use App\Models\MissionItemTranslation;
 use App\Models\Product;
@@ -299,22 +300,29 @@ class AdminResourceController extends Controller
     {
         $record = $this->findRecord($resource, $id);
 
-        if ($record instanceof ProductCategory && $record->products()->whereNull('deleted_at')->exists()) {
-            return response()->json(['success' => false, 'message' => 'Kategori masih memiliki produk. Pindahkan atau hapus produk terlebih dahulu.'], 409);
-        }
-
         if ($record instanceof MissionItem && MissionItem::query()->count() <= 1) {
             return response()->json(['success' => false, 'message' => 'Minimal satu poin misi harus tersedia.'], 422);
         }
 
         $oldValues = $this->activitySnapshot($record);
 
-        if ($record instanceof Product) {
-            $record->featuredCategories()->detach();
-        }
-
-        $record->delete();
-        $activityLogger->log($request->user(), 'delete', $record::class, $record->getKey(), $oldValues);
+        DB::transaction(function () use ($record, $request, $activityLogger, $oldValues): void {
+            if ($record instanceof ProductCategory) {
+                foreach ($record->products()->lockForUpdate()->get() as $product) {
+                    $productValues = $this->activitySnapshot($product);
+                    $product->featuredCategories()->detach();
+                    $product->delete();
+                    $activityLogger->log($request->user(), 'delete', Product::class, $product->id, $productValues);
+                }
+                $record->featuredProducts()->detach();
+                DB::table('product_subcategories')->where('category_id', $record->id)->delete();
+            }
+            if ($record instanceof Product) {
+                $record->featuredCategories()->detach();
+            }
+            $record->delete();
+            $activityLogger->log($request->user(), 'delete', $record::class, $record->getKey(), $oldValues);
+        });
 
         return response()->json(['success' => true, 'data' => null, 'message' => 'Data berhasil dihapus.']);
     }
@@ -578,6 +586,13 @@ class AdminResourceController extends Controller
         }
 
         $validated = $request->validate($rules);
+        if ($resource === 'products') {
+            $subcategory = array_key_exists('subcategory', $validated) ? $validated['subcategory'] : $record?->subcategory;
+            $categoryId = array_key_exists('category_id', $validated) ? $validated['category_id'] : $record?->category_id;
+            if (filled($subcategory) && ! DB::table('product_subcategories')->where('category_id', $categoryId)->where('name', $subcategory)->exists()) {
+                throw ValidationException::withMessages(['subcategory' => 'Pilih subkategori yang sesuai dengan kategori utama.']);
+            }
+        }
         if ($resource === 'products' && ($validated['new_status'] ?? null) === 'not_new') {
             $validated['new_until'] = null;
         }
@@ -840,7 +855,7 @@ class AdminResourceController extends Controller
 
             foreach (['body', 'description', 'requirements'] as $richTextField) {
                 if (isset($attributes[$richTextField])) {
-                    $attributes[$richTextField] = $this->sanitizeRichText((string) $attributes[$richTextField]);
+                    $attributes[$richTextField] = $this->sanitizeRichText((string) $attributes[$richTextField], $resource === 'documentations' && $richTextField === 'body');
                 }
             }
             if (in_array($resource, ['product-categories', 'products', 'documentations'], true) && (array_key_exists('slug', $attributes) || array_key_exists('name', $attributes) || array_key_exists('title', $attributes))) {
@@ -854,7 +869,7 @@ class AdminResourceController extends Controller
         }
     }
 
-    private function sanitizeRichText(string $value): string
+    private function sanitizeRichText(string $value, bool $allowImages = false): string
     {
         $source = new \DOMDocument('1.0', 'UTF-8');
         $previous = libxml_use_internal_errors(true);
@@ -864,7 +879,7 @@ class AdminResourceController extends Controller
         $output = new \DOMDocument('1.0', 'UTF-8');
         $container = $output->createElement('div');
         $output->appendChild($container);
-        $copy = function (\DOMNode $node, \DOMNode $parent) use (&$copy, $output): void {
+        $copy = function (\DOMNode $node, \DOMNode $parent) use (&$copy, $output, $allowImages): void {
             if ($node instanceof \DOMText) {
                 $parent->appendChild($output->createTextNode($node->nodeValue ?? ''));
 
@@ -875,6 +890,14 @@ class AdminResourceController extends Controller
             }
             $tag = strtolower($node->tagName);
             $target = $parent;
+            if ($allowImages && $tag === 'img' && preg_match('~^/media/([0-9]+)/file$~', $node->getAttribute('src'), $matches) && Media::query()->whereKey($matches[1])->where('mime_type', 'like', 'image/%')->exists()) {
+                $image = $output->createElement('img');
+                $image->setAttribute('src', '/media/'.$matches[1].'/file');
+                $image->setAttribute('alt', mb_substr($node->getAttribute('alt'), 0, 200));
+                $parent->appendChild($image);
+
+                return;
+            }
             $colorStyle = strtolower(preg_replace('/\s+/', '', $node->getAttribute('style')) ?? '');
             if ($tag === 'span' && in_array($colorStyle, ['color:#315bd5', 'color:rgb(49,91,213)', 'color:rgb(49,91,213);'], true)) {
                 $target = $output->createElement('span');
@@ -883,6 +906,10 @@ class AdminResourceController extends Controller
             }
             if (in_array($tag, ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'a'], true)) {
                 $target = $output->createElement($tag);
+                $classes = array_intersect(preg_split('/\s+/', $node->getAttribute('class')) ?: [], ['ql-align-center', 'ql-align-right', 'ql-align-justify', 'ql-size-small', 'ql-size-large', 'ql-size-huge', 'ql-size-12px', 'ql-size-14px', 'ql-size-16px', 'ql-size-18px', 'ql-size-20px', 'ql-size-24px', 'ql-size-28px', 'ql-size-32px', 'ql-size-36px']);
+                if ($classes !== []) {
+                    $target->setAttribute('class', implode(' ', $classes));
+                }
                 if ($tag === 'a') {
                     $href = trim($node->getAttribute('href'));
                     if (preg_match('~^(?:https://[^\s/]+|/(?!/))~i', $href) && ! preg_match('/[\x00-\x20\x7f\\\\]/', $href)) {
@@ -890,6 +917,14 @@ class AdminResourceController extends Controller
                     }
                 }
                 $parent->appendChild($target);
+            }
+            if ($tag === 'span' && $target === $parent) {
+                $classes = array_intersect(preg_split('/\s+/', $node->getAttribute('class')) ?: [], ['ql-size-small', 'ql-size-large', 'ql-size-huge', 'ql-size-12px', 'ql-size-14px', 'ql-size-16px', 'ql-size-18px', 'ql-size-20px', 'ql-size-24px', 'ql-size-28px', 'ql-size-32px', 'ql-size-36px']);
+                if ($classes !== []) {
+                    $target = $output->createElement('span');
+                    $target->setAttribute('class', implode(' ', $classes));
+                    $parent->appendChild($target);
+                }
             }
             foreach ($node->childNodes as $child) {
                 $copy($child, $target);

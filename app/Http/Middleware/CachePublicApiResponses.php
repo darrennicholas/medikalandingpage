@@ -95,12 +95,14 @@ class CachePublicApiResponses
             }
         }
 
-        if (
-            str_starts_with($routeName, 'api.admin.') || str_starts_with($routeName, 'admin.')
-        ) {
-            if (in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true) && $response->getStatusCode() < 400) {
-                $this->publicApiCache->invalidate();
-            }
+        $changesPublicContent = in_array($routeName, [
+            'api.admin.resources.store', 'api.admin.resources.update', 'api.admin.resources.destroy',
+            'api.admin.resources.status', 'api.admin.resources.reorder', 'api.admin.categories.featured.update',
+            'api.admin.seo.update', 'api.admin.company-summary.update', 'api.admin.contact-info.update',
+            'api.admin.content-blocks.update', 'api.admin.media.update', 'api.admin.media.destroy',
+        ], true);
+        if ($changesPublicContent && in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true) && $response->getStatusCode() < 400) {
+            $this->publicApiCache->invalidate();
         }
 
         return $response;

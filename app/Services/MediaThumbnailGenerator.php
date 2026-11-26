@@ -21,7 +21,7 @@ class MediaThumbnailGenerator
             return true;
         }
 
-        $source = imagecreatefromstring($disk->get($media->path));
+        $source = @imagecreatefromstring($disk->get($media->path));
         if ($source === false) {
             throw new RuntimeException('Gambar sumber tidak dapat dibaca untuk dibuatkan thumbnail.');
         }

@@ -83,6 +83,10 @@ class EnsureCmsPermission
             return ['activity_logs', 'view'];
         }
 
+        if (str_starts_with($routeName, 'admin.permissions.')) {
+            return ['permissions', $method === 'GET' ? 'view' : 'update'];
+        }
+
         $module = match ($resource) {
             'hero-slides' => 'home_hero_banner',
             'brands' => 'home_brands',
@@ -115,13 +119,20 @@ class EnsureCmsPermission
         if (str_contains($routeName, 'featured.')) {
             $module = 'products_catalog';
         }
+        if (str_starts_with($routeName, 'admin.subcategories.')) {
+            $module = 'products_categories';
+        }
 
-        if ($routeName === 'admin.brochure-leads.index') {
+        if (str_starts_with($routeName, 'admin.brochure-leads.')) {
             $module = 'products_catalog';
         }
 
         if ($module === null) {
             return [null, 'view'];
+        }
+
+        if ($routeName === 'admin.content.preview-unsaved') {
+            return [$module, 'view'];
         }
 
         $action = match (true) {

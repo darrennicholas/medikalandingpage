@@ -64,8 +64,8 @@ class AdminUserController extends Controller
             $user->refresh();
             $role = Role::query()->findOrFail($validated['role_id']);
 
-            if ($actor->is($user) && ($validated['status'] !== 'active' || $role->name !== 'superadmin')) {
-                return response()->json(['success' => false, 'data' => null, 'message' => 'Superadmin tidak dapat menonaktifkan atau menurunkan role akunnya sendiri.'], 422);
+            if ($actor->is($user) && ($validated['status'] !== 'active' || (int) $role->id !== (int) $user->role_id)) {
+                return response()->json(['success' => false, 'data' => null, 'message' => 'Anda tidak dapat menonaktifkan atau mengubah role akun sendiri.'], 422);
             }
 
             if ($user->hasRole('superadmin') && $user->status === 'active' && ($validated['status'] !== 'active' || $role->name !== 'superadmin') && $this->activeSuperadminCount() <= 1) {

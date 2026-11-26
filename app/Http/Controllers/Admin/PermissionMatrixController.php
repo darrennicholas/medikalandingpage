@@ -26,12 +26,7 @@ class PermissionMatrixController extends Controller
     {
         $defaults = [];
         foreach (self::modules() as $key => $module) {
-            if (in_array($key, ['users', 'permissions', 'activity_logs'], true)) {
-                continue;
-            }
-            $defaults[$key] = in_array($key, ['contacts', 'footer', 'seo'], true)
-                ? array_values(array_intersect($module['actions'], ['view', 'update']))
-                : $module['actions'];
+            $defaults[$key] = $module['actions'];
         }
 
         return $defaults;
@@ -77,7 +72,7 @@ class PermissionMatrixController extends Controller
             'about_summary' => ['label' => 'Summary Nilai & Pencapaian', 'group' => 'Konten Landing Page', 'actions' => $edit],
             'about_mission' => ['label' => 'Visi & Misi', 'group' => 'Konten Landing Page', 'actions' => $content],
             'about_certificates' => ['label' => 'Sertifikat & Penghargaan', 'group' => 'Konten Landing Page', 'actions' => $content],
-            'products_categories' => ['label' => 'Kategori Pemeriksaan', 'group' => 'Konten Landing Page', 'actions' => $content],
+            'products_categories' => ['label' => 'Pengaturan Kategori', 'group' => 'Konten Landing Page', 'actions' => $content],
             'products_catalog' => ['label' => 'Katalog Produk & Layanan', 'group' => 'Konten Landing Page', 'actions' => $content],
             'documentation' => ['label' => 'Dokumentasi (Artikel & Kegiatan)', 'group' => 'Konten Landing Page', 'actions' => $content],
             'careers' => ['label' => 'Karir (Lowongan Kerja)', 'group' => 'Konten Landing Page', 'actions' => $content],
@@ -85,8 +80,8 @@ class PermissionMatrixController extends Controller
             'footer' => ['label' => 'Sosial Media & Struktur Footer', 'group' => 'Konten Landing Page', 'actions' => $content],
             'media' => ['label' => 'Media Library (File & Gambar)', 'group' => 'Media & Pengaturan SEO', 'actions' => ['view', 'create', 'update', 'delete']],
             'seo' => ['label' => 'Pengaturan SEO (Meta, Sitemap, OpenGraph)', 'group' => 'Media & Pengaturan SEO', 'actions' => $edit],
-            'users' => ['label' => 'Manajemen User', 'group' => 'Pengaturan Sistem', 'actions' => ['view']],
-            'permissions' => ['label' => 'Hak Akses (Permission)', 'group' => 'Pengaturan Sistem', 'actions' => []],
+            'users' => ['label' => 'Manajemen User', 'group' => 'Pengaturan Sistem', 'actions' => ['view', 'create', 'update', 'delete']],
+            'permissions' => ['label' => 'Hak Akses (Permission)', 'group' => 'Pengaturan Sistem', 'actions' => ['view', 'update']],
             'activity_logs' => ['label' => 'Log Aktivitas (Audit Trail)', 'group' => 'Pengaturan Sistem', 'actions' => ['view']],
         ];
     }

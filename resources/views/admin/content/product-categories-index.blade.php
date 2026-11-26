@@ -1,8 +1,8 @@
 @extends('admin.layout')
 
-@section('title', 'Kategori Pemeriksaan')
-@section('page-heading', 'Kategori Pemeriksaan')
-@section('breadcrumb', 'Konten Landing Page  /  Produk  /  Kategori Pemeriksaan')
+@section('title', 'Pengaturan Kategori')
+@section('page-heading', 'Pengaturan Kategori')
+@section('breadcrumb', 'Konten Landing Page  /  Produk  /  Pengaturan Kategori')
 @section('page-description', 'Kelola kategori dan urutan tab yang tampil pada katalog produk.')
 @section('page-actions')
     <a class="admin-button admin-button--primary" href="{{ route('admin.content.create', 'product-categories') }}">
@@ -98,7 +98,7 @@
                                     <button class="admin-icon-button" type="button" aria-label="Ubah status {{ $translationId?->name ?? 'kategori' }}" title="Ubah status" data-status-url="{{ url('/api/v1/admin/product-categories/'.$record->id.'/status') }}" data-next-status="{{ $record->status === 'published' ? 'draft' : 'published' }}">
                                         <span class="material-symbols-rounded" aria-hidden="true">{{ $record->status === 'published' ? 'visibility_off' : 'visibility' }}</span>
                                     </button>
-                                    <button class="admin-icon-button is-danger" type="button" aria-label="Hapus {{ $translationId?->name ?? 'kategori' }}" title="Hapus" data-delete-url="{{ url('/api/v1/admin/product-categories/'.$record->id) }}">
+                                    <button class="admin-icon-button is-danger" type="button" aria-label="Hapus {{ $translationId?->name ?? 'kategori' }}" title="Hapus" data-delete-confirm="Hapus kategori ini beserta seluruh subkategori dan produk di dalamnya?" data-delete-url="{{ url('/api/v1/admin/product-categories/'.$record->id) }}">
                                         <span class="material-symbols-rounded" aria-hidden="true">delete</span>
                                     </button>
                                 </div>

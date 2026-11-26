@@ -1709,3 +1709,43 @@
         width: 44px;
     }
 }
+
+/* Product card layout follows the catalog design across screen sizes. */
+.product-card__image-wrap { padding: 14px 20px 10px; }
+.product-card__image:not(.product-card__image--compact) { width: 82%; height: 82%; max-width: 82%; max-height: 82%; }
+.product-card__content { min-height: 170px; padding: 8px 14px 14px; }
+.product-card__title { margin-bottom: 5px; }
+.product-card__subtitle { margin: 0 0 8px; line-height: 1.4; }
+.product-card__parameters { gap: 4px; margin: 0 0 8px; }
+.product-card__badge { max-width: 100%; margin: 0 0 12px; line-height: 1.3; overflow-wrap: anywhere; }
+.product-card__watermark { right: 12px; bottom: 10px; width: 100px; opacity: .2; }
+.product-card .product-card__watermark.is-visible { opacity: .2; }
+.product-card:hover .product-card__watermark { opacity: .2; }
+.product-card__actions { position: relative; z-index: 1; gap: 7px; }
+
+@media (max-width: 767px) {
+    .product-card__image-wrap { padding: 12px 16px 8px; }
+    .product-card__content { min-height: 156px; padding: 8px 10px 12px; }
+    .product-card__title { margin-bottom: 5px; }
+    .product-card__subtitle { margin-bottom: 7px; }
+    .product-card__badge { margin-bottom: 12px; }
+    .product-card__actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .product-card__buy, .product-card__brochure { flex: 0 0 auto; width: auto; min-height: 36px; padding: 7px 12px; }
+    .product-card__watermark { right: 10px; bottom: 10px; z-index: 4; width: 68px; }
+}
+.product-card { height: 100%; border-radius: 10px; box-shadow: 0 3px 12px rgb(23 36 59 / 8%); }
+.product-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgb(23 36 59 / 12%); }
+.product-card__image-wrap { height: auto; flex: none; aspect-ratio: 1.35; padding: 18px 22px 12px; }
+.product-card__image-wrap .product-card__image { width: 82%; height: 82%; max-width: 82%; max-height: 82%; object-fit: contain; object-position: center; transform: none; }
+.product-card__content { min-height: 155px; padding: 10px 14px 14px; }
+.product-card__title { margin-bottom: 5px; }
+.product-card__subtitle { margin-bottom: 8px; }
+.product-card__parameters { margin-bottom: 8px; }
+.product-card__badge { margin-bottom: 12px; }
+.product-card__watermark { width: 35%; max-width: 100px; opacity: .2; pointer-events: none; }
+.product-card__actions { margin-top: auto; }
+@media (max-width: 767px) {
+    .product-card__image-wrap { aspect-ratio: 1.35; padding: 16px; }
+    .product-card__content { min-height: 150px; padding: 10px 12px 12px; }
+    .product-card__watermark { width: 30%; max-width: 82px; }
+}

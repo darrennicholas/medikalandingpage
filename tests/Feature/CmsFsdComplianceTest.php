@@ -32,6 +32,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PDOException;
 use RuntimeException;
@@ -40,6 +41,117 @@ use Tests\TestCase;
 class CmsFsdComplianceTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_product_subcategories_follow_the_selected_category_in_the_catalog(): void
+    {
+        $category = ProductCategory::factory()->create(['status' => 'published']);
+        $category->translations()->create(['lang' => 'id', 'name' => 'Rapid Test (Master)', 'slug' => 'rapid-test-master']);
+        DB::table('product_subcategories')->insert(['category_id' => $category->id, 'name' => 'Drugs of Abuse (DOA)']);
+        $product = Product::factory()->create(['status' => 'published', 'category_id' => $category->id, 'subcategory' => 'Drugs of Abuse (DOA)', 'new_until' => today()->addDay()]);
+        $product->translations()->create(['lang' => 'id', 'name' => 'DOA Panel', 'slug' => 'doa-panel', 'description' => 'Deskripsi produk']);
+        $other = Product::factory()->create(['status' => 'published', 'category_id' => $category->id, 'subcategory' => 'Hepatitis']);
+        $other->translations()->create(['lang' => 'id', 'name' => 'Hepatitis Test', 'slug' => 'hepatitis-test']);
+
+        $this->get('/id/produk')->assertOk()->assertSee('data-subcategory="Drugs of Abuse (DOA)"', false)->assertSee('DOA Panel');
+        $this->get('/id/produk/semua?category='.$category->id.'&subcategory='.urlencode('Drugs of Abuse (DOA)'))
+            ->assertOk()->assertSee('DOA Panel')->assertDontSee('Hepatitis Test');
+        $this->actingAs($this->cmsUser('superadmin'))->get('/admin/content/products/'.$product->id.'/edit')
+            ->assertOk()->assertSee('Subkategori')->assertSee('Drugs of Abuse (DOA)');
+    }
+
+    public function test_subcategory_creation_and_assignment_are_scoped_to_category(): void
+    {
+        $category = ProductCategory::factory()->create(['status' => 'published']);
+        $otherCategory = ProductCategory::factory()->create(['status' => 'published']);
+        $admin = $this->cmsUser('superadmin');
+        $this->actingAs($admin)->post('/admin/product-subcategories', ['category_id' => $category->id, 'name' => 'Drugs of Abuse'])
+            ->assertRedirect('/admin/product-subcategories');
+        $this->assertDatabaseHas('product_subcategories', ['category_id' => $category->id, 'name' => 'Drugs of Abuse']);
+        $this->postJson('/api/v1/admin/products', ['status' => 'draft', 'category_id' => $otherCategory->id, 'subcategory' => 'Drugs of Abuse'])
+            ->assertUnprocessable()->assertJsonValidationErrors('subcategory');
+        $this->postJson('/api/v1/admin/products', ['status' => 'draft', 'category_id' => $category->id, 'subcategory' => 'Drugs of Abuse'])
+            ->assertCreated();
+        $this->assertDatabaseHas('products', ['category_id' => $category->id, 'subcategory' => 'Drugs of Abuse']);
+    }
+
+    public function test_category_and_subcategory_settings_have_separate_pages(): void
+    {
+        $category = ProductCategory::factory()->create();
+        $category->translations()->create(['lang' => 'id', 'name' => 'Kategori Contoh', 'slug' => 'kategori-contoh']);
+        $emptyCategory = ProductCategory::factory()->create();
+        $emptyCategory->translations()->create(['lang' => 'id', 'name' => 'Kategori Kosong', 'slug' => 'kategori-kosong']);
+        DB::table('product_subcategories')->insert(['category_id' => $category->id, 'name' => 'Subkategori Contoh']);
+
+        $this->actingAs($this->cmsUser('superadmin'))->get('/admin/content/product-categories')
+            ->assertOk()->assertSee('Pengaturan Kategori')->assertSee('Pengaturan SubKategori')
+            ->assertDontSee('id="subcategory-heading"', false);
+        $this->get('/admin/product-subcategories')->assertOk()
+            ->assertSee('Kategori Contoh')->assertSee('Kategori Kosong')->assertSee('Subkategori Contoh')->assertSee('None')
+            ->assertSee('Tambah Subkategori')->assertDontSee('Ringkasan kategori');
+
+        $this->actingAs($this->cmsUser('admin', ['products_categories' => ['view']]))
+            ->get('/admin/product-subcategories')->assertOk()->assertDontSee('Tambah Subkategori');
+        $this->post('/admin/product-subcategories', ['category_id' => $category->id, 'name' => 'Tidak diizinkan'])->assertForbidden();
+        $this->actingAs($this->cmsUser('admin'))->get('/admin/product-subcategories')->assertForbidden();
+        $this->assertDatabaseMissing('product_subcategories', ['name' => 'Tidak diizinkan']);
+    }
+
+    public function test_subcategory_table_updates_linked_products_and_validates_duplicates(): void
+    {
+        $category = ProductCategory::factory()->create();
+        $target = ProductCategory::factory()->create();
+        $id = DB::table('product_subcategories')->insertGetId(['category_id' => $category->id, 'name' => 'Nama Lama']);
+        DB::table('product_subcategories')->insert(['category_id' => $target->id, 'name' => 'Sudah Ada']);
+        $product = Product::factory()->create(['category_id' => $category->id, 'subcategory' => 'Nama Lama']);
+        $unrelated = Product::factory()->create(['category_id' => $target->id, 'subcategory' => 'Nama Lama']);
+
+        $this->actingAs($this->cmsUser('superadmin'))->get('/admin/product-subcategories?edit='.$id)
+            ->assertOk()->assertSee('Simpan Perubahan')->assertSee('Nama Lama')->assertSee('Kembali ke daftar')->assertDontSee('Jumlah Produk');
+        $this->put('/admin/product-subcategories/'.$id, ['category_id' => $target->id, 'name' => 'Sudah Ada'])
+            ->assertSessionHasErrors('name');
+        $this->put('/admin/product-subcategories/'.$id, ['category_id' => $target->id, 'name' => 'Nama Baru'])
+            ->assertRedirect('/admin/product-subcategories');
+        $this->assertDatabaseHas('product_subcategories', ['id' => $id, 'category_id' => $target->id, 'name' => 'Nama Baru']);
+        $this->assertDatabaseHas('products', ['id' => $product->id, 'category_id' => $target->id, 'subcategory' => 'Nama Baru']);
+        $this->assertDatabaseHas('products', ['id' => $unrelated->id, 'category_id' => $target->id, 'subcategory' => 'Nama Lama']);
+    }
+
+    public function test_subcategory_deletion_removes_its_products_and_checks_permissions(): void
+    {
+        $category = ProductCategory::factory()->create();
+        $used = DB::table('product_subcategories')->insertGetId(['category_id' => $category->id, 'name' => 'Digunakan']);
+        $unused = DB::table('product_subcategories')->insertGetId(['category_id' => $category->id, 'name' => 'Kosong']);
+        $product = Product::factory()->create(['category_id' => $category->id, 'subcategory' => 'Digunakan']);
+        $otherProduct = Product::factory()->create(['category_id' => $category->id, 'subcategory' => 'Kosong']);
+        $otherCategory = ProductCategory::factory()->create();
+        $unrelated = Product::factory()->create(['category_id' => $otherCategory->id, 'subcategory' => 'Digunakan']);
+        $otherCategory->featuredProducts()->attach($product->id, ['display_order' => 1]);
+
+        $this->actingAs($this->cmsUser('admin', ['products_categories' => ['view']]))
+            ->put('/admin/product-subcategories/'.$used, ['category_id' => $category->id, 'name' => 'Terlarang'])->assertForbidden();
+        $this->delete('/admin/product-subcategories/'.$unused)->assertForbidden();
+        $this->actingAs($this->cmsUser('superadmin'))->delete('/admin/product-subcategories/'.$used)
+            ->assertRedirect('/admin/product-subcategories')->assertSessionHasNoErrors();
+        $this->assertDatabaseMissing('product_subcategories', ['id' => $used]);
+        $this->assertSoftDeleted($product);
+        $this->assertNotSoftDeleted($otherProduct);
+        $this->assertNotSoftDeleted($unrelated);
+        $this->assertDatabaseMissing('category_featured_products', ['product_id' => $product->id]);
+        $this->delete('/admin/product-subcategories/'.$unused)->assertRedirect('/admin/product-subcategories');
+        $this->assertDatabaseMissing('product_subcategories', ['id' => $unused]);
+    }
+
+    public function test_public_products_are_paginated_on_the_server(): void
+    {
+        $category = ProductCategory::factory()->create(['status' => 'published']);
+        $category->translations()->create(['lang' => 'id', 'name' => 'Rapid Test', 'slug' => 'rapid-test']);
+        for ($index = 1; $index <= 13; $index++) {
+            $product = Product::factory()->create(['status' => 'published', 'category_id' => $category->id, 'display_order' => $index]);
+            $product->translations()->create(['lang' => 'id', 'name' => 'Produk '.$index, 'slug' => 'produk-'.$index]);
+        }
+        $this->get('/id/produk')->assertOk()->assertSee('Produk 12')->assertDontSee('Produk 13');
+        $this->get('/id/produk?page=2')->assertOk()->assertSee('Produk 13')->assertDontSee('Produk 12');
+    }
 
     public function test_new_product_date_controls_badge_and_cms_field(): void
     {
@@ -71,9 +183,10 @@ class CmsFsdComplianceTest extends TestCase
         $this->post('/id/produk/'.$product->id.'/brosur', [...$payload, 'consent' => '1'])->assertRedirect('/brochures/example.pdf');
         $this->assertDatabaseHas('brochure_leads', ['product_id' => $product->id, 'email' => 'customer@example.com']);
         $this->get('/brochures/example.pdf')->assertOk()->assertHeader('Cache-Control', 'no-store, private');
-        $this->actingAs($this->cmsUser('superadmin'))->get('/admin/brochure-leads')->assertOk()->assertSee('customer@example.com');
-        $this->actingAs($this->cmsUser('admin'))->get('/admin/brochure-leads')->assertForbidden();
-        $this->actingAs($this->cmsUser('admin', ['products_catalog' => ['view']]))->get('/admin/brochure-leads')->assertOk()->assertSee('customer@example.com');
+        $this->actingAs($this->cmsUser('superadmin'))->get('/admin/brochure-requests')->assertOk()->assertSee('customer@example.com')->assertSee('Brochure Request')->assertDontSee('Dashboard Digmar');
+        $this->get('/digmar/brochure-requests')->assertRedirect('/admin/brochure-requests');
+        $this->actingAs($this->cmsUser('admin'))->get('/admin/brochure-requests')->assertForbidden();
+        $this->actingAs($this->cmsUser('admin', ['products_catalog' => ['view']]))->get('/admin/brochure-requests')->assertOk()->assertSee('customer@example.com');
     }
 
     public function test_documentation_rich_text_link_is_saved_and_shown(): void
@@ -91,13 +204,28 @@ class CmsFsdComplianceTest extends TestCase
         $this->get('/admin/content/documentations/'.$id.'/edit')->assertOk()->assertDontSee('Link tombol CTA')->assertDontSee('Label tombol CTA');
     }
 
-    public function test_deleting_category_with_products_returns_conflict(): void
+    public function test_deleting_category_also_deletes_its_subcategories_and_products(): void
     {
         $category = ProductCategory::factory()->create();
-        Product::factory()->create(['category_id' => $category->id]);
+        $product = Product::factory()->create(['category_id' => $category->id]);
+        $draftProduct = Product::factory()->create(['category_id' => $category->id, 'status' => 'draft']);
+        $otherCategory = ProductCategory::factory()->create();
+        $unrelated = Product::factory()->create(['category_id' => $otherCategory->id]);
+        DB::table('product_subcategories')->insert(['category_id' => $category->id, 'name' => 'Anak Kategori']);
+        DB::table('product_subcategories')->insert(['category_id' => $otherCategory->id, 'name' => 'Anak Kategori']);
+        $otherCategory->featuredProducts()->attach($product->id, ['display_order' => 1]);
+        $category->featuredProducts()->attach($unrelated->id, ['display_order' => 1]);
         $this->actingAs($this->cmsUser('superadmin'))->deleteJson('/api/v1/admin/product-categories/'.$category->id)
-            ->assertStatus(409)->assertJsonPath('message', 'Kategori masih memiliki produk. Pindahkan atau hapus produk terlebih dahulu.');
-        $this->assertDatabaseHas('product_categories', ['id' => $category->id, 'deleted_at' => null]);
+            ->assertOk();
+        $this->assertSoftDeleted($category);
+        $this->assertSoftDeleted($product);
+        $this->assertSoftDeleted($draftProduct);
+        $this->assertNotSoftDeleted($unrelated);
+        $this->assertNotSoftDeleted($otherCategory);
+        $this->assertDatabaseMissing('product_subcategories', ['category_id' => $category->id]);
+        $this->assertDatabaseHas('product_subcategories', ['category_id' => $otherCategory->id]);
+        $this->assertDatabaseMissing('category_featured_products', ['product_id' => $product->id]);
+        $this->assertDatabaseMissing('category_featured_products', ['category_id' => $category->id]);
     }
 
     public function test_detail_language_switcher_uses_the_target_translation_slug(): void
@@ -415,6 +543,21 @@ class CmsFsdComplianceTest extends TestCase
         $this->assertSame([$products[1]->id, $products[0]->id], $log->new_values['featured_product_ids']);
     }
 
+    public function test_png_with_bad_color_profile_can_be_uploaded(): void
+    {
+        Storage::fake('public');
+        $file = UploadedFile::fake()->image('profile.png', 20, 20);
+        $png = file_get_contents($file->getRealPath());
+        $profile = "ICC\0\0".gzcompress(str_repeat("\0", 128));
+        $chunk = 'iCCP'.$profile;
+        file_put_contents($file->getRealPath(), substr($png, 0, 33).pack('N', strlen($profile)).$chunk.pack('N', crc32($chunk)).substr($png, 33));
+
+        $response = $this->actingAs($this->cmsUser('superadmin'))->postJson('/api/v1/admin/media', ['files' => [$file]])->assertCreated();
+        $media = Media::findOrFail($response->json('data.0.id'));
+        Storage::disk('public')->assertExists($media->path);
+        Storage::disk('public')->assertExists('images/thumbnails/'.basename($media->path));
+    }
+
     public function test_media_rejects_invalid_or_oversized_upload_and_prevents_deleting_used_image(): void
     {
         Storage::fake(config('cms.media.disk'));
@@ -708,6 +851,24 @@ class CmsFsdComplianceTest extends TestCase
         $this->assertSame(2, $attempts);
     }
 
+    public function test_public_cache_is_preserved_for_previews_and_invalidated_for_content_writes(): void
+    {
+        $admin = $this->cmsUser('superadmin');
+        $cache = app(PublicApiCache::class);
+        $request = Request::create(url('/id'));
+        $originalKey = $cache->responseKey($request);
+
+        $this->actingAs($admin)->post('/admin/preview/products', ['translations' => ['id' => ['name' => 'Preview']]])->assertOk();
+        $this->assertSame($originalKey, $cache->responseKey($request));
+
+        $brand = Brand::factory()->create(['name' => 'Brand', 'status' => 'draft']);
+        $this->putJson('/api/v1/admin/brands/'.$brand->id, ['name' => str_repeat('a', 101), 'status' => 'draft'])->assertUnprocessable();
+        $this->assertSame($originalKey, $cache->responseKey($request));
+
+        $this->putJson('/api/v1/admin/brands/'.$brand->id, ['name' => 'Brand baru', 'status' => 'draft'])->assertOk();
+        $this->assertNotSame($originalKey, $cache->responseKey($request));
+    }
+
     public function test_admin_user_changes_keep_an_active_superadmin(): void
     {
         $actor = $this->cmsUser('superadmin');
@@ -976,7 +1137,7 @@ class CmsFsdComplianceTest extends TestCase
     public function test_unsaved_content_preview_does_not_create_records(): void
     {
         $admin = $this->cmsUser('superadmin');
-        $this->actingAs($admin)->get('/admin/content/products/create')->assertDontSee('data-preview-unsaved', false);
+        $this->actingAs($admin)->get('/admin/content/products/create')->assertSee('data-preview-unsaved', false);
         $this->post('/admin/preview/hero-slides', ['translations' => ['id' => ['title' => 'Banner preview']]])->assertOk()->assertSee('Banner preview')->assertHeader('X-Robots-Tag', 'noindex, nofollow');
         $this->post('/admin/preview/products', ['translations' => ['id' => ['name' => 'Produk preview']]])->assertOk()->assertSee('Produk preview')->assertHeader('X-Robots-Tag', 'noindex, nofollow');
         $this->post('/admin/preview/documentations', ['type' => 'article', 'translations' => ['id' => ['title' => 'Artikel preview', 'body' => '<script>alert(1)</script><p>Aman</p>']]])->assertOk()->assertSee('Artikel preview')->assertDontSee('<script>alert(1)</script>', false);
@@ -1007,6 +1168,7 @@ class CmsFsdComplianceTest extends TestCase
         $this->actingAs($admin)->post('/admin/preview/product-categories', ['translations' => ['id' => ['name' => 'Kategori preview']]])->assertOk()->assertSee('Kategori preview');
         $this->post('/admin/preview/brands', ['name' => 'Brand preview', 'logo_media_id' => $logo->id])->assertOk()->assertSee('brand-preview.png');
         $this->post('/admin/preview/mission-items', ['translations' => ['id' => ['text' => 'Misi preview']]])->assertOk()->assertSee('Misi preview');
+        $this->post('/admin/preview/social-links', ['platform' => 'Instagram', 'url' => 'https://instagram.com/preview'])->assertOk()->assertSee('instagram.com/preview');
         $this->assertSame(0, ProductCategory::query()->count());
         $this->assertSame(0, Brand::query()->count());
         $this->assertSame(0, MissionItem::query()->count());

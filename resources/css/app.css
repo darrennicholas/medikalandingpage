@@ -53,7 +53,7 @@ section[id] {
 }
 
 .site-header {
-    position: absolute;
+    position: fixed;
     inset: 0 0 auto;
     z-index: 100;
     background: var(--white);

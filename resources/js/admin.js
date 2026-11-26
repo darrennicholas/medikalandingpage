@@ -1,6 +1,11 @@
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 
+const articleSizes = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px'];
+const SizeClass = Quill.import('attributors/class/size');
+SizeClass.whitelist = ['small', 'large', 'huge', ...articleSizes];
+Quill.register(SizeClass, true);
+
 const csrfToken = document.querySelector('input[name="_token"]')?.value || '';
 
 if (document.body.classList.contains('admin-body')) {
@@ -74,11 +79,12 @@ if (document.body.classList.contains('admin-body')) {
         menu.querySelectorAll('button')[index]?.scrollIntoView({ block: 'nearest' });
     };
     const chooseOption = (index) => {
-        const option = activeSelect?.options[index];
+        const optionIndex = Number(menu.querySelectorAll('button')[index]?.dataset.optionIndex);
+        const option = activeSelect?.options[optionIndex];
         if (!option || option.disabled || option.parentElement?.disabled) return;
         const select = activeSelect;
-        const changed = select.selectedIndex !== index;
-        select.selectedIndex = index;
+        const changed = select.selectedIndex !== optionIndex;
+        select.selectedIndex = optionIndex;
         closeSelectMenu();
         select.focus({ preventScroll: true });
         if (changed) {
@@ -96,7 +102,9 @@ if (document.body.classList.contains('admin-body')) {
         menu.style.font = style.font;
         menu.style.color = style.color;
         Array.from(select.options).forEach((option, index) => {
+            if (option.hidden || option.parentElement?.hidden) return;
             const button = document.createElement('button');
+            button.dataset.optionIndex = index;
             button.type = 'button';
             button.className = 'admin-select-menu__option';
             button.textContent = option.textContent.trim();
@@ -104,7 +112,7 @@ if (document.body.classList.contains('admin-body')) {
             button.setAttribute('role', 'option');
             button.setAttribute('aria-selected', String(index === select.selectedIndex));
             button.addEventListener('pointerdown', (event) => event.preventDefault());
-            button.addEventListener('click', () => chooseOption(index));
+            button.addEventListener('click', () => chooseOption([...menu.querySelectorAll('button')].indexOf(button)));
             menu.append(button);
         });
         const rect = select.getBoundingClientRect();
@@ -120,11 +128,11 @@ if (document.body.classList.contains('admin-body')) {
         menu.hidden = false;
         select.setAttribute('aria-expanded', 'true');
         select.setAttribute('aria-controls', menu.id);
-        highlightOption(Math.max(0, select.selectedIndex));
+        highlightOption(Math.max(0, [...menu.querySelectorAll('button')].findIndex((button) => Number(button.dataset.optionIndex) === select.selectedIndex)));
     };
     document.addEventListener('pointerdown', (event) => {
         const select = event.target.closest('.admin-body select:not([multiple])');
-        if (!select || select.disabled || select.size > 1) return;
+        if (!select || select.closest('.ql-toolbar') || select.disabled || select.size > 1) return;
         event.preventDefault();
         select.focus({ preventScroll: true });
         openSelectMenu(select);
@@ -134,7 +142,7 @@ if (document.body.classList.contains('admin-body')) {
     });
     document.addEventListener('keydown', (event) => {
         const select = event.target.closest('.admin-body select:not([multiple])');
-        if (!select || select.disabled || select.size > 1) return;
+        if (!select || select.closest('.ql-toolbar') || select.disabled || select.size > 1) return;
         if (activeSelect !== select) {
             if (['ArrowDown', 'ArrowUp', ' ', 'Enter'].includes(event.key)) { event.preventDefault(); openSelectMenu(select); }
             return;
@@ -843,7 +851,17 @@ const normalizeEditorRepeaters = (formData, form) => {
 };
 
 const submitContentForm = async (form, event) => {
-    if (event.submitter?.hasAttribute('data-preview-unsaved')) return;
+    if (event.submitter?.hasAttribute('data-preview-unsaved')) {
+        if (form.querySelector('select[data-pending-upload="1"]') || form.querySelector('[data-gallery-upload]')?.files.length || form.querySelector('.ql-editor img[src^="data:"]')) {
+            event.preventDefault();
+            await showSweetAlert({ icon: 'info', title: 'Simpan media terlebih dahulu', text: 'Simpan sebagai Draft agar gambar baru dapat ditampilkan dalam pratinjau.' });
+            return;
+        }
+        const activeLanguage = form.querySelector('.admin-language-tabs [data-language-tab].is-active')?.dataset.languageTab || 'id';
+        const languageField = form.querySelector('[data-unsaved-preview-language]');
+        if (languageField) languageField.value = activeLanguage;
+        return;
+    }
     event.preventDefault();
     const errors = form.querySelector('[data-form-errors]');
     errors.hidden = true;
@@ -906,7 +924,23 @@ const submitContentForm = async (form, event) => {
         const hasPendingUploads = Boolean(form.querySelector('select[data-pending-upload="1"]'));
         const result = await withGlobalLoading(hasPendingUploads ? 'Menyimpan media dan perubahan...' : 'Menyimpan perubahan...', async () => {
             await savePendingMediaSelects(form, formData);
-            if (resource === 'documentations') serializeDocumentationGallery(formData, form);
+            for (const host of form.querySelectorAll('[data-article-editor]')) {
+                await host._savePendingImages?.(formData);
+            }
+            if (resource === 'documentations' && form.querySelector('[data-gallery-picker]')) {
+                serializeDocumentationGallery(formData, form);
+                const galleryInput = form.querySelector('[data-gallery-upload]');
+                const galleryFiles = galleryInput?.files || [];
+                let index = form.querySelectorAll('[name="gallery_media_ids[]"]:checked').length;
+                for (const [fileIndex, file] of [...galleryFiles].entries()) {
+                    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) {
+                        throw new Error('Galeri hanya menerima JPG, PNG, atau WebP dengan ukuran maksimal 2 MB per gambar.');
+                    }
+                    galleryInput._uploadedMedia ||= [];
+                    const media = galleryInput._uploadedMedia[fileIndex] ||= await uploadMediaFile(file, '/api/v1/admin/media');
+                    formData.append(`gallery[${index++}][media_id]`, media.id);
+                }
+            }
 
             return responseMessage(await fetch(endpoint, {
                 method: 'POST',
@@ -1110,7 +1144,32 @@ document.querySelectorAll('[data-certificate-batch]').forEach((form) => {
 
 document.querySelectorAll('[data-admin-form]').forEach((form) => form.addEventListener('submit', (event) => submitContentForm(form, event)));
 
+document.querySelectorAll('[data-section-preview]').forEach((preview) => {
+    preview.addEventListener('toggle', () => {
+        const frame = preview.querySelector('iframe[data-preview-src]');
+        if (preview.open && frame && !frame.getAttribute('src')) frame.src = frame.dataset.previewSrc;
+    });
+});
+
+document.querySelectorAll('[data-gallery-upload]').forEach((input) => {
+    input.addEventListener('change', () => { input._uploadedMedia = []; });
+});
+
 document.querySelectorAll('.admin-cms-form[data-resource="products"]').forEach((form) => {
+    const category = form.querySelector('[name="category_id"]');
+    const subcategory = form.querySelector('[data-product-subcategory]');
+    const updateSubcategoryOptions = () => {
+        if (!category || !subcategory) return;
+        [...subcategory.options].forEach((option) => {
+            if (!option.value) return;
+            const available = option.dataset.categoryId === category.value && option.value.trim().toLowerCase() !== 'none';
+            option.hidden = !available;
+            option.disabled = !available;
+        });
+        if (subcategory.selectedOptions[0]?.disabled) subcategory.value = '';
+    };
+    category?.addEventListener('change', updateSubcategoryOptions);
+    updateSubcategoryOptions();
     const status = form.querySelector('[data-product-new-status]');
     const expiryField = form.querySelector('[data-product-new-until-field]');
     const expiryDate = form.querySelector('[data-product-new-until]');
@@ -1228,7 +1287,6 @@ const initializeMediaSelectUpload = (select) => {
             if (select._pendingUploadFile && select.value !== select._pendingOptionValue) clearPendingMedia(select);
         });
     }
-    if (select.closest('.admin-cms-form[data-resource="products"]') && select.name !== 'media_id') return;
     if (select.dataset.inlineUploadReady || select.matches('[data-hero-media]')) return;
     const field = select.closest('.admin-field');
     if (!field) return;
@@ -1373,7 +1431,7 @@ document.querySelectorAll('[data-status-url]').forEach((button) => {
 document.querySelectorAll('[data-delete-url]').forEach((button) => {
     button.addEventListener('click', async () => {
         const label = button.getAttribute('aria-label')?.replace(/^Hapus\s*/i, '').trim();
-        const confirmed = await showSweetAlert({ icon: 'warning', title: 'Hapus data?', text: label ? `Data “${label}” akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.` : 'Data ini akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.', showCancel: true, confirmText: 'Ya, hapus' });
+        const confirmed = await showSweetAlert({ icon: 'warning', title: 'Hapus data?', text: button.dataset.deleteConfirm || (label ? `Data “${label}” akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.` : 'Data ini akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.'), showCancel: true, confirmText: 'Ya, hapus' });
         if (!confirmed) return;
         try {
             const result = await withGlobalLoading('Menghapus konten...', async () => responseMessage(await fetch(button.dataset.deleteUrl, {
@@ -1857,19 +1915,86 @@ document.querySelectorAll('[data-rich-editor]').forEach((host) => {
     editorElement.className = 'admin-rich-editor__content';
     host.append(editorElement);
 
+    const isArticle = host.hasAttribute('data-article-editor');
     const editor = new Quill(editorElement, {
         theme: 'snow',
         placeholder: host.dataset.placeholder || 'Tulis konten di sini...',
-        formats: ['bold', 'italic', 'underline', 'color', 'list', 'link'],
+        formats: ['bold', 'italic', 'underline', 'color', 'list', 'link', ...(isArticle ? ['size', 'align', 'image'] : [])],
         modules: {
             toolbar: [
                 ['bold', 'italic'],
                 [{ list: 'ordered' }, { list: 'bullet' }],
                 ['link'],
+                ...(isArticle ? [[{ size: articleSizes }], [{ align: [] }], ['image']] : []),
             ],
         },
     });
     const toolbar = editor.getModule('toolbar');
+    if (isArticle) {
+        const pendingImages = new Map();
+        let selectedImage = null;
+        const removeImage = document.createElement('button');
+        removeImage.type = 'button';
+        removeImage.className = 'admin-btn admin-btn--secondary';
+        removeImage.textContent = 'Hapus gambar terpilih';
+        removeImage.hidden = true;
+        host.append(removeImage);
+        editor.root.addEventListener('click', (event) => {
+            selectedImage = event.target.closest('img');
+            removeImage.hidden = !selectedImage;
+        });
+        removeImage.addEventListener('click', () => {
+            if (selectedImage && editor.root.contains(selectedImage)) {
+                const index = editor.getIndex(Quill.find(selectedImage));
+                editor.deleteText(index, 1, Quill.sources.USER);
+                editor.setSelection(index, 0, Quill.sources.SILENT);
+            }
+            selectedImage = null;
+            removeImage.hidden = true;
+        });
+        editor.on('text-change', () => {
+            if (!selectedImage || !editor.root.contains(selectedImage)) removeImage.hidden = true;
+        });
+        host._savePendingImages = async (formData) => {
+            for (const image of [...editor.root.querySelectorAll('img')]) {
+                const pending = pendingImages.get(image.getAttribute('src'));
+                if (!pending) continue;
+                pending.media ||= await uploadMediaFile(pending.file, '/api/v1/admin/media');
+                const path = new URL(pending.media.admin_preview_url, window.location.origin).pathname;
+                const index = editor.getIndex(Quill.find(image));
+                const attributes = editor.getContents(index, 1).ops[0]?.attributes;
+                editor.updateContents({ ops: [{ retain: index }, { delete: 1 }, { insert: { image: path }, ...(attributes ? { attributes } : {}) }] }, Quill.sources.USER);
+            }
+            formData.set(field.name, field.value);
+        };
+        const imageButton = toolbar.container.querySelector('.ql-image');
+        imageButton?.setAttribute('aria-label', 'Unggah gambar artikel');
+        imageButton?.setAttribute('title', 'Unggah gambar artikel');
+        toolbar.addHandler('image', () => {
+            const range = editor.getSelection(true) || { index: editor.getLength() - 1 };
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/jpeg,image/png,image/webp';
+            input.addEventListener('change', async () => {
+                const file = input.files?.[0];
+                if (!file) return;
+                if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) {
+                    await showSweetAlert({ icon: 'error', title: 'Gambar tidak valid', text: 'Pilih JPG, PNG, atau WebP maksimal 2 MB.' });
+                    return;
+                }
+                const reader = new FileReader();
+                reader.addEventListener('load', () => {
+                    const source = String(reader.result);
+                    pendingImages.set(source, { file });
+                    editor.insertEmbed(range.index, 'image', source, Quill.sources.USER);
+                    editor.setSelection(range.index + 1, 0, Quill.sources.SILENT);
+                });
+                reader.addEventListener('error', () => showSweetAlert({ icon: 'error', title: 'Gambar tidak dapat dibaca', text: 'Pilih ulang gambar dan coba lagi.' }));
+                reader.readAsDataURL(file);
+            });
+            input.click();
+        });
+    }
     const linkButton = toolbar.container.querySelector('.ql-link');
     linkButton?.setAttribute('aria-label', 'Tambah atau ubah tautan');
     linkButton?.setAttribute('title', 'Tambah atau ubah tautan');

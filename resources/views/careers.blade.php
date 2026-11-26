@@ -16,7 +16,7 @@
         </nav>
     </div></header>
     <main class="careers-page">
-        <section class="careers-hero" aria-labelledby="careers-title">
+        <section id="careers-hero" class="careers-hero" aria-labelledby="careers-title">
             <div class="container careers-hero__inner">
                 <div class="careers-hero__copy">
                     @php

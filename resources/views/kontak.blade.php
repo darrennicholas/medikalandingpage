@@ -110,7 +110,7 @@
         </div>
     </main>
 
-    <footer class="site-footer">
+    <footer id="footer" class="site-footer">
         @include('partials.site-footer', ['footer' => $footer])
     </footer>
 </body>

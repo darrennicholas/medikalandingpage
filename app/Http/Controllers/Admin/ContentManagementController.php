@@ -19,14 +19,87 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\SeoMeta;
 use App\Models\SocialLink;
+use App\Services\ActivityLogger;
+use App\Services\PublicApiCache;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ContentManagementController extends Controller
 {
+    public function subcategories(Request $request): View
+    {
+        $editingSubcategory = $request->filled('edit')
+            ? DB::table('product_subcategories')->where('id', $request->integer('edit'))->first()
+            : null;
+        abort_if($request->filled('edit') && ! $editingSubcategory, 404);
+
+        return view('admin.content.product-subcategories-index', [
+            'subcategoryCategories' => ProductCategory::query()->with('translations')->withCount('products')->orderBy('display_order')->orderBy('id')->get(),
+            'subcategories' => DB::table('product_subcategories')->select('product_subcategories.*')
+                ->selectSub(DB::table('products')->selectRaw('COUNT(*)')
+                    ->whereColumn('products.category_id', 'product_subcategories.category_id')
+                    ->whereColumn('products.subcategory', 'product_subcategories.name'), 'products_count')
+                ->orderBy('name')->get()->groupBy('category_id'),
+            'editingSubcategory' => $editingSubcategory,
+        ]);
+    }
+
+    public function updateSubcategory(Request $request, int $id, ActivityLogger $activityLogger, PublicApiCache $publicApiCache): RedirectResponse
+    {
+        $data = $request->validate([
+            'category_id' => ['required', 'integer', Rule::exists('product_categories', 'id')->whereNull('deleted_at')],
+            'name' => ['required', 'string', 'max:100', Rule::unique('product_subcategories', 'name')->where('category_id', $request->input('category_id'))->ignore($id)],
+        ]);
+        DB::transaction(function () use ($request, $id, $data, $activityLogger): void {
+            $subcategory = DB::table('product_subcategories')->where('id', $id)->lockForUpdate()->first();
+            abort_unless($subcategory, 404);
+            DB::table('product_subcategories')->where('id', $id)->update([...$data, 'updated_at' => now()]);
+            DB::table('products')->where('category_id', $subcategory->category_id)->where('subcategory', $subcategory->name)
+                ->update(['category_id' => $data['category_id'], 'subcategory' => $data['name'], 'updated_at' => now()]);
+            $activityLogger->log($request->user(), 'update', 'product_subcategory', $id, (array) $subcategory, $data);
+        });
+        $publicApiCache->invalidate();
+
+        return redirect()->route('admin.subcategories.index')->with('status', 'Subkategori dan produk terkait berhasil diperbarui.');
+    }
+
+    public function destroySubcategory(Request $request, int $id, ActivityLogger $activityLogger, PublicApiCache $publicApiCache): RedirectResponse
+    {
+        DB::transaction(function () use ($request, $id, $activityLogger): void {
+            $subcategory = DB::table('product_subcategories')->where('id', $id)->lockForUpdate()->first();
+            abort_unless($subcategory, 404);
+            foreach (Product::query()->where('category_id', $subcategory->category_id)->where('subcategory', $subcategory->name)->lockForUpdate()->get() as $product) {
+                $oldValues = $product->toArray();
+                $product->featuredCategories()->detach();
+                $product->delete();
+                $activityLogger->log($request->user(), 'delete', Product::class, $product->id, $oldValues);
+            }
+            DB::table('product_subcategories')->where('id', $id)->delete();
+            $activityLogger->log($request->user(), 'delete', 'product_subcategory', $id, (array) $subcategory);
+        });
+        $publicApiCache->invalidate();
+
+        return redirect()->route('admin.subcategories.index')->with('status', 'Subkategori beserta produk di dalamnya berhasil dihapus.');
+    }
+
+    public function storeSubcategory(Request $request, ActivityLogger $activityLogger, PublicApiCache $publicApiCache): RedirectResponse
+    {
+        $data = $request->validate([
+            'category_id' => ['required', 'integer', Rule::exists('product_categories', 'id')->whereNull('deleted_at')],
+            'name' => ['required', 'string', 'max:100', Rule::unique('product_subcategories', 'name')->where('category_id', $request->input('category_id'))],
+        ]);
+        $id = DB::table('product_subcategories')->insertGetId([...$data, 'created_at' => now(), 'updated_at' => now()]);
+        $activityLogger->log($request->user(), 'create', 'product_subcategory', $id, null, $data);
+        $publicApiCache->invalidate();
+
+        return redirect()->route('admin.subcategories.index')->with('status', 'Subkategori berhasil ditambahkan.');
+    }
+
     /** @var array<string, class-string<Model>> */
     private const MODELS = [
         'hero-slides' => HeroSlide::class, 'content-blocks' => ContentBlock::class, 'brands' => Brand::class,
@@ -38,7 +111,7 @@ class ContentManagementController extends Controller
     private const LABELS = [
         'hero-slides' => 'Hero / Banner', 'content-blocks' => 'Blok Konten', 'brands' => 'Brand Kami',
         'mission-items' => 'Visi & Misi', 'company-summary' => 'Summary Perusahaan', 'certificates' => 'Sertifikat & Penghargaan',
-        'product-categories' => 'Kategori Pemeriksaan', 'products' => 'Daftar Produk & Brosur', 'documentations' => 'Dokumentasi',
+        'product-categories' => 'Pengaturan Kategori', 'products' => 'Daftar Produk & Brosur', 'documentations' => 'Dokumentasi',
         'job-openings' => 'Lowongan Karir', 'contact-info' => 'Informasi Kontak', 'social-links' => 'Sosial Media & Footer', 'seo-metas' => 'Pengaturan SEO',
     ];
 
@@ -608,6 +681,9 @@ class ContentManagementController extends Controller
             if ($resource === 'products' && $field['name'] === 'category_id') {
                 $field['options'] = $categoryOptions->mapWithKeys(fn (ProductCategory $category): array => [$category->id => ($category->translations->firstWhere('lang', 'id')?->name ?? 'Kategori '.$category->id).($category->status !== 'published' ? ' (tidak aktif)' : '')])->all();
             }
+            if ($resource === 'products' && $field['name'] === 'subcategory') {
+                $field['suggestions'] = DB::table('product_subcategories')->orderBy('name')->get();
+            }
             if ($resource === 'content-blocks' && $record->getAttribute('block_key') === 'footer_about' && $field['name'] === 'block_key') {
                 $field['options'] = ['footer_about' => 'Tentang Footer'];
             }
@@ -729,8 +805,8 @@ class ContentManagementController extends Controller
             'company-summary' => ['common' => [$text('established_year', 'Tahun Berdiri', true, 4), $text('partner_count', 'Jumlah Mitra', true), $text('province_count', 'Jumlah Provinsi', true)], 'id' => [], 'en' => []],
             'certificates' => ['common' => [$media('media_id', 'Gambar', true), $text('issued_year', 'Tahun Terbit'), $text('display_order', 'Urutan')], 'id' => [$text('translations[id][title]', 'Judul', true, 150), $textarea('translations[id][description]', 'Keterangan', false, 300)], 'en' => [$text('translations[en][title]', 'Judul', false, 150), $textarea('translations[en][description]', 'Keterangan', false, 300)]],
             'product-categories' => ['common' => [$text('display_order', 'Urutan')], 'id' => [$text('translations[id][name]', 'Nama Kategori', true, 80), $text('translations[id][slug]', 'Slug', true, 100)], 'en' => [$text('translations[en][name]', 'Nama Kategori', false, 80), $text('translations[en][slug]', 'Slug', false, 100)], 'zh' => [$text('translations[zh][name]', 'Nama Kategori', false, 80), $text('translations[zh][slug]', 'Slug', false, 100)]],
-            'products' => ['common' => [$select('category_id', 'Kategori', [], true), $select('new_status', 'Status Produk Baru', ['new' => 'New', 'not_new' => 'Tidak New'], true), ['name' => 'new_until', 'label' => 'Tampilkan NEW sampai tanggal', 'type' => 'date', 'required' => false], $media('media_id', 'Gambar Utama'), $text('buy_url', 'Link Beli'), ['name' => 'brochure', 'label' => 'Brosur PDF (lokal)', 'type' => 'file', 'required' => false], ['name' => 'parameters', 'label' => 'Parameter (pisahkan dengan koma)', 'type' => 'text', 'required' => false], $media('logo_top_media_id', 'Logo Atas'), $media('logo_bottom_media_id', 'Logo Watermark'), $text('display_order', 'Urutan')], 'id' => [$text('translations[id][name]', 'Nama Produk', true, 150), $text('translations[id][slug]', 'Slug', true, 150), $textarea('translations[id][description]', 'Deskripsi', true, 20000)], 'en' => [$text('translations[en][name]', 'Nama Produk', false, 150), $text('translations[en][slug]', 'Slug', false, 150), $textarea('translations[en][description]', 'Deskripsi', false, 20000)]],
-            'documentations' => ['common' => [$select('type', 'Tipe', ['article' => 'Artikel', 'activity' => 'Foto Kegiatan']), $media('cover_media_id', 'Gambar Sampul'), $text('event_date', 'Tanggal', true), ['name' => 'gallery', 'label' => 'Galeri Media', 'type' => 'gallery', 'required' => false]], 'id' => [$text('translations[id][title]', 'Judul', true, 150), $text('translations[id][slug]', 'Slug', true, 150), $textarea('translations[id][excerpt]', 'Ringkasan', false, 250), $textarea('translations[id][body]', 'Isi Artikel', false, 20000)], 'en' => [$text('translations[en][title]', 'Judul', false, 150), $text('translations[en][slug]', 'Slug', false, 150), $textarea('translations[en][excerpt]', 'Ringkasan', false, 250), $textarea('translations[en][body]', 'Isi Artikel', false, 20000)]],
+            'products' => ['common' => [$select('category_id', 'Kategori Utama', [], true), $text('subcategory', 'Subkategori', false, 100), $select('new_status', 'Status Produk Baru', ['new' => 'New', 'not_new' => 'Tidak New'], true), ['name' => 'new_until', 'label' => 'Tampilkan NEW sampai tanggal', 'type' => 'date', 'required' => false], $media('media_id', 'Gambar Utama'), $text('buy_url', 'Link Beli'), ['name' => 'brochure', 'label' => 'Brosur PDF (lokal)', 'type' => 'file', 'required' => false], ['name' => 'parameters', 'label' => 'Parameter (pisahkan dengan koma)', 'type' => 'text', 'required' => false], $media('logo_top_media_id', 'Logo Atas'), $media('logo_bottom_media_id', 'Logo Watermark'), $text('display_order', 'Urutan')], 'id' => [$text('translations[id][name]', 'Nama Produk', true, 150), $text('translations[id][slug]', 'Slug', true, 150), $textarea('translations[id][description]', 'Deskripsi Produk', true, 20000)], 'en' => [$text('translations[en][name]', 'Nama Produk', false, 150), $text('translations[en][slug]', 'Slug', false, 150), $textarea('translations[en][description]', 'Deskripsi Produk', false, 20000)]],
+            'documentations' => ['common' => [$select('type', 'Tipe', ['article' => 'Artikel', 'activity' => 'Foto Kegiatan']), $media('cover_media_id', 'Gambar Sampul'), $text('event_date', 'Tanggal', true)], 'id' => [$text('translations[id][title]', 'Judul', true, 150), $text('translations[id][slug]', 'Slug', true, 150), $textarea('translations[id][excerpt]', 'Ringkasan', false, 250), $textarea('translations[id][body]', 'Isi Artikel', false, 20000)], 'en' => [$text('translations[en][title]', 'Judul', false, 150), $text('translations[en][slug]', 'Slug', false, 150), $textarea('translations[en][excerpt]', 'Ringkasan', false, 250), $textarea('translations[en][body]', 'Isi Artikel', false, 20000)]],
             'job-openings' => ['common' => [$text('employment_type', 'Tipe Kepegawaian', true, 50), $text('location', 'Lokasi', true, 150), $text('posted_at', 'Tanggal Posting', true), $text('closing_date', 'Tanggal Penutupan'), $text('apply_url', 'Link HRIS Lamaran', true, 500)], 'id' => [$textarea('translations[id][title]', 'Posisi', true, 150), $textarea('translations[id][description]', 'Deskripsi', true, 20000), $textarea('translations[id][requirements]', 'Persyaratan', true, 20000)], 'en' => [$textarea('translations[en][title]', 'Posisi', false, 150), $textarea('translations[en][description]', 'Deskripsi', false, 20000), $textarea('translations[en][requirements]', 'Persyaratan', false, 20000)]],
             'contact-info' => ['common' => [$text('phone', 'Nomor Telepon', true, 20), $text('email', 'Email', true, 150), $text('maps_url', 'Link Google Maps'), $text('latitude', 'Latitude'), $text('longitude', 'Longitude')], 'id' => [$textarea('translations[id][address]', 'Alamat', true, 300), $text('translations[id][office_hours]', 'Jam Operasional', false, 150)], 'en' => [$textarea('translations[en][address]', 'Alamat', false, 300), $text('translations[en][office_hours]', 'Jam Operasional', false, 150)]],
             'social-links' => ['common' => [$select('platform', 'Platform', ['Instagram' => 'Instagram', 'LinkedIn' => 'LinkedIn', 'Facebook' => 'Facebook', 'YouTube' => 'YouTube', 'TikTok' => 'TikTok']), $text('url', 'URL', true, 500), $media('preview_media_id', 'Gambar pratinjau hover'), $text('display_order', 'Urutan')], 'id' => [], 'en' => []],

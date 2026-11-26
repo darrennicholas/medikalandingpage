@@ -48,7 +48,7 @@ class DashboardController extends Controller
                 'closed_jobs' => DB::table('job_openings')->where('status', 'closed')->whereNull('deleted_at')->count(),
                 'jobs_closing_soon' => DB::table('job_openings')->where('status', 'open')
                     ->whereBetween('closing_date', [today(), today()->addDays(7)])->count(),
-                'recent_activities' => $user?->hasRole('superadmin')
+                'recent_activities' => ($user?->hasRole('superadmin') || $user?->role?->hasPermission('activity_logs', 'view'))
                     ? ActivityLog::query()->with('user')->latest('created_at')->limit(self::RECENT_ACTIVITY_LIMIT)->get()
                     : [],
             ],
@@ -155,7 +155,7 @@ class DashboardController extends Controller
         ]);
         $fromDate = $dates['from'] ?? $dates['to'] ?? now()->startOfMonth()->toDateString();
         $toDate = $dates['to'] ?? $dates['from'] ?? now()->endOfMonth()->toDateString();
-        $isSuperadmin = $request->user()?->hasRole('superadmin') ?? false;
+        $isSuperadmin = $request->user()?->hasRole('superadmin') || $request->user()?->role?->hasPermission('activity_logs', 'view');
         $activityQuery = ActivityLog::query()->with('user')->latest('created_at');
         $activityQuery->whereBetween('created_at', [
             Carbon::parse($fromDate)->startOfDay(),

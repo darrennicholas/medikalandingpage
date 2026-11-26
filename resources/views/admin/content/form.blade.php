@@ -3,13 +3,13 @@
 @section('heading', ($isEditing ? 'Ubah ' : 'Tambah ').$title)
 @if ($resource === 'product-categories')
     @section('page-heading', ($isEditing ? 'Ubah ' : 'Tambah ').$title)
-    @section('breadcrumb', 'Konten Landing Page  /  Produk  /  Kategori Pemeriksaan')
+    @section('breadcrumb', 'Konten Landing Page  /  Produk  /  Pengaturan Kategori')
     @section('page-description', 'Kelola nama kategori, slug, urutan tab, dan status katalog.')
 @endif
 @section('content')
 <section class="admin-panel {{ $resource === 'product-categories' ? 'admin-category-editor' : '' }}">
     <div class="admin-panel__header"><div><p class="admin-eyebrow">{{ $title }}</p><h2>{{ $isEditing ? 'Perbarui data' : 'Data baru' }}</h2></div><a class="admin-button admin-button--back" href="{{ route('admin.content.index', $resource) }}"><span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>Kembali ke daftar</a></div>
-    <form class="admin-form admin-cms-form {{ $resource === 'brands' ? 'admin-cms-form--brand' : '' }}" data-admin-form data-resource="{{ $resource }}" data-api-url="{{ $apiUrl }}" data-is-editing="{{ $isEditing ? '1' : '0' }}" enctype="multipart/form-data">
+    <form class="admin-form admin-cms-form {{ $resource === 'brands' ? 'admin-cms-form--brand' : '' }} {{ $resource === 'products' ? 'admin-cms-form--product' : '' }}" data-admin-form data-resource="{{ $resource }}" data-api-url="{{ $apiUrl }}" data-is-editing="{{ $isEditing ? '1' : '0' }}" enctype="multipart/form-data">
         @include('admin.partials.record-version', ['record' => $record])
         @csrf
         @foreach ($definitions['common'] as $field)
@@ -22,6 +22,9 @@
                 if ($fieldName === 'parameters' && is_array($fieldValue)) { $fieldValue = implode(', ', $fieldValue); }
                 if (preg_match('/^translations\[([^\]]+)\]\[([^\]]+)\]$/', $fieldName, $matches)) { $fieldValue = $translations->get($matches[1])?->{$matches[2]}; }
             @endphp
+            @if ($resource === 'products' && in_array($fieldName, ['category_id', 'media_id', 'status'], true))
+                <div class="admin-product-form-heading"><h3>{{ match ($fieldName) { 'category_id' => 'Kategori produk', 'media_id' => 'Gambar dan informasi produk', default => 'Status publikasi' } }}</h3><p>{{ match ($fieldName) { 'category_id' => 'Tentukan kategori utama dan subkategori agar produk mudah ditemukan.', 'media_id' => 'Lengkapi gambar, tautan, brosur, dan logo produk.', default => 'Tentukan apakah produk sudah siap ditayangkan.' } }}</p></div>
+            @endif
             @if ($field['type'] === 'hidden')
                 <input type="hidden" name="{{ $fieldName }}" value="{{ old($fieldName, $field['value'] ?? $fieldValue) }}">
             @else
@@ -42,6 +45,9 @@
                 @elseif ($field['type'] === 'file')
                     <input type="file" name="{{ $fieldName }}" accept="application/pdf" @required($field['required'])>@if ($record->brochure_path)@php $brochurePath = preg_replace('#^(?:public/)?brochures/#', '', ltrim($record->brochure_path, '/')); $brochureUrl = route('stored.brochure', ['path' => $brochurePath]); @endphp<a class="admin-current-pdf" href="{{ $brochureUrl }}" target="_blank" rel="noopener noreferrer">Buka brosur PDF tersimpan</a>@endif
                 @elseif ($field['type'] === 'gallery')
+                    <span>Tambahkan gambar baru untuk galeri</span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" multiple data-gallery-upload>
+                    <small>JPG, PNG, atau WebP, maksimal 2 MB per gambar. Gambar disimpan saat konten disimpan.</small>
                     <div class="admin-gallery-picker" data-gallery-picker>
                         @foreach ($mediaOptions->sortBy(fn ($item) => $record->exists ? ($record->gallery->firstWhere('id', $item->id)?->pivot?->display_order ?? PHP_INT_MAX) : PHP_INT_MAX) as $media)
                             @php
@@ -68,14 +74,19 @@
                             <div class="admin-gallery-caption-dialog__actions"><button class="admin-button" type="button" data-gallery-caption-cancel>Batal</button><button class="admin-button admin-button--primary" type="button" data-gallery-caption-save>Simpan keterangan</button></div>
                         </dialog>
                     </div>
+                @elseif ($fieldName === 'subcategory')
+                    <select name="subcategory" data-product-subcategory><option value="">Tanpa subkategori</option>@foreach ($field['suggestions'] ?? [] as $suggestion)<option value="{{ $suggestion->name }}" data-category-id="{{ $suggestion->category_id }}" @selected((string) old($fieldName, $fieldValue) === $suggestion->name && (int) old('category_id', $record->category_id) === $suggestion->category_id)>{{ $suggestion->name }}</option>@endforeach</select>
+                    <small>Tambahkan pilihan melalui menu Pengaturan SubKategori.</small>
                 @else
-                    <input type="{{ in_array($fieldName, ['event_date', 'posted_at', 'closing_date'], true) ? 'date' : (in_array($fieldName, ['established_year', 'partner_count', 'province_count', 'display_order', 'issued_year'], true) ? 'number' : 'text') }}" name="{{ $fieldName }}" value="{{ old($fieldName, $fieldValue) }}" maxlength="{{ $field['maxlength'] ?? 500 }}" @required($field['required'])>
+                    <input type="{{ in_array($fieldName, ['event_date', 'posted_at', 'closing_date'], true) ? 'date' : (in_array($fieldName, ['established_year', 'partner_count', 'province_count', 'display_order', 'issued_year'], true) ? 'number' : 'text') }}" name="{{ $fieldName }}" value="{{ old($fieldName, $fieldValue) }}" maxlength="{{ $field['maxlength'] ?? 500 }}" @if ($fieldName === 'subcategory') list="product-subcategory-options" placeholder="Contoh: Drugs of Abuse (DOA)" @endif @required($field['required'])>
+                    @if ($fieldName === 'subcategory')<datalist id="product-subcategory-options">@foreach ($field['suggestions'] ?? [] as $suggestion)<option value="{{ $suggestion }}">@endforeach</datalist><small>Pilih atau tulis subkategori di bawah kategori utama.</small>@endif
                 @endif
             </label>
             @endif
         @endforeach
 
         @if ($definitions['id'] !== [] || $definitions['en'] !== [] || $definitions['zh'] !== [])
+            @if ($resource === 'products')<div class="admin-product-form-heading"><h3>Nama dan deskripsi produk</h3><p>Isi informasi produk dalam bahasa yang tersedia. Subkategori diatur pada bagian kategori di atas.</p></div>@endif
             <div class="admin-language-tabs" role="tablist"><button type="button" class="is-active" data-language-tab="id">Bahasa Indonesia <b>*</b></button><button type="button" data-language-tab="en">Bahasa Inggris</button><button type="button" data-language-tab="zh">Mandarin</button></div>
             @foreach (['id' => 'Bahasa Indonesia', 'en' => 'Bahasa Inggris', 'zh' => 'Mandarin'] as $language => $label)
                 <div class="admin-language-panel {{ $language !== 'id' ? 'is-hidden' : '' }}" data-language-panel="{{ $language }}">
@@ -94,7 +105,7 @@
                         @if ($isRichText)
                             <div class="admin-field admin-field--rich" data-rich-field>
                                 <span>{{ $field['label'] }} @if ($requiredMarker)<b>*</b>@endif</span>
-                                <div class="admin-rich-editor" data-rich-editor data-placeholder="Tulis {{ mb_strtolower($field['label']) }} di sini...">
+                                <div class="admin-rich-editor" data-rich-editor @if ($resource === 'documentations' && str_contains($fieldName, '[body]')) data-article-editor @endif data-placeholder="Tulis {{ mb_strtolower($field['label']) }} di sini...">
                                     <textarea name="{{ $fieldName }}" @required($isRequired) @if ($isRequired) data-rich-required @endif>{{ old($fieldName, $fieldValue) }}</textarea>
                                 </div>
                                 <small>Gunakan tombol format untuk menebalkan, memiringkan, membuat daftar, atau menambahkan tautan.</small>
@@ -110,11 +121,15 @@
             @endforeach
         @endif
         @if ($resource === 'documentations')
-            <p>Kolom bertanda * wajib untuk publikasi. Draft dapat disimpan dengan data parsial. Galeri media bersifat opsional.</p>
+            <p>Kolom bertanda * wajib untuk publikasi. Draft dapat disimpan dengan data parsial.</p>
         @endif
         <div class="admin-form__error" data-form-errors hidden></div>
         <div class="admin-form__actions">
             <a class="admin-button" href="{{ route('admin.content.index', $resource) }}">Batal</a>
+            @if (in_array($resource, ['products', 'product-categories', 'documentations', 'job-openings', 'brands', 'mission-items', 'certificates', 'social-links'], true))
+                <input type="hidden" name="preview_lang" value="id" data-unsaved-preview-language>
+                <button class="admin-button" type="submit" data-preview-unsaved formaction="{{ route('admin.content.preview-unsaved', ['resource' => $resource]) }}" formmethod="post" formtarget="_blank" formnovalidate><span class="material-symbols-rounded" aria-hidden="true">visibility</span>Pratinjau Perubahan</button>
+            @endif
             @if (in_array('status', $record->getFillable(), true))
                 <button class="admin-button" type="submit" data-save-status="draft" formnovalidate>Simpan Draft</button>
                 <button class="admin-button admin-button--primary" type="submit" data-save-status="{{ $resource === 'job-openings' ? 'open' : 'published' }}">{{ $resource === 'job-openings' ? 'Simpan & Buka' : 'Simpan & Publish' }}</button>

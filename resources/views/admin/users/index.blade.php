@@ -2,9 +2,15 @@
 @section('title', 'Manajemen User')
 @section('heading', 'Manajemen User')
 @section('content')
+@php
+    $canManageUsers = auth()->user()->hasRole('superadmin');
+    $canCreateUser = $canManageUsers || auth()->user()->role?->hasPermission('users', 'create');
+    $canUpdateUser = $canManageUsers || auth()->user()->role?->hasPermission('users', 'update');
+    $canDeleteUser = $canManageUsers || auth()->user()->role?->hasPermission('users', 'delete');
+@endphp
 <section class="admin-dashboard-intro">
     <div><p class="admin-eyebrow">Pengaturan Sistem</p><h2>Manajemen User</h2><p>Kelola akun pengguna CMS, role, status, dan kredensial dengan aman.</p></div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">@if (auth()->user()->hasRole('superadmin'))<a class="admin-button" href="{{ route('admin.users.export', request()->query()) }}"><span class="material-symbols-rounded" aria-hidden="true">download</span>Export CSV</a><a class="admin-button admin-button--primary" href="{{ route('admin.users.create') }}"><span class="material-symbols-rounded" aria-hidden="true">person_add</span> Tambah User</a>@endif</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><a class="admin-button" href="{{ route('admin.users.export', request()->query()) }}"><span class="material-symbols-rounded" aria-hidden="true">download</span>Export CSV</a>@if ($canCreateUser)<a class="admin-button admin-button--primary" href="{{ route('admin.users.create') }}"><span class="material-symbols-rounded" aria-hidden="true">person_add</span> Tambah User</a>@endif</div>
 </section>
 @if (session('temporary_password'))<div class="admin-alert admin-alert--success">Password sementara (ditampilkan sekali): <strong>{{ session('temporary_password') }}</strong></div>@endif
 <section class="admin-stats-grid admin-stats-grid--three">
@@ -21,11 +27,11 @@
         <label>Baris <select name="per_page">@foreach ([10, 25, 50] as $size)<option value="{{ $size }}" @selected((int) request('per_page', 10) === $size)>{{ $size }}</option>@endforeach</select></label>
         <div class="admin-filter-actions"><button class="admin-button admin-button--primary" type="submit">Cari</button><a class="admin-button" href="{{ route('admin.users.index') }}">Reset</a></div>
     </form>
-    <div class="admin-table-wrap"><table class="admin-table"><thead><tr>@if (auth()->user()->hasRole('superadmin'))<th>Aksi</th>@endif<th>Nama Pengguna</th><th>Email</th><th>Peran (Role)</th><th>Status</th><th>Login Terakhir</th></tr></thead><tbody>
+    <div class="admin-table-wrap"><table class="admin-table"><thead><tr>@if ($canUpdateUser || $canDeleteUser)<th>Aksi</th>@endif<th>Nama Pengguna</th><th>Email</th><th>Peran (Role)</th><th>Status</th><th>Login Terakhir</th></tr></thead><tbody>
         @forelse ($users as $user)
-            <tr>@if (auth()->user()->hasRole('superadmin'))<td class="admin-actions"><a href="{{ route('admin.users.edit', $user) }}" title="Ubah" aria-label="Ubah"><span class="material-symbols-rounded" aria-hidden="true">edit</span></a><form method="POST" action="{{ route('admin.users.reset-password', $user) }}" data-confirm="Reset password user ini?">@csrf<button type="submit" title="Reset password" aria-label="Reset password"><span class="material-symbols-rounded" aria-hidden="true">lock_reset</span></button></form>@if ($user->status === 'locked')<form method="POST" action="{{ route('admin.users.unlock', $user) }}">@csrf<button type="submit" title="Buka kunci" aria-label="Buka kunci"><span class="material-symbols-rounded" aria-hidden="true">lock_open</span></button></form>@endif<form method="POST" action="{{ route('admin.users.destroy', $user) }}" data-confirm="Apakah Anda yakin ingin menghapus data ini?"><input type="hidden" name="_method" value="DELETE">@csrf<button type="submit" class="is-danger" title="Hapus" aria-label="Hapus"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button></form></td>@endif
+            <tr>@if ($canUpdateUser || $canDeleteUser)<td class="admin-actions">@if ($canUpdateUser)<a href="{{ route('admin.users.edit', $user) }}" title="Ubah" aria-label="Ubah"><span class="material-symbols-rounded" aria-hidden="true">edit</span></a><form method="POST" action="{{ route('admin.users.reset-password', $user) }}" data-confirm="Reset password user ini?">@csrf<button type="submit" title="Reset password" aria-label="Reset password"><span class="material-symbols-rounded" aria-hidden="true">lock_reset</span></button></form>@if ($user->status === 'locked')<form method="POST" action="{{ route('admin.users.unlock', $user) }}">@csrf<button type="submit" title="Buka kunci" aria-label="Buka kunci"><span class="material-symbols-rounded" aria-hidden="true">lock_open</span></button></form>@endif @endif @if ($canDeleteUser)<form method="POST" action="{{ route('admin.users.destroy', $user) }}" data-confirm="Apakah Anda yakin ingin menghapus data ini?"><input type="hidden" name="_method" value="DELETE">@csrf<button type="submit" class="is-danger" title="Hapus" aria-label="Hapus"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button></form>@endif</td>@endif
             <td><strong>{{ $user->name }}</strong>@if (auth()->id() === $user->id)<span class="admin-status admin-status--published">Anda</span>@endif</td><td>{{ $user->email }}</td><td><span class="admin-status admin-status--draft">{{ ucfirst($user->role?->name ?? 'Tanpa role') }}</span></td><td><span class="admin-status admin-status--{{ $user->status }}">{{ ucfirst($user->status) }}</span></td><td>{{ $user->last_login_at?->format('d M Y, H:i') ?? 'Belum pernah login' }}</td></tr>
-        @empty<tr><td colspan="{{ auth()->user()->hasRole('superadmin') ? 6 : 5 }}">Tidak ada akun yang cocok dengan filter ini.</td></tr>@endforelse
+        @empty<tr><td colspan="{{ ($canUpdateUser || $canDeleteUser) ? 6 : 5 }}">Tidak ada akun yang cocok dengan filter ini.</td></tr>@endforelse
     </tbody></table></div>
     @include('admin.partials.pagination', ['paginator' => $users, 'label' => 'user'])
 </section>

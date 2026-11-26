@@ -166,14 +166,12 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
         const selectedCategory = categorySelect.value;
         const selectedSubcategory = subcategorySelect.value;
         const selectedCategoryIds = getSelectedCategoryIds();
-        const productFilterTerms = selectedProductFilter
-            .split('|')
-            .map((term) => term.trim().toLowerCase())
-            .filter(Boolean);
+        const newIds = new Set(productEntries.filter(({ section }) => section.dataset.categoryFilter === 'new-products').map(({ card }) => card.dataset.productId));
         const matchingEntries = productEntries.filter(({ card }) =>
-            (selectedCategory === 'all' || selectedCategoryIds.includes(card.dataset.category))
+            (selectedCategory === 'new-products' ? card.closest('.product-category-section')?.dataset.categoryFilter === 'new-products' :
+                (selectedCategory === 'all' || selectedCategoryIds.includes(card.dataset.category)) && (selectedCategory !== 'all' || card.closest('.product-category-section')?.dataset.categoryFilter === 'new-products' || !newIds.has(card.dataset.productId)) && (selectedCategory === 'all' || card.closest('.product-category-section')?.dataset.categoryFilter !== 'new-products'))
             && (selectedSubcategory === 'all' || card.dataset.subcategory === selectedSubcategory)
-            && (productFilterTerms.length === 0 || productFilterTerms.some((term) => card.textContent.toLowerCase().includes(term))),
+            && (!selectedProductFilter || card.dataset.subcategory === selectedProductFilter),
         );
         const shouldPaginate = catalogMode;
         const totalPages = shouldPaginate ? Math.ceil(matchingEntries.length / pageSize) : 1;
@@ -183,17 +181,6 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
             ? matchingEntries.slice(firstIndex, firstIndex + pageSize)
             : matchingEntries;
         const visibleCards = new Set(visibleEntries.map(({ card }) => card));
-        const selectedSections = productSections.filter((section) => {
-            if (selectedCategory === 'all') {
-                return true;
-            }
-
-            const sectionCategoryIds = section.dataset.categoryIds.split(',').filter(Boolean);
-
-            return section.dataset.categoryFilter === selectedCategory
-                || sectionCategoryIds.some((categoryId) => selectedCategoryIds.includes(categoryId));
-        });
-        const hasVisibleEmptySection = selectedSections.some((section) => section.querySelector('.product-category-section__empty'));
 
         productEntries.forEach(({ card }) => {
             card.hidden = !visibleCards.has(card);
@@ -201,13 +188,10 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
 
         productSections.forEach((section) => {
             const hasVisibleCard = visibleEntries.some((entry) => entry.section === section);
-            const shouldShowEmptyCategory = selectedSections.includes(section)
-                && section.querySelector('.product-category-section__empty');
-
-            section.hidden = !hasVisibleCard && !shouldShowEmptyCategory;
+            section.hidden = !hasVisibleCard;
         });
 
-        productNoMatches.hidden = matchingEntries.length > 0 || hasVisibleEmptySection;
+        productNoMatches.hidden = matchingEntries.length > 0;
 
         productResults.replaceChildren();
         const count = document.createElement('strong');
@@ -322,6 +306,13 @@ if (categorySelect && subcategorySelect && resetFilters && productResults && pro
 }
 
 if (document.querySelector('.product-catalog__layout')?.dataset.catalogMode === 'all') {
+    const savedScroll = sessionStorage.getItem('product-catalog-scroll');
+    if (savedScroll !== null) {
+        sessionStorage.removeItem('product-catalog-scroll');
+        const restoreScroll = () => window.scrollTo({ top: Number(savedScroll), behavior: 'instant' });
+        restoreScroll();
+        window.addEventListener('load', restoreScroll, { once: true });
+    }
     document.querySelectorAll('button[data-category-filter]').forEach((button) => {
         button.addEventListener('click', () => {
             const url = new URL(window.location.href);
@@ -337,6 +328,7 @@ if (document.querySelector('.product-catalog__layout')?.dataset.catalogMode === 
             if (button.dataset.productFilter) url.searchParams.set('subcategory', button.dataset.productFilter);
             else url.searchParams.delete('subcategory');
             url.searchParams.delete('page');
+            sessionStorage.setItem('product-catalog-scroll', String(window.scrollY));
             window.location.assign(url);
         });
     });

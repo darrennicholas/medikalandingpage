@@ -19,7 +19,6 @@
 /database/*.sqlite
 /database/*.sqlite-*
 /public/storage
-/storage/app/public/
 /storage/*.key
 /storage/pail
 

@@ -52,6 +52,7 @@ class MediaController extends Controller
 
     private function isUsedByPublishedContent(Media $media): bool
     {
+        $queries = [];
         foreach ([
             ['hero_slides', 'media_id'],
             ['content_blocks', 'media_id'],
@@ -63,17 +64,25 @@ class MediaController extends Controller
             ['documentations', 'cover_media_id'],
             ['social_links', 'preview_media_id'],
         ] as [$table, $column]) {
-            if (DB::table($table)->where($column, $media->id)->where('status', 'published')->whereNull('deleted_at')->exists()) {
-                return true;
-            }
+            $queries[] = DB::table($table)->selectRaw('1')->where($column, $media->id)->where('status', 'published')->whereNull('deleted_at');
         }
 
-        return DB::table('documentation_media')
+        $queries[] = DB::table('documentation_media')->selectRaw('1')
             ->join('documentations', 'documentations.id', '=', 'documentation_media.documentation_id')
             ->where('documentation_media.media_id', $media->id)
             ->where('documentations.status', 'published')
-            ->whereNull('documentations.deleted_at')
-            ->exists()
-            || DB::table('seo_metas')->where('og_media_id', $media->id)->exists();
+            ->whereNull('documentations.deleted_at');
+        $queries[] = DB::table('seo_metas')->selectRaw('1')->where('og_media_id', $media->id);
+        $queries[] = DB::table('documentation_translations')->selectRaw('1')
+            ->join('documentations', 'documentations.id', '=', 'documentation_translations.documentation_id')
+            ->where('documentations.status', 'published')->whereNull('documentations.deleted_at')
+            ->where('documentation_translations.body', 'like', '%"/media/'.$media->id.'/file"%');
+
+        $query = array_shift($queries);
+        foreach ($queries as $usageQuery) {
+            $query->unionAll($usageQuery);
+        }
+
+        return $query->exists();
     }
 }

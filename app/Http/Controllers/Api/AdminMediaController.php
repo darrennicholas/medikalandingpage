@@ -128,6 +128,9 @@ class AdminMediaController extends Controller
                 $usages[] = $label;
             }
         }
+        if (DB::table('documentation_translations')->where('body', 'like', '%"/media/'.$media->id.'/file"%')->exists()) {
+            $usages[] = 'Isi artikel';
+        }
 
         foreach (['hero_slides' => 'Draft perubahan Hero', 'content_blocks' => 'Draft perubahan blok konten'] as $table => $label) {
             foreach (DB::table($table)->whereNotNull('draft_payload')->pluck('draft_payload') as $payload) {
@@ -146,7 +149,7 @@ class AdminMediaController extends Controller
     private function storeOptimizedImage(UploadedFile $file, Request $request, int $index, array &$storedPaths, MediaThumbnailGenerator $thumbnailGenerator): Media
     {
         $contents = file_get_contents($file->getRealPath());
-        $source = imagecreatefromstring($contents ?: '');
+        $source = @imagecreatefromstring($contents ?: '');
         abort_if($source === false, 415, 'Isi file bukan gambar yang valid.');
         $width = imagesx($source);
         $height = imagesy($source);

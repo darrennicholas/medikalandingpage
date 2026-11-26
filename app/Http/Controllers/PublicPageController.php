@@ -57,6 +57,9 @@ class PublicPageController extends Controller
             'gallery_captions.*.en' => ['nullable', 'string', 'max:200'],
             'gallery_captions.*.zh' => ['nullable', 'string', 'max:200'],
             'name' => ['nullable', 'string', 'max:100'],
+            'platform' => ['nullable', 'string', 'max:30'],
+            'url' => ['nullable', 'url:https', 'max:500'],
+            'preview_media_id' => ['nullable', 'integer', 'exists:media,id'],
             'logo_media_id' => ['nullable', 'integer', 'exists:media,id'],
             'translations.id.text' => ['nullable', 'string', 'max:300'],
             'translations.en.text' => ['nullable', 'string', 'max:300'],
@@ -93,6 +96,15 @@ class PublicPageController extends Controller
         }
         $translation = (object) array_merge(['name' => null, 'title' => null, 'excerpt' => null, 'description' => null, 'requirements' => null, 'body' => null], $translationFields);
         $data = ['language' => $language, 'footer' => $this->footerData($language), 'seo' => ['title' => 'Pratinjau', 'description' => '', 'robots_index' => false]];
+        if ($resource === 'social-links') {
+            $data = $this->contact()->getData();
+            $social = new SocialLink(['platform' => $validated['platform'] ?? 'Instagram', 'url' => $validated['url'] ?? 'https://instagram.com']);
+            $social->setRelation('previewMedia', Media::query()->find($validated['preview_media_id'] ?? null));
+            $data['socialLinks']->push($social);
+            $data['seo']['robots_index'] = false;
+
+            return response()->view('kontak', $data)->header('X-Robots-Tag', 'noindex, nofollow')->header('Cache-Control', 'private, no-store');
+        }
         if (in_array($resource, ['brands', 'mission-items', 'product-categories', 'certificates'], true)) {
             if ($resource === 'brands') {
                 $view = $this->home();
@@ -123,7 +135,7 @@ class PublicPageController extends Controller
             } else {
                 $view = app(ProductController::class)->index();
                 $data = $view->getData();
-                $data['categories'][] = ['id' => 'preview', 'name' => $translation->name ?? '', 'products' => []];
+                $data['categories'][] = ['id' => 'preview', 'name' => $translation->name ?? '', 'products' => [], 'is_preview' => true];
                 $template = 'produk';
             }
             $data['seo']['robots_index'] = false;
@@ -273,7 +285,7 @@ class PublicPageController extends Controller
             $products = $record->products->where('status', 'published')->sortBy('display_order')->take(6)->map(function ($product) use ($language): array {
                 $text = $this->translation($product->translations, $language);
 
-                return ['name' => $text?->name ?? '', 'subtitle' => $text?->description ?? '', 'parameter' => '', 'parameters' => $product->parameters ?? [], 'image' => $this->mediaUrl($product->media) ?? '', 'image_alt' => $product->media?->alt_text_id, 'logo_top' => $this->mediaUrl($product->topLogo) ?? '', 'logo_bottom' => $this->mediaUrl($product->bottomLogo) ?? '', 'buy_url' => $product->buy_url, 'brochure_url' => $this->fileUrl($product->brochure_path) ?? '', 'subcategory' => $product->subcategory ?? ''];
+                return ['id' => $product->id, 'category_id' => (string) $product->category_id, 'is_new' => $product->new_until !== null && $product->new_until->gte(today()), 'slug' => $text?->slug ?? '', 'name' => $text?->name ?? '', 'subtitle' => $text?->description ?? '', 'parameter' => '', 'parameters' => $product->parameters ?? [], 'image' => $this->mediaUrl($product->media) ?? '', 'image_alt' => $product->media?->alt_text_id, 'logo_top' => $this->mediaUrl($product->topLogo) ?? '', 'logo_bottom' => $this->mediaUrl($product->bottomLogo) ?? '', 'buy_url' => $product->buy_url, 'brochure_url' => $this->fileUrl($product->brochure_path) ?? '', 'subcategory' => $product->subcategory ?? ''];
             })->values()->all();
             $data['categories'] = collect($data['categories'])->reject(fn ($item) => (string) $item['id'] === (string) $record->id)->push(['id' => (string) $record->id, 'name' => $translation?->name ?? '', 'products' => $products])->values()->all();
         } elseif ($resource === 'social-links') {
@@ -316,7 +328,7 @@ class PublicPageController extends Controller
             'blocks' => $blocks,
             'brands' => $brands,
             'summary' => CompanySummary::query()->first(),
-            'footer' => $this->footerData($language),
+            'footer' => $this->footerData($language, $blocks),
             'seo' => $this->seoData('home', 'PT Interskala Medika Indonesia', 'PT Interskala Medika Indonesia melayani kebutuhan alat kesehatan di seluruh Indonesia.'),
         ]);
     }
@@ -342,7 +354,7 @@ class PublicPageController extends Controller
             'missions' => $missions,
             'summary' => $summary,
             'certificates' => $certificates,
-            'footer' => $this->footerData($language),
+            'footer' => $this->footerData($language, $blocks),
             'yearsEstablished' => $summary ? now()->year - (int) $summary->established_year : null,
             'seo' => $this->seoData('about', 'Tentang Kami - Interskala Medika Indonesia', 'Tentang PT Interskala Medika Indonesia, visi, misi, dan sertifikasi kami.'),
         ]);
@@ -404,16 +416,12 @@ class PublicPageController extends Controller
         }
 
         $query->orderBy('event_date', $sortDirection)->orderByDesc('id');
-        $articles = (clone $query)->where('type', 'article')->paginate(9, ['*'], 'articles_page')->withQueryString();
-        $activities = (clone $query)->where('type', 'activity')->paginate(9, ['*'], 'activities_page')->withQueryString();
+        $articles = $type === 'activity' ? new LengthAwarePaginator([], 0, 9)
+            : (clone $query)->where('type', 'article')->paginate(9, ['*'], 'articles_page')->withQueryString();
+        $activities = $type === 'article' ? new LengthAwarePaginator([], 0, 9)
+            : (clone $query)->where('type', 'activity')->paginate(9, ['*'], 'activities_page')->withQueryString();
         $this->decorateDocumentationItems($articles, $language);
         $this->decorateDocumentationItems($activities, $language);
-
-        if ($type === 'article') {
-            $activities = new LengthAwarePaginator([], 0, 9);
-        } elseif ($type === 'activity') {
-            $articles = new LengthAwarePaginator([], 0, 9);
-        }
 
         return view('dokumentasi', [
             'articles' => $articles,
@@ -564,11 +572,11 @@ class PublicPageController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function footerData(string $language): array
+    private function footerData(string $language, ?Collection $blocks = null): array
     {
         $contact = ContactInfo::query()->with('translations')->first();
         $translation = $contact ? $this->translation($contact->translations, $language) : null;
-        $about = $this->publishedBlocks($language)->get('footer_about');
+        $about = ($blocks ?? $this->publishedBlocks($language))->get('footer_about');
         $footerSettings = ContentBlock::query()->where('block_key', 'footer_about')->first();
 
         return [

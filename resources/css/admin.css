@@ -1633,6 +1633,12 @@ body.admin-body { font-size: 15px; }
 
 /* Product category management */
 .admin-category-stats { gap: 14px; margin-bottom: 18px; }
+.admin-subcategory-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 8px 24px; margin: 18px 0 0; padding: 14px 0 0; border-top: 1px solid var(--admin-border); list-style: none; }
+.admin-subcategory-list li { min-width: 0; color: #52627a; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.admin-subcategory-list strong { color: #263750; }
+.admin-subcategory-list strong::after { content: ': '; white-space: pre; }
+.admin-body[data-admin-theme='dark'] .admin-subcategory-list li { color: #b7c4d6; }
+.admin-body[data-admin-theme='dark'] .admin-subcategory-list strong { color: #e5ebf5; }
 .admin-category-stats .admin-management-stat { min-height: 126px; padding: 18px; }
 .admin-category-order-note { display: flex; align-items: center; gap: 13px; margin: 0 0 18px; padding: 17px 20px; border: 1px solid #e3eaff; border-radius: 14px; background: #edf2ff; color: #40516c; }
 .admin-category-order-note > .material-symbols-rounded { display: grid; flex: 0 0 38px; width: 38px; height: 38px; place-items: center; border-radius: 11px; background: #dce6ff; color: var(--admin-primary); font-size: 22px; }
@@ -2200,6 +2206,7 @@ body.admin-body { font-size: 15px; }
 .admin-rich-editor .ql-editor p + p { margin-top: .55em; }
 .admin-rich-editor .ql-editor ul, .admin-rich-editor .ql-editor ol { padding-left: 1.4em; }
 .admin-rich-editor .ql-editor a { color: #315bd5; text-decoration: underline; }
+.admin-rich-editor .ql-editor img { display: inline-block; max-width: 100%; max-height: 320px; object-fit: contain; cursor: pointer; }
 .admin-rich-editor .ql-editor.ql-blank::before { color: #7a8799; font-style: normal; }
 .admin-rich-editor .ql-toolbar button:focus-visible { outline: 2px solid #315bd5; outline-offset: 2px; }
 .admin-rich-editor.is-invalid .ql-toolbar.ql-snow,
@@ -2419,6 +2426,15 @@ body.admin-body { font-size: 15px; }
 .admin-media-inline-upload__copy small { color: #687891; font-size: 12px; line-height: 1.5; }
 .admin-media-inline-upload > .admin-button { min-height: 44px; min-width: 156px; justify-content: center; }
 .admin-media-inline-upload .admin-form__error { grid-column: 1 / -1; margin: 0; }
+.admin-section-preview { margin-bottom: 20px; padding: 16px 20px; background: #fff; border: 1px solid #dce5f3; border-radius: 12px; }
+.admin-section-preview summary { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #234fc4; font-weight: 700; }
+.admin-section-preview p { color: #536681; font-size: 13px; margin: 12px 0; }
+.admin-section-preview iframe { display: block; width: 100%; height: 420px; border: 1px solid #dce5f3; border-radius: 8px; background: #fff; }
+.admin-section-preview a { display: inline-block; margin-top: 10px; }
+.admin-product-form-heading { grid-column: 1 / -1; padding-top: 18px; border-top: 1px solid #dce5f3; }
+.admin-product-form-heading:first-of-type { padding-top: 0; border-top: 0; }
+.admin-product-form-heading h3 { margin: 0; color: #1c2c47; font-size: 16px; }
+.admin-product-form-heading p { margin: 5px 0 0; color: #536681; font-size: 13px; line-height: 1.5; }
 .admin-body[data-admin-theme='dark'] .admin-media-inline-upload { border-color: #33435b; background: #172338; }
 .admin-body[data-admin-theme='dark'] .admin-media-inline-upload__copy strong { color: #e5ebf5; }
 .admin-body[data-admin-theme='dark'] .admin-media-inline-upload__copy small { color: #aab7ca; }
@@ -2604,3 +2620,69 @@ body.admin-body { font-size: 15px; }
 .admin-body[data-admin-theme='dark'] .admin-filter-toggle { border-color: #33435b; background: var(--admin-surface); color: #d6dfed; }
 .admin-body[data-admin-theme='dark'] .admin-filter-toggle:hover { border-color: #526789; background: #1b2a40; color: #a9c0ff; }
 .admin-page-heading__actions > .admin-filter-toggle { margin: 0; }
+
+.admin-subcategory-editor__selector { display: grid; margin-bottom: 24px; }
+.admin-subcategory-editor .admin-form__actions { padding-top: 16px; }
+
+.admin-rich-editor .ql-editor .ql-size-12px { font-size: 12px !important; }
+.admin-rich-editor .ql-editor .ql-size-14px { font-size: 14px !important; }
+.admin-rich-editor .ql-editor .ql-size-16px { font-size: 16px !important; }
+.admin-rich-editor .ql-editor .ql-size-18px { font-size: 18px !important; }
+.admin-rich-editor .ql-editor .ql-size-20px { font-size: 20px !important; }
+.admin-rich-editor .ql-editor .ql-size-24px { font-size: 24px !important; }
+.admin-rich-editor .ql-editor .ql-size-28px { font-size: 28px !important; }
+.admin-rich-editor .ql-editor .ql-size-32px { font-size: 32px !important; }
+.admin-rich-editor .ql-editor .ql-size-36px { font-size: 36px !important; }
+.admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before, .admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before { content: "12 px"; }
+.admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="14px"]::before, .admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="14px"]::before { content: "14 px"; }
+.admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="16px"]::before, .admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="16px"]::before { content: "16 px"; }
+.admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="18px"]::before, .admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="18px"]::before { content: "18 px"; }
+.admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="20px"]::before, .admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="20px"]::before { content: "20 px"; }
+.admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before, .admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before { content: "24 px"; }
+.admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="28px"]::before, .admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="28px"]::before { content: "28 px"; }
+.admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="32px"]::before, .admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="32px"]::before { content: "32 px"; }
+.admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="36px"]::before, .admin-rich-editor .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="36px"]::before { content: "36 px"; }
+/* Show selected media at its natural proportions without cropping or upscaling. */
+.admin-body .admin-media-preview { align-items: center; justify-content: center; text-align: center; }
+.admin-body .admin-media-preview img,
+.admin-body .admin-cms-form--brand .admin-media-preview img,
+.admin-body .admin-editor--block[data-live-editor='coverage'] .admin-media-preview img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: min(55vh, 480px);
+    object-fit: contain;
+    object-position: center;
+}
+/* Compact, consistent image previews for media selected or uploaded in CMS forms. */
+.admin-body .admin-media-preview,
+.admin-body .admin-cms-form--brand .admin-media-preview,
+.admin-body .admin-editor--block[data-live-editor='coverage'] .admin-media-preview {
+    min-height: 0;
+    gap: 6px;
+    padding: 8px;
+}
+.admin-body .admin-media-preview img,
+.admin-body .admin-cms-form--brand .admin-media-preview img,
+.admin-body .admin-editor--block[data-live-editor='coverage'] .admin-media-preview img {
+    width: min(100%, 180px);
+    height: 100px;
+    max-width: 100%;
+    max-height: 100px;
+    object-fit: contain;
+    object-position: center;
+}
+.admin-body .admin-media-preview,
+.admin-body .admin-cms-form--brand .admin-media-preview,
+.admin-body .admin-editor--block[data-live-editor='coverage'] .admin-media-preview {
+    background: transparent;
+    border-color: transparent;
+}
+.admin-body .admin-media-preview img,
+.admin-body .admin-cms-form--brand .admin-media-preview img,
+.admin-body .admin-editor--block[data-live-editor='coverage'] .admin-media-preview img {
+    width: min(100%, 280px);
+    height: 160px;
+    max-height: 160px;
+}

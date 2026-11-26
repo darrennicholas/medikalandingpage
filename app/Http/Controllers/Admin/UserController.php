@@ -128,8 +128,8 @@ class UserController extends Controller
             $user->refresh();
             $newRole = Role::query()->findOrFail($validated['role_id']);
 
-            if ($actor->is($user) && ($validated['status'] !== 'active' || $newRole->name !== 'superadmin')) {
-                return back()->withErrors(['role_id' => 'Superadmin tidak dapat menonaktifkan atau menurunkan role akunnya sendiri.'])->withInput();
+            if ($actor->is($user) && ($validated['status'] !== 'active' || (int) $newRole->id !== (int) $user->role_id)) {
+                return back()->withErrors(['role_id' => 'Anda tidak dapat menonaktifkan atau mengubah role akun sendiri.'])->withInput();
             }
 
             if ($user->hasRole('superadmin') && $user->status === 'active' && ($validated['status'] !== 'active' || $newRole->name !== 'superadmin')) {

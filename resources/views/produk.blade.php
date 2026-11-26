@@ -51,90 +51,15 @@
             </div>
 
             @php
-                $categoryIdsByEnglishName = [
-                    'Drugs Abuse' => '1',
-                    'Rapid Test' => '2',
-                    'Molecular' => '3',
-                    'Rapid Test (Master)' => '4',
-                    'POCT' => '5',
-                    'Point of Care Testing (POCT)' => '5',
-                    'Medical Instruments' => '6',
-                    'Instrument and Consumable' => '6',
-                    'Medical Consumables' => '7',
-                    'Medical Consumable' => '7',
-                    'Rapid Test COVID-19' => '2',
-                ];
-                $idsForCategoryNames = fn (array $names): string => collect($names)
-                    ->map(fn (string $name): ?string => $categoryIdsByEnglishName[$name] ?? null)
-                    ->filter(fn (?string $id): bool => $id !== null && collect($categories)->contains(fn (array $category): bool => (string) $category['id'] === $id))
-                    ->unique()
-                    ->implode(',');
-                $sidebarGroups = [
-                    [
-                        'title' => 'Molecular',
-                        'filter' => 'molecular',
-                        'category_ids' => $idsForCategoryNames(['Molecular']),
-                        'children' => [
-                            ['label' => 'PCR', 'filter' => 'PCR'],
-                            ['label' => 'Extraction', 'filter' => 'Extraction|Ekstraksi'],
-                        ],
-                    ],
-                    [
-                        'title' => 'Rapid Test (Master)',
-                        'filter' => 'rapid-test-master',
-                        'category_ids' => $idsForCategoryNames(['Rapid Test', 'Rapid Test (Master)', 'Rapid Test COVID-19', 'Drugs Abuse']),
-                        'children' => [
-                            ['label' => app()->getLocale() === 'en' ? 'Infectious Disease: HIV Series' : 'Infeksius HIV Series', 'filter' => 'HIV|Syphilis'],
-                            ['label' => app()->getLocale() === 'en' ? 'Infectious Disease: Hepatitis' : 'Infeksius Hepatitis', 'filter' => 'Hepatitis|HBsAg|Anti HBs|Anti-HCV|HAV|HBV'],
-                            ['label' => app()->getLocale() === 'en' ? 'Infectious Disease: Tropical' : 'Infeksius Tropical', 'filter' => 'Malaria|Dengue|Chikungunya|Typhoid'],
-                            ['label' => 'Tumor Marker', 'filter' => 'Tumor Marker'],
-                            ['label' => 'Covid', 'filter' => 'Covid'],
-                            ['label' => 'Drugs of Abuse', 'filter' => 'DOA'],
-                        ],
-                    ],
-                    [
-                        'title' => 'Point of Care Testing (POCT)',
-                        'filter' => 'point-of-care',
-                        'category_ids' => $idsForCategoryNames(['Point of Care Testing (POCT)', 'POCT']),
-                        'children' => [
-                            ['label' => 'Glucose', 'filter' => 'Glucose'],
-                            ['label' => 'Cholesterol', 'filter' => 'Cholesterol'],
-                            ['label' => 'Uric Acid', 'filter' => 'Uric Acid'],
-                            ['label' => 'Lipid', 'filter' => 'Lipid'],
-                        ],
-                    ],
-                    [
-                        'title' => 'Medical Instruments',
-                        'filter' => 'medical-instruments',
-                        'category_ids' => $idsForCategoryNames(['Medical Instruments', 'Instrument and Consumable']),
-                        'children' => [
-                            ['label' => 'Urine Analyzer and Strips', 'filter' => 'Urine Analyzer'],
-                            ['label' => 'Chemistry Analyzer and Reagent', 'filter' => 'Chemistry Analyzer'],
-                            ['label' => 'Electrolyte Analyzer and Reagent', 'filter' => 'Electrolyte Analyzer'],
-                            ['label' => 'Hematology Analyzer and Reagent', 'filter' => 'Hematology Analyzer'],
-                        ],
-                    ],
-                    [
-                        'title' => 'Medical Consumables',
-                        'filter' => 'medical-consumables',
-                        'category_ids' => $idsForCategoryNames(['Medical Consumables', 'Medical Consumable']),
-                        'children' => [
-                            ['label' => app()->getLocale() === 'en' ? 'Filter Tips and More' : 'Filtertips dkk', 'filter' => 'Filtertips'],
-                            ['label' => 'Blood Vacuum tube', 'filter' => 'Blood Vacuum tube'],
-                            ['label' => 'Swab', 'filter' => 'Swab'],
-                        ],
-                    ],
-                ];
-                $sidebarGroups = collect($sidebarGroups)->filter(fn ($group) => $group['category_ids'] !== '')->values()->all();
-                $groupedCategoryIds = collect($sidebarGroups)->flatMap(fn ($group) => explode(',', $group['category_ids']))->all();
-                foreach ($categories as $category) {
-                    if (!in_array((string) $category['id'], $groupedCategoryIds, true)) {
-                        $sidebarGroups[] = ['title' => $category['name'], 'filter' => $category['id'], 'category_ids' => $category['id'], 'children' => []];
-                    }
-                }
+                $sidebarGroups = collect($categories)->map(fn ($category) => [
+                    'title' => $category['name'],
+                    'filter' => $category['id'],
+                    'category_ids' => $category['id'],
+                    'children' => collect($category['subcategories'] ?? [])->map(fn ($name) => ['label' => $name, 'filter' => $name])->all(),
+                ])->all();
                 $displayCategories = collect($categories);
                 $newCategoryTitle = app()->getLocale() === 'en' ? 'New' : (app()->getLocale() === 'zh' ? '新品' : 'Produk Baru');
-                if ($newProducts !== []) {
+                if (! $catalogMode && $newProducts !== []) {
                     $displayCategories->prepend(['id' => 'new-products', 'name' => $newCategoryTitle, 'products' => $newProducts]);
                 }
             @endphp
@@ -142,7 +67,7 @@
             <div class="product-filter-controls" hidden>
                 <select id="filter-kategori" aria-label="Filter kategori produk">
                     <option value="all" @selected(! request()->boolean('new')) data-i18n="allCategories">{{ app()->getLocale() === 'en' ? '-- All Categories --' : '-- Semua Kategori --' }}</option>
-                    @if ($newProducts !== [])<option value="new-products" @selected(request()->boolean('new'))>{{ $newCategoryTitle }}</option>@endif
+                    @if ($hasNewProducts)<option value="new-products" @selected(request()->boolean('new'))>{{ $newCategoryTitle }}</option>@endif
                     @foreach ($categories as $category)
                         <option value="{{ $category['id'] }}">{{ $category['name'] }}</option>
                     @endforeach
@@ -163,8 +88,8 @@
                         <span aria-hidden="true"></span>
                     </div>
 
-                    <button class="product-sidebar__category product-sidebar__category--all" type="button" data-category-filter="all" aria-pressed="{{ request()->boolean('new') ? 'false' : 'true' }}" data-i18n="allCategories">{{ app()->getLocale() === 'en' ? 'All Products' : 'Semua Produk' }}</button>
-                    @if ($newProducts !== [])<button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-filter="new-products" data-category-ids="new-products" data-category-title="{{ $newCategoryTitle }}" aria-pressed="{{ request()->boolean('new') ? 'true' : 'false' }}">{{ $newCategoryTitle }}</button>@endif
+                    <button class="product-sidebar__category product-sidebar__category--all {{ ! request()->boolean('new') && ! request()->filled('category') ? 'is-active' : '' }}" type="button" data-category-filter="all" aria-pressed="{{ ! request()->boolean('new') && ! request()->filled('category') ? 'true' : 'false' }}" data-i18n="allCategories">{{ app()->getLocale() === 'en' ? 'All Products' : 'Semua Produk' }}</button>
+                    @if ($hasNewProducts)<button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-filter="new-products" data-category-ids="new-products" data-category-title="{{ $newCategoryTitle }}" aria-pressed="{{ request()->boolean('new') ? 'true' : 'false' }}">{{ $newCategoryTitle }}</button>@endif
                     <nav class="product-sidebar__list" aria-label="Pilih kategori produk">
                         @foreach ($sidebarGroups as $groupIndex => $sidebarGroup)
                             @php
@@ -173,12 +98,12 @@
                             @endphp
                             <div class="product-sidebar__group">
                                 <div class="product-sidebar__category-row">
-                                    <button class="product-sidebar__category product-sidebar__category--parent" type="button" data-category-filter="{{ $sidebarGroup['filter'] }}" data-category-ids="{{ $sidebarCategoryIds }}" data-category-title="{{ $sidebarGroup['title'] }}" aria-pressed="false">{{ $sidebarGroup['title'] }}</button>
-                                    <button class="product-sidebar__toggle" type="button" data-category-toggle aria-expanded="false" aria-controls="{{ $submenuId }}" aria-label="Tampilkan subkategori {{ $sidebarGroup['title'] }}"><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                    <button class="product-sidebar__category product-sidebar__category--parent {{ request('category') === $sidebarCategoryIds && ! request()->filled('subcategory') ? 'is-active' : '' }}" type="button" data-category-filter="{{ $sidebarGroup['filter'] }}" data-category-ids="{{ $sidebarCategoryIds }}" data-category-title="{{ $sidebarGroup['title'] }}" aria-pressed="{{ request('category') === $sidebarCategoryIds && ! request()->filled('subcategory') ? 'true' : 'false' }}">{{ $sidebarGroup['title'] }}</button>
+                                    @if (count($sidebarGroup['children']))<button class="product-sidebar__toggle" type="button" data-category-toggle aria-expanded="false" aria-controls="{{ $submenuId }}" aria-label="Tampilkan subkategori {{ $sidebarGroup['title'] }}"><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>@endif
                                 </div>
                                 <div class="product-sidebar__children" id="{{ $submenuId }}" hidden>
                                     @foreach ($sidebarGroup['children'] as $childCategory)
-                                        <button class="product-sidebar__category product-sidebar__category--child" type="button" data-category-filter="{{ $sidebarGroup['filter'] }}" data-category-ids="{{ $sidebarCategoryIds }}" data-category-title="{{ $sidebarGroup['title'] }}" data-product-filter="{{ $childCategory['filter'] }}" aria-pressed="false">{{ $childCategory['label'] }} <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
+                                        <button class="product-sidebar__category product-sidebar__category--child {{ request('category') === $sidebarCategoryIds && request('subcategory') === $childCategory['filter'] ? 'is-active' : '' }}" type="button" data-category-filter="{{ $sidebarGroup['filter'] }}" data-category-ids="{{ $sidebarCategoryIds }}" data-category-title="{{ $sidebarGroup['title'] }}" data-product-filter="{{ $childCategory['filter'] }}" aria-pressed="{{ request('category') === $sidebarCategoryIds && request('subcategory') === $childCategory['filter'] ? 'true' : 'false' }}">{{ $childCategory['label'] }} <svg aria-hidden="true"><use href="#icon-chevron"/></svg></button>
                                     @endforeach
                                 </div>
                             </div>
@@ -189,16 +114,16 @@
                     @if ($catalogMode)<form method="GET" class="product-catalog-search"><input type="search" name="q" value="{{ request('q') }}" placeholder="{{ app()->getLocale() === 'en' ? 'Search products...' : 'Cari produk...' }}">@if(request('category'))<input type="hidden" name="category" value="{{ request('category') }}">@endif @if(request('subcategory'))<input type="hidden" name="subcategory" value="{{ request('subcategory') }}">@endif @if(request()->boolean('new'))<input type="hidden" name="new" value="1">@endif<button type="submit">{{ app()->getLocale() === 'en' ? 'Search' : 'Cari' }}</button></form>@endif
                     <p class="product-results sr-only" id="product-results" aria-live="polite"></p>
                     <h2 class="product-active-heading" id="product-active-heading"></h2>
-                    <p class="product-no-matches" id="product-no-matches" data-i18n="emptyCategory" hidden>{{ app()->getLocale() === 'en' ? 'No products in this category yet.' : 'Belum ada produk dalam kategori ini.' }}</p>
+                    <p class="product-no-matches" id="product-no-matches" data-i18n="emptyCategory" @if (! $catalogMode || $catalogPage->total() > 0) hidden @endif>{{ app()->getLocale() === 'en' ? 'No products in this category yet.' : 'Belum ada produk dalam kategori ini.' }}</p>
                     <div id="product-categories">
                         @foreach ($displayCategories as $categoryIndex => $category)
+                            @if ($catalogMode && count($category['products']) === 0 && empty($category['is_preview'])) @continue @endif
                             <section class="product-category-section" data-category-filter="{{ $category['id'] }}" data-category-ids="{{ $category['id'] }}" aria-labelledby="category-group-{{ $categoryIndex }}">
                                 <h3 class="product-category-section__title" id="category-group-{{ $categoryIndex }}">{{ $category['name'] }}</h3>
                                 @if (count($category['products']) > 0)
                                 <div class="product-grid">
                                     @foreach ($category['products'] as $product)
                                         @php
-                                            $isDrugAbuse = (string) $product['category_id'] === '1';
                                             $productImageName = basename($product['image']);
                                             $isDoaSevenProductImage = $productImageName === 'doa-7-new-cutout.png';
                                             $isCompactProductImage = in_array($productImageName, ['doa-10-cup.png', 'doa-3-amp-thc-meth-new.png', 'doa-3-amp-thc-mop-new.png', 'doa-3-revamp-1.png', 'doa-5-new.png', 'doa-6-new.png', 'doa-7-new.png'], true);
@@ -213,7 +138,7 @@
                                             $parameterLabels = collect($product['parameters'] ?? []);
                                             $categoryLabel = $category['name'];
                                         @endphp
-                                        <article class="product-card" data-category="{{ $category['id'] }}" data-subcategory="{{ $product['subcategory'] }}">
+                                        <article class="product-card" data-category="{{ $product['category_id'] }}" data-subcategory="{{ $product['subcategory'] }}" data-product-id="{{ $product['id'] }}">
                                             @if ($product['logo_bottom'])
                                                 <x-public-image class="product-card__watermark" :src="$product['logo_bottom']" alt="" sizes="60px"/>
                                             @endif
@@ -230,6 +155,7 @@
                                             </div>
                                             <div class="product-card__content">
                                                 <h4 class="product-card__title" title="{{ $product['name'] }}">@if (!empty($product['slug']))<a href="{{ route('localized.products.show', ['locale' => app()->getLocale(), 'slug' => $product['slug']]) }}">{{ $product['name'] }}</a>@else{{ $product['name'] }}@endif</h4>
+                                                <p class="product-card__subtitle">{{ $categoryLabel }}</p>
                                                 @if ($parameterLabels->isNotEmpty())
                                                     <div class="product-card__parameters" aria-label="Parameter produk">
                                                         @foreach ($parameterLabels as $parameterLabel)
@@ -237,8 +163,7 @@
                                                         @endforeach
                                                     </div>
                                                 @endif
-                                                <p class="product-card__subtitle">{{ $isDrugAbuse ? 'Rapid Test (Master)' : $product['subtitle'] }}</p>
-                                                <span class="product-card__badge">{{ $categoryLabel }}</span>
+                                                @if (filled($product['subcategory']) && strtolower(trim($product['subcategory'])) !== 'none')<span class="product-card__badge">{{ $product['subcategory'] }}</span>@endif
                                                 <div class="product-card__actions">
                                                     <a class="product-card__buy" href="{{ $product['buy_url'] }}" target="_blank" rel="noopener noreferrer" aria-label="Beli {{ $product['name'] }}"><svg aria-hidden="true"><use href="#icon-cart"/></svg><span data-i18n="buyProduct">{{ app()->getLocale() === 'en' ? 'Buy' : 'Beli' }}</span></a>
                                                     @if (!empty($product['brochure_url']))
@@ -259,7 +184,7 @@
                     </div>
 
                     <nav class="product-pagination" id="product-pagination" aria-label="Halaman produk">@if ($catalogMode)<span>{{ app()->getLocale() === 'en' ? 'Showing' : 'Menampilkan' }} {{ $catalogPage->firstItem() ?? 0 }}–{{ $catalogPage->lastItem() ?? 0 }} {{ app()->getLocale() === 'en' ? 'of' : 'dari' }} {{ $catalogPage->total() }}</span> @if ($catalogPage->previousPageUrl())<a href="{{ $catalogPage->previousPageUrl() }}">{{ app()->getLocale() === 'en' ? '‹ Previous' : '‹ Sebelumnya' }}</a>@endif @if ($catalogPage->nextPageUrl())<a href="{{ $catalogPage->nextPageUrl() }}">{{ app()->getLocale() === 'en' ? 'Next ›' : 'Berikutnya ›' }}</a>@endif @endif</nav>
-                    @if ($catalogMode)
+                    @if ($isFullCatalog)
                         <a class="product-catalog__all-link public-back-button" href="{{ route('localized.products', ['locale' => app()->getLocale()]) }}">{{ app()->getLocale() === 'en' ? 'Back to Featured Products' : 'Kembali ke Produk Unggulan' }}</a>
                     @else
                         <a class="product-catalog__all-link" href="{{ route('localized.products.all', ['locale' => app()->getLocale()]) }}" data-catalog-link>{{ app()->getLocale() === 'en' ? 'View All Products' : 'Lihat Semua Produk' }}</a>

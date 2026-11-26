@@ -21,6 +21,24 @@ class CmsPermissionsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_digital_marketing_has_full_default_access_and_can_manage_social_media(): void
+    {
+        $role = Role::query()->where('name', 'admin')->firstOrFail();
+        $this->assertSame(PermissionMatrixController::defaultPermissions(), $role->permissions);
+        $admin = User::factory()->create(['role_id' => $role->id]);
+
+        $this->actingAs($admin)->get('/admin/content/social-links')->assertOk();
+        $this->get('/admin/brochure-requests')->assertOk()->assertSee('Brochure Request')->assertDontSee('Dashboard Digmar');
+        $id = $this->postJson('/api/v1/admin/social-links', ['platform' => 'Instagram', 'url' => 'https://instagram.com/example', 'status' => 'published'])->assertCreated()->json('data.id');
+        $this->putJson('/api/v1/admin/social-links/'.$id, ['platform' => 'Instagram', 'url' => 'https://instagram.com/updated', 'status' => 'published'])->assertOk();
+        $this->patchJson('/api/v1/admin/social-links/'.$id.'/status', ['status' => 'draft'])->assertOk();
+        $this->deleteJson('/api/v1/admin/social-links/'.$id)->assertOk();
+        $this->get('/admin/users')->assertOk()->assertSee('Tambah User');
+        $this->get('/admin/permissions')->assertOk();
+        $this->get('/admin/activity-logs/export')->assertOk();
+        $this->get('/admin/users/export')->assertOk();
+    }
+
     public function test_superadmin_can_open_all_cms_menu_pages(): void
     {
         $superadmin = User::factory()->create(['role_id' => Role::query()->where('name', 'superadmin')->value('id')]);
@@ -105,9 +123,10 @@ class CmsPermissionsTest extends TestCase
         $this->actingAs($admin)->postJson('/api/v1/admin/brands', ['name' => 'Brand', 'status' => 'published'])->assertUnprocessable();
     }
 
-    public function test_only_superadmin_can_save_admin_permissions(): void
+    public function test_permission_changes_require_permission_update_access(): void
     {
         $role = Role::query()->where('name', 'admin')->firstOrFail();
+        $role->update(['permissions' => []]);
         $admin = User::factory()->create(['role_id' => $role->id]);
         $superadmin = User::factory()->create(['role_id' => Role::query()->where('name', 'superadmin')->value('id')]);
         $this->actingAs($admin)->put('/admin/permissions', ['permissions' => ['media' => ['view']]])->assertForbidden();
@@ -122,9 +141,10 @@ class CmsPermissionsTest extends TestCase
         $superadmin = User::factory()->create(['role_id' => Role::query()->where('name', 'superadmin')->value('id')]);
         $this->actingAs($superadmin)->get('/admin/permissions')->assertOk()->assertSee('permissions[home_cta][]', false)->assertSee('data-permission-defaults', false)->assertSee('Batalkan Perubahan');
         $defaults = PermissionMatrixController::defaultPermissions();
-        $this->assertSame(['view', 'update'], $defaults['contacts']);
-        $this->assertArrayNotHasKey('users', $defaults);
-        $this->assertArrayNotHasKey('activity_logs', $defaults);
+        $this->assertSame(['view', 'update', 'publish'], $defaults['contacts']);
+        $this->assertSame(['view', 'create', 'update', 'delete'], $defaults['users']);
+        $this->assertSame(['view', 'update'], $defaults['permissions']);
+        $this->assertSame(['view'], $defaults['activity_logs']);
     }
 
     public function test_non_cms_role_cannot_log_in(): void

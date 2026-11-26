@@ -11,7 +11,7 @@
 </head>
 <body class="admin-body" data-admin-theme="light">
     @php
-        $currentResource = request()->route('resource');
+        $currentResource = request()->routeIs('admin.subcategories.*') ? 'product-subcategories' : request()->route('resource');
         $currentSection = request()->query('section');
         $homeBlockSections = ['home_coverage', 'home_cta'];
         $aboutBlockSections = ['about_company'];
@@ -19,10 +19,31 @@
             || ($currentResource === 'content-blocks' && in_array($currentSection, $homeBlockSections, true));
         $aboutIsExpanded = in_array($currentResource, ['company-summary', 'mission-items', 'certificates'], true)
             || ($currentResource === 'content-blocks' && in_array($currentSection, $aboutBlockSections, true));
-        $productResources = ['product-categories', 'products'];
+        $productResources = ['product-categories', 'product-subcategories', 'products'];
         $contactResources = ['contact-info', 'social-links'];
         $footerIsExpanded = in_array($currentResource, $contactResources, true)
             || ($currentResource === 'content-blocks' && $currentSection === 'footer_about');
+        $sectionPreview = match ($currentResource) {
+            'hero-slides' => ['home', 'beranda'],
+            'brands' => ['home', 'brand'],
+            'content-blocks' => match ($currentSection) {
+                'home_coverage' => ['home', 'jangkauan'],
+                'home_cta' => ['home', 'kontak'],
+                'about_company' => ['about', 'about-intro'],
+                'career_intro' => ['careers', 'careers-hero'],
+                'footer_about' => ['contact', 'footer'],
+                default => null,
+            },
+            'company-summary' => ['about', 'about-stats'],
+            'mission-items' => ['about', 'vision-mission'],
+            'certificates' => ['about', 'certificates'],
+            'product-categories', 'product-subcategories', 'products' => ['products', 'products'],
+            'documentations' => ['documentation', 'content'],
+            'job-openings' => ['careers', 'lowongan'],
+            'contact-info' => ['contact', 'contact-details-title'],
+            'social-links' => ['contact', 'social-title'],
+            default => null,
+        };
     @endphp
     <div class="admin-shell" data-admin-shell>
         <aside class="admin-sidebar" aria-label="Navigasi CMS">
@@ -74,10 +95,13 @@
                             <span class="material-symbols-rounded" aria-hidden="true">inventory_2</span><span class="admin-nav__label">Produk</span><span class="material-symbols-rounded admin-nav__chevron" aria-hidden="true">expand_more</span>
                         </button>
                         <div class="admin-nav__section-content" data-nav-section-content @if (! (in_array($currentResource, $productResources, true) || request()->routeIs('admin.featured.*', 'admin.brochure-leads.*'))) hidden @endif>
-                            <a class="admin-nav__link admin-nav__link--child {{ $currentResource === 'product-categories' ? 'is-active' : '' }}" href="{{ route('admin.content.index', 'product-categories') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">category</span><span class="admin-nav__label">Kategori Pemeriksaan</span></a>
+                            <a class="admin-nav__link admin-nav__link--child {{ $currentResource === 'product-categories' ? 'is-active' : '' }}" href="{{ route('admin.content.index', 'product-categories') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">category</span><span class="admin-nav__label">Pengaturan Kategori</span></a>
+                            @if (auth()->user()->hasRole('superadmin') || auth()->user()->role?->hasPermission('products_categories', 'view'))
+                                <a class="admin-nav__link admin-nav__link--child {{ $currentResource === 'product-subcategories' ? 'is-active' : '' }}" href="{{ route('admin.subcategories.index') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">account_tree</span><span class="admin-nav__label">Pengaturan SubKategori</span></a>
+                            @endif
                             <a class="admin-nav__link admin-nav__link--child {{ $currentResource === 'products' ? 'is-active' : '' }}" href="{{ route('admin.content.index', 'products') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">inventory_2</span><span class="admin-nav__label">Daftar Produk &amp; Brosur</span></a>
                             <a class="admin-nav__link admin-nav__link--child {{ request()->routeIs('admin.featured.*') ? 'is-active' : '' }}" href="{{ route('admin.featured.index') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">star</span><span class="admin-nav__label">Produk Unggulan</span></a>
-                            @if (auth()->user()->hasRole('superadmin') || auth()->user()->role?->hasPermission('products_catalog', 'view'))<a class="admin-nav__link admin-nav__link--child {{ request()->routeIs('admin.brochure-leads.*') ? 'is-active' : '' }}" href="{{ route('admin.brochure-leads.index') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">contact_page</span><span class="admin-nav__label">Permintaan Brosur</span></a>@endif
+                            @if (auth()->user()->hasRole('superadmin') || auth()->user()->role?->hasPermission('products_catalog', 'view'))<a class="admin-nav__link admin-nav__link--child {{ request()->routeIs('admin.brochure-leads.index') ? 'is-active' : '' }}" href="{{ route('admin.brochure-leads.index') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">contact_page</span><span class="admin-nav__label">Brochure Request</span></a>@endif
                         </div>
                     </div>
                     <a class="admin-nav__link {{ $currentResource === 'documentations' ? 'is-active' : '' }}" href="{{ route('admin.content.index', 'documentations') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">article</span><span class="admin-nav__label">Dokumentasi</span></a>
@@ -100,13 +124,13 @@
                     <a class="admin-nav__link {{ $currentResource === 'seo-metas' ? 'is-active' : '' }}" href="{{ route('admin.content.index', 'seo-metas') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">manage_search</span><span class="admin-nav__label">Pengaturan SEO</span></a>
                 </div>
 
-                @if (auth()->user()->hasRole('superadmin') || auth()->user()->role?->hasPermission('users', 'view') || auth()->user()->role?->hasPermission('activity_logs', 'view'))
+                @if (auth()->user()->hasRole('superadmin') || auth()->user()->role?->hasPermission('users', 'view') || auth()->user()->role?->hasPermission('permissions', 'view') || auth()->user()->role?->hasPermission('activity_logs', 'view'))
                     <div class="admin-nav__category" data-nav-category>
                         <span class="admin-nav__heading">Pengaturan Sistem</span>
                         @if (auth()->user()->hasRole('superadmin') || auth()->user()->role?->hasPermission('users', 'view'))
                             <a class="admin-nav__link {{ request()->routeIs('admin.users.*') ? 'is-active' : '' }}" href="{{ route('admin.users.index') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">group</span><span class="admin-nav__label">Manajemen User</span></a>
                         @endif
-                        @if (auth()->user()->hasRole('superadmin'))
+                        @if (auth()->user()->hasRole('superadmin') || auth()->user()->role?->hasPermission('permissions', 'view'))
                             <a class="admin-nav__link {{ request()->routeIs('admin.permissions.*') ? 'is-active' : '' }}" href="{{ route('admin.permissions.index') }}" data-nav-link><span class="material-symbols-rounded" aria-hidden="true">admin_panel_settings</span><span class="admin-nav__label">Hak Akses (Permission)</span></a>
                         @endif
                         @if (auth()->user()->hasRole('superadmin') || auth()->user()->role?->hasPermission('activity_logs', 'view'))
@@ -169,6 +193,14 @@
                 @if (session('status'))<span data-admin-flash-success="{{ session('status') }}" hidden></span>@endif
                 @if ($errors->any())<span data-admin-flash-error="{{ $errors->first() }}" hidden></span>
                     <div class="admin-alert admin-alert--error" role="alert"><span class="material-symbols-rounded" aria-hidden="true">error</span><span>{{ $errors->first() }}</span></div>
+                @endif
+                @if ($sectionPreview && (request()->routeIs('admin.content.index') || (request()->routeIs('admin.subcategories.index') && ! request()->hasAny(['edit', 'create', 'category_id']))))
+                    <details class="admin-section-preview" data-section-preview>
+                        <summary><span class="material-symbols-rounded" aria-hidden="true">visibility</span> Lihat tampilan section di website</summary>
+                        <p>Menampilkan halaman yang sudah terbit. Perubahan yang belum disimpan tidak ditampilkan.</p>
+                        <iframe title="Pratinjau halaman website" loading="lazy" data-preview-src="{{ route('localized.'.$sectionPreview[0], ['locale' => 'id']) }}{{ $sectionPreview[1] ? '#'.$sectionPreview[1] : '' }}"></iframe>
+                        <a href="{{ route('localized.'.$sectionPreview[0], ['locale' => 'id']) }}{{ $sectionPreview[1] ? '#'.$sectionPreview[1] : '' }}" target="_blank" rel="noopener">Buka halaman di tab baru</a>
+                    </details>
                 @endif
                 @yield('content')
             </div>

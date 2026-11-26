@@ -19,7 +19,7 @@
     </section>
     <section class="admin-panel permission-panel">
         <div class="permission-heading"><div><h3><span class="material-symbols-rounded">checklist</span> Matriks Otorisasi Hak Akses Modul</h3><p>Tentukan izin untuk melihat, menambah, mengubah, menghapus, dan mempublikasikan konten.</p></div><span class="permission-badge permission-badge--role">Role: Admin Konten</span></div>
-        <div class="permission-notices"><div><span class="material-symbols-rounded">info</span><p><strong>Penerapan Hak Akses</strong>Perubahan izin berlaku setelah disimpan dan diterapkan pada akses CMS berikutnya.</p></div><div><span class="material-symbols-rounded">verified_user</span><p><strong>Perlindungan Akses Sistem</strong>Superadmin memiliki akses penuh. Pengaturan hak akses hanya dapat diubah Superadmin.</p></div></div>
+        <div class="permission-notices"><div><span class="material-symbols-rounded">info</span><p><strong>Penerapan Hak Akses</strong>Perubahan izin berlaku setelah disimpan dan diterapkan pada akses CMS berikutnya.</p></div><div><span class="material-symbols-rounded">verified_user</span><p><strong>Perlindungan Akses Sistem</strong>Superadmin memiliki akses penuh. Admin dapat mengubah izin sesuai hak aksesnya.</p></div></div>
         <form method="POST" action="{{ route('admin.permissions.update') }}" data-permission-form data-permission-defaults="{{ json_encode($defaultPermissions) }}">
             @csrf @method('PUT')
             <div class="permission-toolbar"><span>Terapkan opsi cepat:</span><button type="button" data-permission-check="all">Pilih Semua</button><button type="button" data-permission-check="none">Kosongkan Semua</button><button type="button" data-permission-default>Batalkan Perubahan</button><span class="permission-legend">✓ Diberikan <span>— Tidak tersedia</span></span></div>
@@ -30,7 +30,7 @@
                     @foreach (collect($modules)->groupBy('group', preserveKeys: true) as $group => $groupModules)
                         <tr class="permission-category"><th colspan="6">{{ $group }}</th></tr>
                         @foreach ($groupModules as $key => $module)
-                            <tr><td>{{ $module['label'] }}@if ($key === 'users')<small>Hanya baca untuk Admin</small>@elseif ($key === 'permissions')<small>Khusus Superadmin</small>@endif</td>
+                            <tr><td>{{ $module['label'] }}</td>
                                 @foreach (['view', 'create', 'update', 'delete', 'publish'] as $action)
                                     <td>@if (in_array($action, $module['actions'], true))<input class="permission-checkbox" type="checkbox" name="permissions[{{ $key }}][]" value="{{ $action }}" aria-label="{{ $action }} {{ $module['label'] }}" @checked(in_array($action, $adminRole->permissions[$key] ?? [], true))>@else<span class="permission-unavailable" aria-label="Tidak tersedia">—</span>@endif</td>
                                 @endforeach
