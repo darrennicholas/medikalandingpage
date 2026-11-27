@@ -196,10 +196,11 @@
                 @endif
                 @if ($sectionPreview && (request()->routeIs('admin.content.index', 'admin.featured.index') || (request()->routeIs('admin.subcategories.index') && ! request()->hasAny(['edit', 'create', 'category_id']))))
                     <details class="admin-section-preview" data-section-preview>
-                        <summary><span class="material-symbols-rounded" aria-hidden="true">visibility</span> Lihat tampilan section di website</summary>
-                        <p>Menampilkan halaman yang sudah terbit. Perubahan yang belum disimpan tidak ditampilkan.</p>
-                        <iframe title="Pratinjau halaman website" loading="lazy" data-preview-src="{{ route('localized.'.$sectionPreview[0], ['locale' => 'id']) }}{{ $sectionPreview[1] ? '#'.$sectionPreview[1] : '' }}"></iframe>
-                        <a href="{{ route('localized.'.$sectionPreview[0], ['locale' => 'id']) }}{{ $sectionPreview[1] ? '#'.$sectionPreview[1] : '' }}" target="_blank" rel="noopener">Buka halaman di tab baru</a>
+                        <summary><span class="admin-section-preview__icon material-symbols-rounded" aria-hidden="true">visibility</span><span class="admin-section-preview__label"><strong>Lihat tampilan section di website</strong><small>Pratinjau konten yang sudah terbit</small></span><span class="admin-section-preview__chevron material-symbols-rounded" aria-hidden="true">expand_more</span></summary>
+                        <div class="admin-section-preview__body">
+                            <div class="admin-section-preview__toolbar"><p>Perubahan yang belum disimpan tidak ditampilkan.</p><a class="admin-button" href="{{ route('localized.'.$sectionPreview[0], ['locale' => 'id']) }}{{ $sectionPreview[1] ? '#'.$sectionPreview[1] : '' }}" target="_blank" rel="noopener"><span class="material-symbols-rounded" aria-hidden="true">open_in_new</span>Buka website</a></div>
+                            <iframe title="Pratinjau section website yang sudah terbit" loading="lazy" data-preview-src="{{ route('localized.'.$sectionPreview[0], ['locale' => 'id']) }}{{ $sectionPreview[1] ? '#'.$sectionPreview[1] : '' }}"></iframe>
+                        </div>
                     </details>
                 @endif
                 @yield('content')

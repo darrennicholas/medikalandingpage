@@ -22,9 +22,10 @@
                 if ($fieldName === 'parameters' && is_array($fieldValue)) { $fieldValue = implode(', ', $fieldValue); }
                 if (preg_match('/^translations\[([^\]]+)\]\[([^\]]+)\]$/', $fieldName, $matches)) { $fieldValue = $translations->get($matches[1])?->{$matches[2]}; }
             @endphp
-            @if ($resource === 'products' && in_array($fieldName, ['category_id', 'media_id', 'status'], true))
-                <div class="admin-product-form-heading"><h3>{{ match ($fieldName) { 'category_id' => 'Kategori produk', 'media_id' => 'Gambar dan informasi produk', default => 'Status publikasi' } }}</h3><p>{{ match ($fieldName) { 'category_id' => 'Tentukan kategori utama dan subkategori agar produk mudah ditemukan.', 'media_id' => 'Lengkapi gambar, tautan, brosur, dan logo produk.', default => 'Tentukan apakah produk sudah siap ditayangkan.' } }}</p></div>
+            @if ($resource === 'products' && in_array($fieldName, ['category_id', 'media_id', 'buy_url', 'status'], true))
+                <div class="admin-product-form-heading"><h3>{{ match ($fieldName) { 'category_id' => 'Kategori produk', 'media_id' => 'Gambar produk', 'buy_url' => 'Informasi produk', default => 'Status publikasi' } }}</h3><p>{{ match ($fieldName) { 'category_id' => 'Tentukan kategori utama dan subkategori agar produk mudah ditemukan.', 'media_id' => 'Pilih gambar utama dan logo produk.', 'buy_url' => 'Lengkapi tautan, brosur, dan parameter produk.', default => 'Tentukan apakah produk sudah siap ditayangkan.' } }}</p></div>
             @endif
+            @if ($resource === 'products' && $fieldName === 'media_id')<div class="admin-product-media-group">@endif
             @if ($field['type'] === 'hidden')
                 <input type="hidden" name="{{ $fieldName }}" value="{{ old($fieldName, $field['value'] ?? $fieldValue) }}">
             @else
@@ -83,6 +84,7 @@
                 @endif
             </label>
             @endif
+            @if ($resource === 'products' && $fieldName === 'logo_bottom_media_id')</div>@endif
         @endforeach
 
         @if ($definitions['id'] !== [] || $definitions['en'] !== [] || $definitions['zh'] !== [])

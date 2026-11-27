@@ -2688,3 +2688,79 @@ body.admin-body { font-size: 15px; }
     height: 160px;
     max-height: 160px;
 }
+.admin-cms-form--product .admin-product-media-field {
+    align-content: start;
+    gap: 8px;
+    padding: 14px;
+    border: 1px solid #dce5f3;
+    border-radius: 12px;
+    background: #f8faff;
+}
+.admin-cms-form--product .admin-product-media-upload { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.admin-cms-form--product .admin-product-media-upload .admin-button { min-height: 40px; }
+.admin-cms-form--product .admin-product-media-upload .admin-form__error { flex-basis: 100%; margin: 0; }
+.admin-cms-form--product .admin-product-media-field .admin-media-preview { margin: 0; }
+@media (max-width: 600px) { .admin-cms-form--product .admin-product-media-field { padding: 12px; } }
+@media (min-width: 761px) {
+    .admin-cms-form--product .admin-product-media-field:has(select[name="logo_bottom_media_id"]) {
+        grid-column: 1 / -1;
+        width: calc(50% - 9px);
+        justify-self: center;
+    }
+}
+.admin-cms-form--product .admin-product-media-group {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    gap: 16px;
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid #dce5f3;
+    border-radius: 12px;
+    background: #f8faff;
+}
+.admin-cms-form--product .admin-product-media-group .admin-product-media-field {
+    width: auto;
+    min-width: 0;
+    grid-column: auto;
+    justify-self: stretch;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+.admin-cms-form--product .admin-product-media-group .admin-media-preview { padding: 4px 0 0; }
+.admin-cms-form--product .admin-product-media-group .admin-media-preview img { height: 120px; max-height: 120px; }
+@media (max-width: 900px) { .admin-cms-form--product .admin-product-media-group { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .admin-cms-form--product .admin-product-media-group { grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 14px; } }
+@media (min-width: 761px) {
+    .admin-cms-form--product .admin-product-media-group .admin-product-media-field:has(select[name="logo_bottom_media_id"]) {
+        grid-column: auto;
+        width: auto;
+        justify-self: stretch;
+    }
+}
+.admin-section-preview { padding: 0; overflow: hidden; }
+.admin-section-preview summary { list-style: none; display: flex; align-items: center; gap: 12px; min-height: 68px; padding: 14px 18px; color: #234fc4; }
+.admin-section-preview summary::-webkit-details-marker { display: none; }
+.admin-section-preview summary:hover { background: #f5f8ff; }
+.admin-section-preview summary:focus-visible { outline: 3px solid #315bd5; outline-offset: -3px; border-radius: 10px; }
+.admin-section-preview__icon { flex: 0 0 38px; width: 38px; height: 38px; border-radius: 10px; background: #edf2ff; }
+.admin-section-preview__label { display: grid; flex: 1; min-width: 0; gap: 3px; }
+.admin-section-preview__label small { color: #687891; font-size: 12px; font-weight: 400; }
+.admin-section-preview__chevron { transition: transform .2s ease; }
+.admin-section-preview[open] .admin-section-preview__chevron { transform: rotate(180deg); }
+.admin-section-preview__body { padding: 0 18px 18px; }
+.admin-section-preview__toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.admin-section-preview__toolbar p { margin: 8px 0; }
+.admin-section-preview__toolbar a { display: inline-flex; margin: 0 0 10px; }
+.admin-section-preview iframe { height: min(60vh, 480px); min-height: 260px; }
+@media (prefers-reduced-motion: reduce) { .admin-section-preview__chevron { transition: none; } }
+.admin-unified-media-field { min-width: 0; align-content: start; gap: 8px; padding: 14px; border: 1px solid #dce5f3; border-radius: 12px; background: #f8faff; }
+.admin-unified-media-field .admin-product-media-upload { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.admin-unified-media-field .admin-product-media-upload .admin-button { min-height: 40px; }
+.admin-unified-media-field .admin-product-media-upload .admin-form__error { flex-basis: 100%; margin: 0; }
+.admin-unified-media-field .admin-unified-hero-upload { display: flex; padding: 0; border: 0; background: transparent; }
+.admin-unified-media-field .admin-unified-hero-upload .admin-button { min-height: 40px; }
+@media (max-width: 600px) { .admin-unified-media-field { padding: 12px; } }
+.admin-cms-form--product .admin-product-media-group .admin-unified-media-field { padding: 0; border: 0; background: transparent; }

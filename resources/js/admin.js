@@ -26,7 +26,8 @@ if (document.body.classList.contains('admin-body')) {
         const filterId = form.id || `admin-filter-panel-${index + 1}`;
         form.id = filterId;
         form.dataset.cmsCollapsibleFilter = '';
-        form.hidden = true;
+        const initiallyOpen = form.hasAttribute('data-filter-default-open');
+        form.hidden = !initiallyOpen;
 
         const toggle = document.createElement('button');
         const icon = document.createElement('span');
@@ -36,14 +37,14 @@ if (document.body.classList.contains('admin-body')) {
         toggle.type = 'button';
         toggle.className = 'admin-filter-toggle';
         toggle.setAttribute('aria-controls', filterId);
-        toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-expanded', String(initiallyOpen));
         icon.className = 'material-symbols-rounded';
         icon.setAttribute('aria-hidden', 'true');
         icon.textContent = 'tune';
-        label.textContent = 'Filter';
+        label.textContent = initiallyOpen ? 'Sembunyikan Filter' : 'Filter';
         chevron.className = 'material-symbols-rounded admin-filter-toggle__chevron';
         chevron.setAttribute('aria-hidden', 'true');
-        chevron.textContent = 'expand_more';
+        chevron.textContent = initiallyOpen ? 'expand_less' : 'expand_more';
         toggle.append(icon, label, chevron);
         form.before(toggle);
 
@@ -1288,15 +1289,24 @@ const initializeMediaSelectUpload = (select) => {
         });
     }
     if (select.dataset.inlineUploadReady || select.matches('[data-hero-media]')) return;
-    const field = select.closest('.admin-field');
+    let field = select.closest('.admin-field');
     if (!field) return;
     select.dataset.inlineUploadReady = '1';
+    if (field.tagName === 'LABEL') {
+        const container = document.createElement('div');
+        container.className = `${field.className} admin-product-media-field admin-unified-media-field`;
+        const label = field.querySelector(':scope > span');
+        if (label) {
+            label.id = `media-label-${Math.random().toString(36).slice(2)}`;
+            select.setAttribute('aria-labelledby', label.id);
+        }
+        field.replaceWith(container);
+        container.append(...field.childNodes);
+        field = container;
+    }
 
     const uploadControl = document.createElement('div');
     uploadControl.className = 'admin-media-inline-upload';
-    const uploadCopy = document.createElement('div');
-    uploadCopy.className = 'admin-media-inline-upload__copy';
-    uploadCopy.innerHTML = '<strong>Upload gambar dari perangkat</strong><small>Pratinjau muncul langsung. Gambar disimpan ke Media Library saat konten disimpan.</small>';
     const button = document.createElement('button');
     button.className = 'admin-button admin-button--soft';
     button.type = 'button';
@@ -1321,8 +1331,11 @@ const initializeMediaSelectUpload = (select) => {
             input.value = '';
         }
     });
-    uploadControl.append(uploadCopy, button, input, errors);
-    field.insertAdjacentElement('afterend', uploadControl);
+    field.classList.add('admin-unified-media-field');
+    uploadControl.className = 'admin-product-media-upload';
+    button.innerHTML = '<span class="material-symbols-rounded" aria-hidden="true">upload_file</span>Upload gambar';
+    uploadControl.append(button, input, errors);
+    select.insertAdjacentElement('afterend', uploadControl);
 };
 
 const findMediaSelects = (root) => {
@@ -1331,6 +1344,23 @@ const findMediaSelects = (root) => {
 };
 
 findMediaSelects(document);
+document.querySelectorAll('[data-hero-media]').forEach((select) => {
+    const field = select.closest('.admin-field');
+    const upload = field?.parentElement?.querySelector('[data-hero-upload-container]');
+    if (!field || !upload) return;
+    const container = document.createElement('div');
+    container.className = `${field.className} admin-unified-media-field`;
+    const label = field.querySelector(':scope > span');
+    if (label) {
+        label.id = 'hero-media-label';
+        select.setAttribute('aria-labelledby', label.id);
+    }
+    field.replaceWith(container);
+    container.append(...field.childNodes);
+    upload.querySelector('.admin-hero-upload__copy')?.remove();
+    upload.classList.add('admin-unified-hero-upload');
+    select.insertAdjacentElement('afterend', upload);
+});
 new MutationObserver((mutations) => {
     mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
         if (node instanceof Element) findMediaSelects(node);

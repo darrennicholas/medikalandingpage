@@ -4,7 +4,7 @@
 @section('content')
 <section class="admin-featured-page">
     @if ($selectedCategory)
-        <form method="GET" class="admin-featured-category-bar">
+        <form method="GET" class="admin-featured-category-bar" data-filter-default-open>
             <label for="featured-category">Kategori pemeriksaan</label>
             <select id="featured-category" name="category">
                 @foreach ($categories as $category)
