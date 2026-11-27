@@ -14,7 +14,7 @@ class HeroSlideTranslation extends Model
 
     public $timestamps = false;
 
-    protected $fillable = ['lang', 'title', 'subtitle', 'cta_label'];
+    protected $fillable = ['lang', 'title', 'subtitle', 'description', 'cta_label'];
 
     public function heroSlide(): BelongsTo
     {

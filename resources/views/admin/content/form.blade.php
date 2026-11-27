@@ -44,10 +44,19 @@
                     <select name="{{ $fieldName }}" data-media-preview-select @required($field['required'])><option value="" data-image-url="">Pilih media...</option>@foreach ($mediaOptions as $media)<option value="{{ $media->id }}" data-image-url="{{ $media->admin_preview_url }}" @selected((string) old($fieldName, $fieldValue) === (string) $media->id)>{{ $media->original_name }} ({{ number_format($media->size_bytes / 1024, 0) }} KB)</option>@endforeach</select>
                     <span class="admin-media-preview {{ in_array($fieldName, ['logo_top_media_id', 'logo_bottom_media_id'], true) ? 'admin-media-preview--product-logo' : '' }}" data-media-preview>@if ($selectedMediaUrl)<img src="{{ $selectedMediaUrl }}" alt="{{ $selectedMedia?->alt_text_id ?: $selectedMedia?->original_name }}" loading="lazy"><span>{{ $selectedMedia?->original_name }}</span>@else<span>Pilih media untuk melihat pratinjau</span>@endif</span>
                 @elseif ($field['type'] === 'file')
-                    <input type="file" name="{{ $fieldName }}" accept="application/pdf" @required($field['required'])>@if ($record->brochure_path)@php $brochurePath = preg_replace('#^(?:public/)?brochures/#', '', ltrim($record->brochure_path, '/')); $brochureUrl = route('stored.brochure', ['path' => $brochurePath]); @endphp<a class="admin-current-pdf" href="{{ $brochureUrl }}" target="_blank" rel="noopener noreferrer">Buka brosur PDF tersimpan</a>@endif
+                    <div class="admin-local-file-picker" data-local-file-picker>
+                        <button class="admin-button admin-button--soft" type="button" data-file-picker-trigger="{{ $fieldName }}-upload" aria-controls="{{ $fieldName }}-upload"><span class="material-symbols-rounded" aria-hidden="true">upload_file</span>Upload brosur PDF</button>
+                        <input id="{{ $fieldName }}-upload" type="file" name="{{ $fieldName }}" accept="application/pdf" @required($field['required']) hidden>
+                        <span class="admin-local-file-picker__status" data-file-picker-status data-empty-label="Belum ada PDF dipilih" data-selected-unit="file" aria-live="polite">Belum ada PDF dipilih</span>
+                    </div>
+                    @if ($record->brochure_path)@php $brochurePath = preg_replace('#^(?:public/)?brochures/#', '', ltrim($record->brochure_path, '/')); $brochureUrl = route('stored.brochure', ['path' => $brochurePath]); @endphp<a class="admin-current-pdf" href="{{ $brochureUrl }}" target="_blank" rel="noopener noreferrer">Buka brosur PDF tersimpan</a>@endif
                 @elseif ($field['type'] === 'gallery')
                     <span>Tambahkan gambar baru untuk galeri</span>
-                    <input type="file" accept="image/jpeg,image/png,image/webp" multiple data-gallery-upload>
+                    <div class="admin-local-file-picker" data-local-file-picker>
+                        <button class="admin-button admin-button--soft" type="button" data-file-picker-trigger="gallery-images" aria-controls="gallery-images"><span class="material-symbols-rounded" aria-hidden="true">upload_file</span>Upload gambar</button>
+                        <input id="gallery-images" type="file" accept="image/jpeg,image/png,image/webp" multiple data-gallery-upload hidden>
+                        <span class="admin-local-file-picker__status" data-file-picker-status data-empty-label="Belum ada gambar dipilih" data-selected-unit="gambar" aria-live="polite">Belum ada gambar dipilih</span>
+                    </div>
                     <small>JPG, PNG, atau WebP, maksimal 2 MB per gambar. Gambar disimpan saat konten disimpan.</small>
                     <div class="admin-gallery-picker" data-gallery-picker>
                         @foreach ($mediaOptions->sortBy(fn ($item) => $record->exists ? ($record->gallery->firstWhere('id', $item->id)?->pivot?->display_order ?? PHP_INT_MAX) : PHP_INT_MAX) as $media)

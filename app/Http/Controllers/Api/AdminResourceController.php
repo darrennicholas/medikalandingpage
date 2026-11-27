@@ -60,7 +60,7 @@ class AdminResourceController extends Controller
 
     /** @var array<string, array<string, mixed>> */
     private const RULES = [
-        'hero-slides' => ['media_id' => 'nullable|integer|exists:media,id', 'cta_url' => ['nullable', 'string', 'max:500', 'regex:/^(https:\/\/|\/(?!\/))/i'], 'display_order' => 'nullable|integer|min:1'],
+        'hero-slides' => ['media_id' => 'nullable|integer|exists:media,id', 'cta_url' => ['nullable', 'string', 'max:500', 'regex:/^(https:\/\/|\/(?!\/))/i'], 'text_alignment' => 'sometimes|in:left,center,justify,right', 'display_order' => 'nullable|integer|min:1'],
         'content-blocks' => ['block_key' => 'required|string|max:50', 'media_id' => 'nullable|integer|exists:media,id', 'cta_url' => ['nullable', 'string', 'max:500', 'regex:/^(https:\/\/|\/(?!\/))/i']],
         'brands' => ['name' => 'required|string|max:100', 'logo_media_id' => 'nullable|integer|exists:media,id', 'website_url' => 'nullable|url:https|max:500', 'display_order' => 'nullable|integer|min:1'],
         'mission-items' => ['display_order' => 'nullable|integer|min:1'],
@@ -97,6 +97,17 @@ class AdminResourceController extends Controller
     {
         $modelClass = $this->modelClass($resource);
         $query = $modelClass::query();
+
+        if ($resource === 'contact-info') {
+            $contacts = $query->with('translations')->orderBy('id')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $contacts->first(),
+                'contacts' => $contacts,
+                'message' => 'Data berhasil dimuat.',
+            ]);
+        }
 
         if (in_array($resource, ['company-summary', 'contact-info'], true)) {
             $record = $query->first();
@@ -177,6 +188,10 @@ class AdminResourceController extends Controller
 
     private function storeLocked(Request $request, string $resource, ActivityLogger $activityLogger): JsonResponse
     {
+        if ($resource === 'contact-info') {
+            return $this->storeContactInfos($request, $activityLogger);
+        }
+
         $payload = $this->validatedPayload($request, $resource);
         $existing = in_array($resource, ['company-summary', 'contact-info'], true) ? $this->modelClass($resource)::query()->lockForUpdate()->first() : null;
         if ($existing !== null && ($conflict = $this->detectStaleUpdate($request, $existing)) !== null) {
@@ -209,6 +224,128 @@ class AdminResourceController extends Controller
         $activityLogger->log($request->user(), $existing ? 'update' : ($payload['status'] === 'published' ? 'publish' : 'create'), $record::class, $record->getKey(), $oldValues, $this->activitySnapshot($record->fresh()));
 
         return response()->json(['success' => true, 'data' => $this->loadTranslations($record), 'message' => 'Data berhasil disimpan.'], 201);
+    }
+
+    private function storeContactInfos(Request $request, ActivityLogger $activityLogger): JsonResponse
+    {
+        $contacts = $request->input('contacts');
+        $isLegacyPayload = ! is_array($contacts) && ! $request->exists('contacts_present');
+        if (! is_array($contacts)) {
+            $legacyContact = $request->exists('phone') || $request->exists('email');
+            $existingContactId = $legacyContact
+                ? ContactInfo::query()->orderBy('id')->value('id')
+                : null;
+            $contacts = $legacyContact
+                ? [[
+                    'id' => $request->input('id', $existingContactId),
+                    'phone' => $request->input('phone'),
+                    'email' => $request->input('email'),
+                    'maps_url' => $request->input('maps_url'),
+                    'latitude' => $request->input('latitude'),
+                    'longitude' => $request->input('longitude'),
+                    'translations' => $request->input('translations', []),
+                ]]
+                : [];
+        }
+        $request->merge(['contacts' => $contacts]);
+
+        $validated = $request->validate([
+            'contacts' => ['present', 'array', 'max:12'],
+            'contacts.*.id' => ['nullable', 'integer', 'distinct', 'exists:contact_info,id'],
+            'contacts.*.expected_version' => ['nullable', 'string', 'size:64'],
+            'contacts.*.label' => ['nullable', 'string', 'max:120'],
+            'contacts.*.phone' => ['required', 'string', 'max:30', 'regex:/^[0-9+()\- .]{6,30}$/'],
+            'contacts.*.email' => ['required', 'email', 'max:150'],
+            'contacts.*.maps_url' => ['nullable', 'url:https', 'max:500'],
+            'contacts.*.latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'contacts.*.longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'contacts.*.translations' => ['nullable', 'array'],
+            'contacts.*.translations.id' => ['nullable', 'array'],
+            'contacts.*.translations.en' => ['nullable', 'array'],
+            'contacts.*.translations.zh' => ['nullable', 'array'],
+            'contacts.*.translations.id.address' => ['required', 'string', 'max:300'],
+            'contacts.*.translations.en.address' => ['nullable', 'string', 'max:300'],
+            'contacts.*.translations.zh.address' => ['nullable', 'string', 'max:300'],
+            'contacts.*.translations.id.office_hours' => ['nullable', 'string', 'max:150'],
+            'contacts.*.translations.en.office_hours' => ['nullable', 'string', 'max:150'],
+            'contacts.*.translations.zh.office_hours' => ['nullable', 'string', 'max:150'],
+        ]);
+
+        $storedContacts = ContactInfo::query()->with('translations')->lockForUpdate()->get()->keyBy('id');
+        $submittedIds = collect($validated['contacts'])->pluck('id')->filter()->map(fn (mixed $id): int => (int) $id);
+
+        foreach ($validated['contacts'] as $contact) {
+            $record = filled($contact['id'] ?? null) ? $storedContacts->get((int) $contact['id']) : null;
+            $expectedVersion = trim((string) ($contact['expected_version'] ?? ''));
+
+            if ($record?->exists && $expectedVersion !== '' && ! hash_equals(app(ContentVersion::class)->token($record), $expectedVersion)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data kontak telah diubah pengguna lain. Muat ulang halaman lalu terapkan perubahan kembali.',
+                ], 409);
+            }
+        }
+
+        if (! $isLegacyPayload) {
+            foreach ($storedContacts as $storedContact) {
+                if ($submittedIds->contains($storedContact->id)) {
+                    continue;
+                }
+
+                $oldValues = $this->activitySnapshot($storedContact);
+                $storedContact->delete();
+                $activityLogger->log($request->user(), 'delete', ContactInfo::class, $storedContact->id, $oldValues);
+            }
+        }
+
+        foreach ($validated['contacts'] as $contact) {
+            $record = filled($contact['id'] ?? null) ? $storedContacts->get((int) $contact['id']) : new ContactInfo;
+            $oldValues = $record->exists ? $this->activitySnapshot($record) : null;
+
+            $record->forceFill([
+                'label' => $contact['label'] ?? null,
+                'phone' => $contact['phone'] ?? null,
+                'email' => $contact['email'] ?? null,
+                'maps_url' => $contact['maps_url'] ?? null,
+                'latitude' => $contact['latitude'] ?? null,
+                'longitude' => $contact['longitude'] ?? null,
+                'updated_by' => $request->user()->id,
+            ])->save();
+
+            foreach (['id', 'en', 'zh'] as $language) {
+                $translation = $contact['translations'][$language] ?? [];
+                $hasTranslation = $record->translations()->where('lang', $language)->exists();
+                if (! $hasTranslation && collect($translation)->every(fn (mixed $value): bool => blank($value))) {
+                    continue;
+                }
+
+                $record->translations()->updateOrCreate(
+                    ['lang' => $language],
+                    [
+                        'address' => $translation['address'] ?? '',
+                        'office_hours' => $translation['office_hours'] ?? null,
+                    ],
+                );
+            }
+
+            $activityLogger->log(
+                $request->user(),
+                $oldValues === null ? 'create' : 'update',
+                ContactInfo::class,
+                $record->id,
+                $oldValues,
+                $this->activitySnapshot($record->fresh()),
+            );
+        }
+
+        $savedContacts = ContactInfo::query()->with('translations')->orderBy('id')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $savedContacts->first(),
+            'contacts' => $savedContacts,
+            'message' => 'Informasi kontak berhasil disimpan.',
+        ]);
     }
 
     public function update(Request $request, string $resource, string $id, ActivityLogger $activityLogger): JsonResponse
@@ -762,7 +899,7 @@ class AdminResourceController extends Controller
         }
 
         return match ($resource) {
-            'hero-slides' => ['title' => 'nullable|string|max:120', 'subtitle' => 'nullable|string|max:250', 'cta_label' => 'nullable|string|max:40'],
+            'hero-slides' => ['title' => 'nullable|string|max:120', 'subtitle' => 'nullable|string|max:250', 'description' => 'nullable|string|max:1000', 'cta_label' => 'nullable|string|max:40'],
             'content-blocks' => [
                 'title' => 'nullable|string|max:120',
                 'subtitle' => 'nullable|string|max:300',

@@ -71,6 +71,7 @@ class PublicPageController extends Controller
             'translations.id.cta_label' => ['nullable', 'string', 'max:40'],
             'cta_url' => ['nullable', 'string', 'max:500', 'regex:/^(https:\/\/|\/(?!\/))/i'],
             'translations.id.description' => ['nullable', 'string', 'max:3000'],
+            'text_alignment' => ['nullable', 'in:left,center,justify,right'],
             'translations.id.requirements' => ['nullable', 'string', 'max:3000'],
             'translations.id.body' => ['nullable', 'string', 'max:10000'],
             'issued_year' => ['nullable', 'integer', 'digits:4'],
@@ -147,7 +148,9 @@ class PublicPageController extends Controller
             $image = Media::query()->find($validated['media_id'] ?? null);
             $slide->setAttribute('public_title', $translation->title ?? '');
             $slide->setAttribute('public_subtitle', $translation->subtitle ?? '');
+            $slide->setAttribute('public_description', $translation->description ?? '');
             $slide->setAttribute('public_cta_label', $translation->cta_label ?? '');
+            $slide->setAttribute('text_alignment', $validated['text_alignment'] ?? 'center');
             $slide->setAttribute('cta_url', $validated['cta_url'] ?? null);
             $slide->setAttribute('public_image_url', $this->mediaUrl($image));
             $slide->setAttribute('public_image_alt', $image?->alt_text_id);
@@ -271,6 +274,7 @@ class PublicPageController extends Controller
             $translation = $this->translation($record->translations, $language);
             $record->setAttribute('public_title', $translation?->title);
             $record->setAttribute('public_subtitle', $translation?->subtitle);
+            $record->setAttribute('public_description', $translation?->description);
             $record->setAttribute('public_cta_label', $translation?->cta_label);
             $record->setAttribute('public_image_url', $this->mediaUrl($record->media));
             $record->setAttribute('public_image_alt', $record->media?->alt_text_id);
@@ -313,6 +317,7 @@ class PublicPageController extends Controller
             $translation = $this->translation($slide->translations, $language);
             $slide->setAttribute('public_title', $translation?->title);
             $slide->setAttribute('public_subtitle', $translation?->subtitle);
+            $slide->setAttribute('public_description', $translation?->description);
             $slide->setAttribute('public_cta_label', $translation?->cta_label);
             $slide->setAttribute('public_image_url', $this->mediaUrl($slide->media));
             $slide->setAttribute('public_image_alt', $this->localizedAltText($slide->media, $language));
@@ -364,13 +369,14 @@ class PublicPageController extends Controller
     {
         $language = app()->getLocale();
 
-        $contact = ContactInfo::query()->with('translations')->first();
-        if ($contact) {
-            $contact->setAttribute('public_translation', $this->translation($contact->translations, $language));
-        }
+        $contactInfos = ContactInfo::query()->with('translations')->orderBy('id')->get();
+        $contactInfos->each(function (ContactInfo $contactInfo) use ($language): void {
+            $contactInfo->setAttribute('public_translation', $this->translation($contactInfo->translations, $language));
+        });
 
         return view('kontak', [
-            'contactInfo' => $contact,
+            'language' => $language,
+            'contactInfos' => $contactInfos,
             'socialLinks' => SocialLink::query()->where('status', 'published')->with('previewMedia')->orderBy('display_order')->get(),
             'footer' => $this->footerData($language),
             'seo' => $this->seoData('contact', 'Hubungi Kami - Interskala Medika Indonesia', 'Informasi kontak PT Interskala Medika Indonesia.'),
@@ -574,7 +580,7 @@ class PublicPageController extends Controller
     /** @return array<string, mixed> */
     private function footerData(string $language, ?Collection $blocks = null): array
     {
-        $contact = ContactInfo::query()->with('translations')->first();
+        $contact = ContactInfo::query()->with('translations')->orderBy('id')->first();
         $translation = $contact ? $this->translation($contact->translations, $language) : null;
         $about = ($blocks ?? $this->publishedBlocks($language))->get('footer_about');
         $footerSettings = ContentBlock::query()->where('block_key', 'footer_about')->first();

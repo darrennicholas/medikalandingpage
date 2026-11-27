@@ -161,6 +161,8 @@ a:hover { text-decoration: none; }
 .admin-media-upload { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; }
 .admin-media-upload input[type='file'] { flex: 1 1 220px; }
 .admin-media-upload label { display: grid; min-width: 170px; gap: 5px; color: #748197; font-size: 9px; font-weight: 700; }
+.admin-local-file-picker { display: flex; min-width: 0; align-items: center; flex-wrap: wrap; gap: 10px; }
+.admin-local-file-picker__status { min-width: 0; color: #748197; font-size: 10px; overflow-wrap: anywhere; }
 
 .admin-table-wrap { width: 100%; overflow-x: auto; border: 1px solid #edf0f6; border-radius: 10px; }
 .admin-table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 10px; }
@@ -799,9 +801,17 @@ a:hover { text-decoration: none; }
 .admin-hero-preview__shade { position: absolute; inset: 0; pointer-events: none; }
 .admin-hero-preview[style*='--hero-preview-image'] .admin-hero-preview__shade { background: rgb(7 20 45 / 55%); }
 .admin-hero-preview__content { position: relative; z-index: 1; width: 100%; min-width: 0; overflow-wrap: anywhere; }
+.admin-hero-alignment { margin-bottom: 12px; }
+.admin-hero-preview__content[data-text-alignment="left"] { text-align: left; }
+.admin-hero-preview__content[data-text-alignment="center"] { text-align: center; }
+.admin-hero-preview__content[data-text-alignment="justify"] { text-align: justify; }
+.admin-hero-preview__content[data-text-alignment="right"] { text-align: right; }
 .admin-hero-preview__eyebrow { display: inline-block; margin-bottom: 10px; color: #dce6ff; font-size: 8px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .admin-hero-preview__content h3 { margin: 0 0 14px; color: #fff; font-size: clamp(18px, 2vw, 28px); font-weight: 700; line-height: 1.15; text-shadow: 2px 2px 8px rgb(0 0 0 / 80%); }
 .admin-hero-preview__content p { margin: 0 0 18px; color: #fff; font-size: 12px; font-weight: 700; line-height: 1.25; text-shadow: 1px 1px 6px rgb(0 0 0 / 80%); }
+.admin-hero-preview__content .admin-hero-preview__description { max-width: 52ch; margin: -8px auto 18px; font-size: 10px; font-weight: 500; line-height: 1.5; white-space: pre-line; }
+.admin-hero-preview__content[data-text-alignment="left"] .admin-hero-preview__description { margin-right: auto; margin-left: 0; }
+.admin-hero-preview__content[data-text-alignment="right"] .admin-hero-preview__description { margin-right: 0; margin-left: auto; }
 .admin-hero-preview__button { display: inline-block; padding: 10px 22px; border: 2px solid #fff; border-radius: 50px; background: #fff; color: #1a3a6b; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
 .admin-hero-preview__button[hidden] { display: none; }
 .admin-hero-preview__button .material-symbols-rounded { font-size: 14px; }
@@ -1943,6 +1953,11 @@ body.admin-body { font-size: 15px; }
 .admin-contact-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
 .admin-contact-form > * { min-width: 0; grid-column: 1 / -1; }
 .admin-contact-form h2, .admin-contact-preview h2 { margin: 0 0 18px; color: #1b2a44; font-size: 19px; }
+.admin-contact-list { display: grid; gap: 18px; }
+.admin-contact-entry { min-width: 0; padding: 20px; border: 1px solid var(--admin-border, #dbe3f2); border-radius: 14px; background: var(--admin-surface, #fff); }
+.admin-contact-entry__header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 4px; }
+.admin-contact-entry__header h2 { margin: 4px 0 0; }
+.admin-contact-entry__header .admin-eyebrow { color: #71809a; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .admin-contact-section { padding: 24px 0; border-bottom: 1px solid #e9eef7; }
 .admin-contact-fields, .admin-contact-coordinates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .admin-contact-form .admin-language-panel { grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 0; }
@@ -1952,14 +1967,18 @@ body.admin-body { font-size: 15px; }
 .admin-contact-form .admin-field input, .admin-contact-form .admin-field textarea { box-sizing: border-box; width: 100%; min-width: 0; min-height: 48px; font-size: 15px; }
 .admin-contact-form .admin-field textarea { min-height: 110px; resize: vertical; }
 .admin-contact-form .admin-contact-coordinates { margin-top: 16px; }
+.admin-contact-location { padding-top: 16px; }
+.admin-contact-location summary { width: fit-content; margin-bottom: 12px; color: var(--admin-primary-strong, #2452bf); cursor: pointer; font-weight: 700; }
+.admin-contact-toolbar { display: flex; justify-content: flex-start; padding-top: 18px; }
 .admin-contact-form .admin-form__actions { justify-content: flex-end; padding-top: 24px; }
-.admin-contact-preview__card { display: grid; gap: 12px; padding: 20px; border-radius: 14px; background: #f1f4ff; }
+.admin-contact-preview__grid { display: grid; gap: 14px; }
+.admin-contact-preview__card { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--admin-border, #dbe3f2); border-radius: 14px; background: var(--admin-surface-soft, #f8faff); }
 .admin-contact-preview__card h3 { margin: 0 0 4px; font-size: 20px; }
 .admin-contact-preview__card > div { display: grid; gap: 5px; padding: 15px; border-radius: 10px; background: white; overflow-wrap: anywhere; }
 .admin-contact-preview__card span { color: #758199; font-size: 13px; }
 .admin-contact-preview__card strong { color: #22334f; font-size: 15px; }
 @media (max-width: 900px) { .admin-contact-layout { grid-template-columns: 1fr; } }
-@media (max-width: 600px) { .admin-contact-form, .admin-contact-preview { padding: 16px; } .admin-contact-fields, .admin-contact-coordinates { grid-template-columns: 1fr; gap: 16px; } }
+@media (max-width: 600px) { .admin-contact-form, .admin-contact-preview { padding: 16px; } .admin-contact-entry { padding: 14px; } .admin-contact-entry__header { align-items: flex-start; } .admin-contact-fields, .admin-contact-coordinates { grid-template-columns: 1fr; gap: 16px; } }
 .admin-body[data-admin-theme='dark'] .admin-product-stats article,
 .admin-body[data-admin-theme='dark'] .admin-product-panel,
 .admin-body[data-admin-theme='dark'] .admin-product-filters,

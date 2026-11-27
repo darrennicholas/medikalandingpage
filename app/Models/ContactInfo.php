@@ -14,7 +14,7 @@ class ContactInfo extends Model
 
     protected $table = 'contact_info';
 
-    protected $fillable = ['phone', 'email', 'maps_url', 'latitude', 'longitude', 'updated_by'];
+    protected $fillable = ['label', 'phone', 'email', 'maps_url', 'latitude', 'longitude', 'updated_by'];
 
     public function translations(): HasMany
     {

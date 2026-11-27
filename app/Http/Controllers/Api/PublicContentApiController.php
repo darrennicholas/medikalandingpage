@@ -30,7 +30,7 @@ class PublicContentApiController extends Controller
 
         return $this->success([
             'hero_mode' => $slides->count() > 1 ? 'slider' : ($slides->isEmpty() ? 'hidden' : 'single'),
-            'hero_slides' => $slides->map(fn (HeroSlide $slide): array => $this->translated($slide, $lang, 'media')),
+            'hero_slides' => $slides->map(fn (HeroSlide $slide): array => [...$this->translated($slide, $lang, 'media'), 'text_alignment' => $slide->text_alignment ?: 'center']),
             'coverage' => $this->block('home_coverage', $lang),
             'cta' => $this->block('home_cta', $lang),
             'brands' => Brand::query()->where('status', 'published')->with(['logo', 'translations'])->orderBy('display_order')->get()
@@ -156,11 +156,20 @@ class PublicContentApiController extends Controller
 
     public function contact(Request $request): JsonResponse
     {
-        $contact = ContactInfo::query()->with('translations')->first();
+        $contacts = ContactInfo::query()->with('translations')->orderBy('id')->get();
+        $contact = $contacts->first();
 
         return $this->success($contact ? $this->translated($contact, $this->language($request)) + [
             'phone' => $contact->phone, 'email' => $contact->email, 'maps_url' => $contact->maps_url,
             'latitude' => $contact->latitude, 'longitude' => $contact->longitude,
+            'contacts' => $contacts->map(fn (ContactInfo $contactInfo): array => $this->translated($contactInfo, $this->language($request)) + [
+                'label' => $contactInfo->label,
+                'phone' => $contactInfo->phone,
+                'email' => $contactInfo->email,
+                'maps_url' => $contactInfo->maps_url,
+                'latitude' => $contactInfo->latitude,
+                'longitude' => $contactInfo->longitude,
+            ])->all(),
         ] : null);
     }
 

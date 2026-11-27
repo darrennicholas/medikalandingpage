@@ -67,7 +67,7 @@ class ProductController extends Controller
 
         $language = app()->getLocale();
         $seo = SeoMeta::query()->where('page_key', 'products')->where('lang', $language)->with('ogImage')->first();
-        $contact = ContactInfo::query()->with('translations')->first();
+        $contact = ContactInfo::query()->with('translations')->orderBy('id')->first();
         $contactTranslation = $contact ? $this->localizedTranslation($contact->translations, $language) : null;
         $footerSettings = ContentBlock::query()->where('block_key', 'footer_about')->with('translations')->first();
         $footerTranslation = $footerSettings?->status === 'published' ? $this->localizedTranslation($footerSettings->translations, $language) : null;

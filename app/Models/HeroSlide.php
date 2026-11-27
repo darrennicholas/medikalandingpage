@@ -14,7 +14,7 @@ class HeroSlide extends Model
     /** @use HasFactory<HeroSlideFactory> */
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['media_id', 'cta_url', 'display_order', 'status', 'created_by', 'updated_by', 'draft_payload'];
+    protected $fillable = ['media_id', 'cta_url', 'text_alignment', 'display_order', 'status', 'created_by', 'updated_by', 'draft_payload'];
 
     protected function casts(): array
     {

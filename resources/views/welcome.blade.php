@@ -31,9 +31,10 @@
                 @foreach ($slides as $slideIndex => $slide)
                     <div class="hero__slide" data-hero-slide @if ($slideIndex !== 0) hidden @endif aria-hidden="{{ $slideIndex === 0 ? 'false' : 'true' }}">
                         @if ($slide->public_image_url && str_starts_with($slide->public_media_type ?? '', 'video/'))<video class="hero__image hero__video" autoplay muted loop playsinline preload="metadata" aria-hidden="true"><source src="{{ $slide->public_image_url }}" type="{{ $slide->public_media_type }}"></video>@elseif ($slide->public_image_url)<x-public-image class="hero__image" :src="$slide->public_image_url" :alt="$slide->public_image_alt ?? ''" :loading="$slideIndex > 0 ? 'lazy' : 'eager'" sizes="100vw"/>@endif
-                        <div class="container hero__content">
+                        <div class="container hero__content" data-text-alignment="{{ in_array($slide->text_alignment, ['left', 'center', 'justify', 'right'], true) ? $slide->text_alignment : 'center' }}">
                             @if ($slide->public_title)<h1>{{ $slide->public_title }}</h1>@endif
-                            @if ($slide->public_subtitle)<p>{{ $slide->public_subtitle }}</p>@endif
+                            @if ($slide->public_subtitle)<p class="hero__subtitle">{{ $slide->public_subtitle }}</p>@endif
+                            @if ($slide->public_description)<p class="hero__description">{{ $slide->public_description }}</p>@endif
                             @if ($slide->public_cta_label && $slide->cta_url)<a class="contact-cta__button" href="{{ preg_replace('#^/(id|en|zh)(?=/|$)#', '/'.app()->getLocale(), $slide->cta_url) }}">{{ $slide->public_cta_label }}</a>@endif
                         </div>
                     </div>

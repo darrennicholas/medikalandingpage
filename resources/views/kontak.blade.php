@@ -44,23 +44,23 @@
                 <p data-i18n="contactPageIntro">{{ app()->getLocale() === 'en' ? 'Our team is ready to help with questions about IMI Medika products and services.' : 'Kami siap membantu Anda dengan segala pertanyaan dan kebutuhan mengenai produk dan layanan IMI Medika. Tim kami yang profesional siap memberikan solusi terbaik untuk Anda.' }}</p>
             </div>
 
-            @php
-                $language = app()->getLocale();
-                $contactTranslation = $contactInfo?->public_translation ?? $contactInfo?->translations->firstWhere('lang', $language) ?? $contactInfo?->translations->firstWhere('lang', 'id');
-                $mapEmbedUrl = null;
-                if ($contactInfo?->latitude !== null && $contactInfo?->longitude !== null) {
-                    $mapEmbedUrl = 'https://www.google.com/maps?q='.urlencode($contactInfo->latitude.','.$contactInfo->longitude).'&output=embed';
-                } elseif ($contactInfo?->maps_url) {
-                    $mapEmbedUrl = str_contains($contactInfo->maps_url, 'output=embed') || str_contains($contactInfo->maps_url, '/maps/embed')
-                        ? $contactInfo->maps_url
-                        : 'https://www.google.com/maps?q='.urlencode($contactInfo->maps_url).'&output=embed';
-                }
-            @endphp
-
-            @if ($contactInfo)
-                <div class="factory-grid factory-grid--single">
-                    <article class="factory-card" aria-labelledby="contact-details-title">
-                        <h2 id="contact-details-title"><svg aria-hidden="true"><use href="#icon-factory"/></svg>{{ $language === 'en' ? 'Contact Details' : 'Informasi Kontak' }}</h2>
+            @if ($contactInfos->isNotEmpty())
+                <div class="factory-grid {{ $contactInfos->count() === 1 ? 'factory-grid--single' : '' }}">
+                    @foreach ($contactInfos as $contactInfo)
+                        @php
+                            $contactTranslation = $contactInfo->public_translation ?? $contactInfo->translations->firstWhere('lang', 'id');
+                            $mapEmbedUrl = null;
+                            if ($contactInfo->latitude !== null && $contactInfo->longitude !== null) {
+                                $mapEmbedUrl = 'https://www.google.com/maps?q='.urlencode($contactInfo->latitude.','.$contactInfo->longitude).'&output=embed';
+                            } elseif ($contactInfo->maps_url) {
+                                $mapEmbedUrl = str_contains($contactInfo->maps_url, 'output=embed') || str_contains($contactInfo->maps_url, '/maps/embed')
+                                    ? $contactInfo->maps_url
+                                    : 'https://www.google.com/maps?q='.urlencode($contactInfo->maps_url).'&output=embed';
+                            }
+                            $contactTitle = $contactInfo->label ?: ($language === 'en' ? 'Contact Details' : 'Informasi Kontak '.$loop->iteration);
+                        @endphp
+                    <article class="factory-card" aria-labelledby="contact-details-title-{{ $contactInfo->id }}">
+                        <h2 id="contact-details-title-{{ $contactInfo->id }}"><svg aria-hidden="true"><use href="#icon-factory"/></svg>{{ $contactTitle }}</h2>
                         <div class="factory-card__body">
                             @if ($contactTranslation?->address)
                                 <div class="factory-card__address"><svg aria-hidden="true"><use href="#icon-pin"/></svg><p>{{ $contactTranslation->address }}</p></div>
@@ -90,6 +90,7 @@
                             @endif
                         </div>
                     </article>
+                    @endforeach
                 </div>
             @endif
 

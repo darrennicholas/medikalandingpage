@@ -14,7 +14,15 @@
 
 <section class="admin-panel admin-media-upload-panel" data-media-upload-panel hidden>
     <div class="admin-panel__header"><div><p class="admin-eyebrow">Gambar maksimal 2 MB · Video maksimal 50 MB, khusus Hero / Banner</p><h2>Unggah Media Baru</h2></div><button class="admin-icon-link" type="button" data-media-upload-close aria-label="Tutup formulir"><span class="material-symbols-rounded" aria-hidden="true">close</span></button></div>
-    <form class="admin-media-upload" data-media-upload data-api-url="{{ url('/api/v1/admin/media') }}" enctype="multipart/form-data"><input type="file" name="files[]" aria-label="Pilih gambar atau video untuk diunggah" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple required><button class="admin-button admin-button--primary" type="submit"><span class="material-symbols-rounded" aria-hidden="true">upload</span>Unggah File</button><div data-media-errors class="admin-form__error" hidden></div></form>
+    <form class="admin-media-upload" data-media-upload data-api-url="{{ url('/api/v1/admin/media') }}" enctype="multipart/form-data">
+        <div class="admin-local-file-picker" data-local-file-picker>
+            <button class="admin-button admin-button--soft" type="button" data-file-picker-trigger="media-library-files" aria-controls="media-library-files"><span class="material-symbols-rounded" aria-hidden="true">upload_file</span>Upload gambar</button>
+            <input id="media-library-files" type="file" name="files[]" aria-label="Upload gambar atau video" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple hidden>
+            <span class="admin-local-file-picker__status" data-file-picker-status data-empty-label="Belum ada gambar dipilih" data-selected-unit="file" aria-live="polite">Belum ada gambar dipilih</span>
+        </div>
+        <button class="admin-button admin-button--primary" type="submit"><span class="material-symbols-rounded" aria-hidden="true">upload</span>Unggah ke Media Library</button>
+        <div data-media-errors class="admin-form__error" hidden></div>
+    </form>
 </section>
 
 <section class="admin-panel admin-media-library-panel">

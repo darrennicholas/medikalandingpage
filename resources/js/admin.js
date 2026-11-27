@@ -242,6 +242,15 @@ const showSweetAlert = ({ icon = 'success', title = 'Berhasil', text = '', showC
     (showCancel ? cancelButton : confirmButton)?.focus();
 });
 
+const confirmCmsDeletion = (title, text) => showSweetAlert({
+    icon: 'warning',
+    title,
+    text,
+    showCancel: true,
+    confirmText: 'Ya, hapus',
+    cancelText: 'Batal',
+});
+
 document.querySelectorAll('[data-sweet-alert-confirm]').forEach((button) => button.addEventListener('click', () => closeSweetAlert(true)));
 document.querySelectorAll('[data-sweet-alert-cancel]').forEach((button) => button.addEventListener('click', () => closeSweetAlert(false)));
 
@@ -556,7 +565,15 @@ document.querySelectorAll('[data-confirm]').forEach((form) => {
         }
 
         event.preventDefault();
-        const confirmed = await showSweetAlert({ icon: 'warning', title: 'Konfirmasi tindakan', text: form.dataset.confirm || 'Apakah Anda yakin ingin menghapus data ini?', showCancel: true, confirmText: 'Ya, lanjutkan' });
+        const method = (form.querySelector('[name="_method"]')?.value || form.method).toUpperCase();
+        const isDelete = method === 'DELETE';
+        const confirmed = await showSweetAlert({
+            icon: 'warning',
+            title: isDelete ? 'Hapus data?' : 'Konfirmasi tindakan',
+            text: form.dataset.confirm || (isDelete ? 'Data ini akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.' : 'Lanjutkan tindakan ini?'),
+            showCancel: true,
+            confirmText: isDelete ? 'Ya, hapus' : 'Ya, lanjutkan',
+        });
         if (confirmed) {
             form.dataset.confirmed = 'true';
             form.requestSubmit();
@@ -635,6 +652,11 @@ const initializeLiveEditor = (form) => {
         setText('subtitle', '');
         setText('body', editorType === 'cta' ? '' : (form.dataset.previewBodyFallback || 'Deskripsi jangkauan tampil di sini.'), editorType === 'cta');
         if (editorType === 'hero') {
+            setText('description', '', true);
+            const previewContent = form.querySelector('[data-preview-content]');
+            if (previewContent) {
+                previewContent.dataset.textAlignment = form.querySelector('[data-hero-alignment]')?.value || 'center';
+            }
             const button = form.querySelector('[data-preview-output="cta_label"]');
             if (button) {
                 const label = valueFor('cta_label');
@@ -786,7 +808,7 @@ const initializeLiveEditor = (form) => {
 
 document.querySelectorAll('[data-live-editor]').forEach(initializeLiveEditor);
 
-document.addEventListener('click', (event) => {
+document.addEventListener('click', async (event) => {
     const addButton = event.target.closest('[data-repeater-add]');
     if (addButton) {
         const repeaterName = addButton.dataset.repeaterAdd;
@@ -806,6 +828,9 @@ document.addEventListener('click', (event) => {
 
     const removeButton = event.target.closest('[data-repeater-remove]');
     if (removeButton) {
+        const label = removeButton.getAttribute('aria-label')?.replace(/^Hapus\s*/i, '').trim() || 'item';
+        const confirmed = await confirmCmsDeletion('Hapus item?', `${label.charAt(0).toUpperCase()}${label.slice(1)} akan dihapus dari formulir. Simpan perubahan untuk menerapkan penghapusan.`);
+        if (!confirmed) return;
         const list = removeButton.closest('[data-repeater-list]');
         removeButton.closest('[data-repeater-item]')?.remove();
         if (list) reindexRepeater(list);
@@ -1021,7 +1046,7 @@ document.querySelectorAll('[data-certificate-batch]').forEach((form) => {
             refreshCertificateBatch(form);
         }
     });
-    form.parentElement.addEventListener('click', (event) => {
+    form.parentElement.addEventListener('click', async (event) => {
         const entryTab = event.target.closest('[data-certificate-entry-tab]');
         if (entryTab) {
             form.dataset.activeIndex = entryTab.dataset.certificateEntryTab;
@@ -1082,6 +1107,8 @@ document.querySelectorAll('[data-certificate-batch]').forEach((form) => {
 
         const remove = event.target.closest('[data-remove-certificate-entry]');
         if (remove && form.querySelectorAll('[data-certificate-entry]').length > 1) {
+            const confirmed = await confirmCmsDeletion('Hapus sertifikat?', 'Sertifikat ini akan dihapus dari daftar. Simpan perubahan batch untuk menerapkannya.');
+            if (!confirmed) return;
             const removedIndex = [...form.querySelectorAll('[data-certificate-entry]')].indexOf(remove.closest('[data-certificate-entry]'));
             const activeIndex = Number(form.dataset.activeIndex || 0);
             remove.closest('[data-certificate-entry]').remove();
@@ -1154,6 +1181,25 @@ document.querySelectorAll('[data-section-preview]').forEach((preview) => {
 
 document.querySelectorAll('[data-gallery-upload]').forEach((input) => {
     input.addEventListener('change', () => { input._uploadedMedia = []; });
+});
+
+document.querySelectorAll('[data-file-picker-trigger]').forEach((button) => {
+    const input = document.getElementById(button.dataset.filePickerTrigger);
+    const status = button.closest('[data-local-file-picker]')?.querySelector('[data-file-picker-status]');
+    if (!input || !status) return;
+
+    button.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => {
+        const files = [...(input.files || [])];
+        if (files.length === 0) {
+            status.textContent = status.dataset.emptyLabel || 'Belum ada file dipilih';
+            return;
+        }
+
+        status.textContent = files.length === 1
+            ? files[0].name
+            : `${files.length} ${status.dataset.selectedUnit || 'file'} dipilih`;
+    });
 });
 
 document.querySelectorAll('.admin-cms-form[data-resource="products"]').forEach((form) => {
@@ -1310,12 +1356,11 @@ const initializeMediaSelectUpload = (select) => {
     const button = document.createElement('button');
     button.className = 'admin-button admin-button--soft';
     button.type = 'button';
-    button.innerHTML = '<span class="material-symbols-rounded" aria-hidden="true">add_photo_alternate</span>Pilih gambar';
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/jpeg,image/png,image/webp';
     input.hidden = true;
-    input.setAttribute('aria-label', 'Pilih gambar baru untuk diunggah');
+    input.setAttribute('aria-label', 'Upload gambar baru');
     const errors = document.createElement('div');
     errors.className = 'admin-form__error';
     errors.hidden = true;
@@ -1520,6 +1565,13 @@ document.querySelectorAll('[data-media-upload]').forEach((form) => {
         event.preventDefault();
         const errors = form.querySelector('[data-media-errors]');
         errors.hidden = true;
+        const input = form.querySelector('input[type="file"]');
+        if (!input?.files?.length) {
+            showError(errors, 'Pilih minimal satu gambar atau video untuk diunggah.');
+            form.querySelector('[data-file-picker-trigger]')?.focus();
+            return;
+        }
+
         try {
             const result = await withGlobalLoading('Mengunggah media...', async () => responseMessage(await fetch(form.dataset.apiUrl, {
                 method: 'POST', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken }, body: new FormData(form),
@@ -1714,7 +1766,7 @@ if (featuredForm) {
         return item;
     };
 
-    featuredForm.addEventListener('click', (event) => {
+    featuredForm.addEventListener('click', async (event) => {
         const addButton = event.target.closest('[data-featured-add]');
         if (addButton && !addButton.disabled) {
             selectedList.append(createFeaturedItem(addButton));
@@ -1724,6 +1776,8 @@ if (featuredForm) {
 
         const removeButton = event.target.closest('[data-featured-remove]');
         if (removeButton) {
+            const confirmed = await confirmCmsDeletion('Hapus dari produk unggulan?', 'Produk ini akan dilepas dari daftar unggulan setelah Anda menyimpan perubahan.');
+            if (!confirmed) return;
             removeButton.closest('[data-featured-selected-item]')?.remove();
             updateFeaturedState();
             return;
@@ -1801,12 +1855,85 @@ document.querySelectorAll('button[data-preview-url]').forEach((button) => {
     button.addEventListener('click', () => window.open(button.dataset.previewUrl, '_blank', 'noopener'));
 });
 
-document.querySelectorAll('[data-contact-preview]').forEach((input) => {
-    input.addEventListener('input', () => {
-        const preview = document.querySelector(`[data-contact-value="${input.dataset.contactPreview}"]`);
-        if (preview) preview.textContent = input.value.trim() || '—';
+const contactEditor = document.querySelector('[data-contact-editor]');
+if (contactEditor) {
+    const contactForm = contactEditor.querySelector('[data-contact-form]');
+    const contactList = contactEditor.querySelector('[data-contact-list]');
+    const contactTemplate = contactEditor.querySelector('[data-contact-template]');
+    const previewGrid = contactEditor.querySelector('.admin-contact-preview__grid');
+
+    const reindexContacts = () => {
+        contactList.querySelectorAll('[data-contact-entry]').forEach((entry, index) => {
+            entry.dataset.contactIndex = String(index);
+            const heading = entry.querySelector('[data-contact-entry-title]');
+            if (heading) heading.textContent = `Informasi Kontak ${index + 1}`;
+            entry.querySelectorAll('[name]').forEach((field) => {
+                field.name = field.name.replace(/contacts\[(?:\d+|__INDEX__)\]/, `contacts[${index}]`);
+            });
+        });
+    };
+
+    const renderContactPreviews = () => {
+        if (!previewGrid) return;
+        const entries = [...contactList.querySelectorAll('[data-contact-entry]')];
+        previewGrid.replaceChildren();
+        entries.forEach((entry, index) => {
+            const read = (name) => entry.querySelector(`[data-contact-field="${name}"]`)?.value.trim() || '—';
+            const card = document.createElement('article');
+            card.className = 'admin-contact-preview__card';
+            const title = document.createElement('h3');
+            title.textContent = read('label') === '—' ? `Informasi Kontak ${index + 1}` : read('label');
+            card.append(title);
+            [['Telepon', 'phone'], ['Email', 'email'], ['Alamat', 'address'], ['Jam Operasional', 'hours']].forEach(([label, field]) => {
+                const row = document.createElement('div');
+                const caption = document.createElement('span');
+                caption.textContent = label;
+                const value = document.createElement('strong');
+                value.textContent = read(field);
+                row.append(caption, value);
+                card.append(row);
+            });
+            previewGrid.append(card);
+        });
+        previewGrid.hidden = entries.length === 0;
+    };
+
+    contactEditor.addEventListener('click', async (event) => {
+        if (event.target.closest('[data-contact-add]')) {
+            const index = contactList.querySelectorAll('[data-contact-entry]').length;
+            const fragment = contactTemplate.content.cloneNode(true);
+            const entry = fragment.querySelector('[data-contact-entry]');
+            entry.querySelectorAll('[name]').forEach((field) => {
+                field.name = field.name.replace('__INDEX__', String(index));
+            });
+            const activeLanguage = contactForm.querySelector('[data-language-tab].is-active')?.dataset.languageTab || 'id';
+            entry.querySelectorAll('[data-language-panel]').forEach((panel) => {
+                panel.classList.toggle('is-hidden', panel.dataset.languagePanel !== activeLanguage);
+            });
+            contactList.append(fragment);
+            reindexContacts();
+            renderContactPreviews();
+            entry.querySelector('[data-contact-field="label"]')?.focus();
+            return;
+        }
+
+        if (event.target.closest('[data-contact-remove]')) {
+            const confirmed = await confirmCmsDeletion('Hapus informasi kontak?', 'Informasi kontak ini akan dihapus saat Anda menyimpan perubahan.');
+            if (!confirmed) return;
+            event.target.closest('[data-contact-entry]')?.remove();
+            reindexContacts();
+            renderContactPreviews();
+        }
     });
-});
+
+    contactEditor.addEventListener('input', (event) => {
+        if (event.target.closest('[data-contact-entry]')) renderContactPreviews();
+    });
+    contactEditor.addEventListener('change', (event) => {
+        if (event.target.closest('[data-contact-entry]')) renderContactPreviews();
+    });
+    renderContactPreviews();
+}
 
 const flashError = document.querySelector('[data-admin-flash-error]')?.dataset.adminFlashError;
 if (flashError) showSweetAlert({ icon: 'error', title: 'Permintaan gagal', text: flashError });
@@ -1907,8 +2034,10 @@ let richLinkContext = null;
 
 richLinkDialog?.querySelector('[data-rich-link-cancel]')?.addEventListener('click', () => richLinkDialog.close());
 richLinkDialog?.addEventListener('close', () => { richLinkContext = null; });
-richLinkRemove?.addEventListener('click', () => {
+richLinkRemove?.addEventListener('click', async () => {
     if (!richLinkContext) return;
+    const confirmed = await confirmCmsDeletion('Hapus tautan?', 'Tautan akan dihapus dari teks artikel. Simpan artikel untuk menerapkan perubahan.');
+    if (!confirmed) return;
     const { editor, range } = richLinkContext;
     editor.formatText(range.index, range.length, 'link', false, Quill.sources.USER);
     richLinkDialog.close();
@@ -1973,7 +2102,9 @@ document.querySelectorAll('[data-rich-editor]').forEach((host) => {
             selectedImage = event.target.closest('img');
             removeImage.hidden = !selectedImage;
         });
-        removeImage.addEventListener('click', () => {
+        removeImage.addEventListener('click', async () => {
+            const confirmed = await confirmCmsDeletion('Hapus gambar?', 'Gambar terpilih akan dihapus dari isi artikel saat Anda menyimpan perubahan.');
+            if (!confirmed) return;
             if (selectedImage && editor.root.contains(selectedImage)) {
                 const index = editor.getIndex(Quill.find(selectedImage));
                 editor.deleteText(index, 1, Quill.sources.USER);

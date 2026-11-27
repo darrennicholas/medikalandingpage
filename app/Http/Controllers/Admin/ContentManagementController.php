@@ -346,11 +346,13 @@ class ContentManagementController extends Controller
         }
 
         if ($resource === 'contact-info') {
-            $record = ContactInfo::query()->with('translations')->first() ?? new ContactInfo;
+            $records = ContactInfo::query()->with('translations')->orderBy('id')->get();
+            if ($records->isEmpty()) {
+                $records->push(new ContactInfo);
+            }
 
             return view('admin.content.contact-info', [
-                'record' => $record,
-                'translations' => $record->translations->keyBy('lang'),
+                'records' => $records,
             ]);
         }
 
