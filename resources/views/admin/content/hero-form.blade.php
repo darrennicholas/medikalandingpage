@@ -7,7 +7,7 @@
 @section('page-description', 'Atur gambar, teks, tombol, dan status publikasi banner beranda.')
 @section('page-actions')
     @if ($isEditing)<a class="admin-button" href="{{ route('admin.content.show', ['resource' => 'hero-slides', 'id' => $record->id]) }}"><span class="material-symbols-rounded" aria-hidden="true">visibility</span>Lihat detail</a>@endif
-    @if ($isEditing)<a class="admin-button" href="{{ route('admin.content.preview', ['resource' => 'hero-slides', 'id' => $record->id]) }}" target="_blank" rel="noopener">Pratinjau Landing Page</a>@endif
+    @if ($isEditing)<a class="admin-button" href="{{ route('admin.content.preview', ['resource' => 'hero-slides', 'id' => $record->id]) }}" target="_blank" rel="noopener">Preview Landing Page</a>@endif
 @endsection
 @section('content')
     @if ($hasPendingDraft)<div class="admin-alert admin-alert--info"><span class="material-symbols-rounded" aria-hidden="true">info</span><span>Draft perubahan tersimpan. Banner yang sedang tayang tidak berubah sampai Anda memilih <strong>Simpan &amp; Publish</strong>.</span></div>@endif

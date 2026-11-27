@@ -19,7 +19,7 @@
 @section('breadcrumb', 'Konten Landing Page  /  Beranda  /  '.$title)
 @section('page-description', $isCoverage ? 'Kelola informasi jangkauan, metrik, dan gambar yang ditampilkan di beranda.' : 'Kelola judul ajakan, pesan pendukung, dan tombol aksi pada beranda.')
 @section('page-actions')
-    @if ($record->exists)<a class="admin-button" href="{{ route('admin.content.preview', ['resource' => 'content-blocks', 'id' => $blockKey]) }}" target="_blank" rel="noopener">Pratinjau Landing Page</a>@endif
+    @if ($record->exists)<a class="admin-button" href="{{ route('admin.content.preview', ['resource' => 'content-blocks', 'id' => $blockKey]) }}" target="_blank" rel="noopener">Preview Landing Page</a>@endif
 @endsection
 @section('content')
     @if ($hasPendingDraft)<div class="admin-alert admin-alert--info"><span class="material-symbols-rounded" aria-hidden="true">info</span><span>Draft perubahan tersimpan. Versi Published pada halaman beranda tetap aktif sampai Anda memilih <strong>Simpan &amp; Publish</strong>.</span></div>@endif

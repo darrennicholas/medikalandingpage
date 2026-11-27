@@ -130,7 +130,7 @@
             <a class="admin-button" href="{{ route('admin.content.index', $resource) }}">Batal</a>
             @if (in_array($resource, ['products', 'product-categories', 'documentations', 'job-openings', 'brands', 'mission-items', 'certificates', 'social-links'], true))
                 <input type="hidden" name="preview_lang" value="id" data-unsaved-preview-language>
-                <button class="admin-button" type="submit" data-preview-unsaved formaction="{{ route('admin.content.preview-unsaved', ['resource' => $resource]) }}" formmethod="post" formtarget="_blank" formnovalidate><span class="material-symbols-rounded" aria-hidden="true">visibility</span>Pratinjau Perubahan</button>
+                <button class="admin-button" type="submit" data-preview-unsaved formaction="{{ route('admin.content.preview-unsaved', ['resource' => $resource]) }}" formmethod="post" formtarget="_blank" formnovalidate><span class="material-symbols-rounded" aria-hidden="true">visibility</span>Preview Perubahan</button>
             @endif
             @if (in_array('status', $record->getFillable(), true))
                 <button class="admin-button" type="submit" data-save-status="draft" formnovalidate>Simpan Draft</button>
@@ -138,7 +138,7 @@
             @else
                 <button class="admin-button admin-button--primary" type="submit" data-save-status="">Simpan</button>
             @endif
-            @if ($isEditing && in_array($resource, ['products', 'product-categories', 'documentations', 'job-openings', 'brands', 'mission-items', 'certificates', 'social-links'], true))<a class="admin-button" href="{{ route('admin.content.preview', ['resource' => $resource, 'id' => $record->id]) }}" target="_blank" rel="noopener">Pratinjau Landing Page</a>@endif
+            @if ($isEditing && in_array($resource, ['products', 'product-categories', 'documentations', 'job-openings', 'brands', 'mission-items', 'certificates', 'social-links'], true))<a class="admin-button" href="{{ route('admin.content.preview', ['resource' => $resource, 'id' => $record->id]) }}" target="_blank" rel="noopener">Preview Landing Page</a>@endif
         </div>
     </form>
 </section>

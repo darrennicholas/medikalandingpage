@@ -3,7 +3,7 @@
 @section('page-heading', ($isEditing ? 'Ubah ' : 'Tambah ').'Sertifikat & Penghargaan')
 @section('breadcrumb', 'Konten Landing Page  /  Tentang  /  Sertifikat')
 @section('page-actions')
-    @if ($isEditing)<a class="admin-button" href="{{ route('admin.content.preview', ['resource' => 'certificates', 'id' => $record->id]) }}" target="_blank" rel="noopener">Pratinjau Landing Page</a>@endif
+    @if ($isEditing)<a class="admin-button" href="{{ route('admin.content.preview', ['resource' => 'certificates', 'id' => $record->id]) }}" target="_blank" rel="noopener">Preview Landing Page</a>@endif
 @endsection
 @section('content')
     <section class="admin-certificate-editor-wrap">

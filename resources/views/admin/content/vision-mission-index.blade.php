@@ -4,7 +4,7 @@
 @section('breadcrumb', 'Konten Landing Page  /  Tentang  /  Visi & Misi')
 @section('page-description', 'Kelola pernyataan visi perusahaan dan butir misi yang ditampilkan pada halaman Tentang.')
 @section('page-actions')
-    <a class="admin-button" href="{{ $visionBlock->exists ? route('admin.content.preview', ['resource' => 'content-blocks', 'id' => 'about_vision']) : url('/id/tentang') }}" target="_blank" rel="noopener"><span class="material-symbols-rounded" aria-hidden="true">visibility</span>Pratinjau Landing Page</a>
+    <a class="admin-button" href="{{ $visionBlock->exists ? route('admin.content.preview', ['resource' => 'content-blocks', 'id' => 'about_vision']) : url('/id/tentang') }}" target="_blank" rel="noopener"><span class="material-symbols-rounded" aria-hidden="true">visibility</span>Preview Landing Page</a>
 @endsection
 @section('content')
     @php
